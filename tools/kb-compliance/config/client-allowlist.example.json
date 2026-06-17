@@ -1,0 +1,5 @@
+{
+  "_comment": "Copy to client-allowlist.json (gitignored) and fill in. Scope ingestion to signed clients. Use corporate 'domains' to capture the whole firm; use exact 'emails' for generic providers (Gmail/Outlook) where the domain would over-match.",
+  "domains": ["example-broker.be", "another-firm.com"],
+  "emails": ["specific.contact@gmail.com"]
+}

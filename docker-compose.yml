@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: brokercomply-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: brokercomply
+      POSTGRES_PASSWORD: brokercomply
+      POSTGRES_DB: brokercomply
+    ports:
+      - '5432:5432'
+    volumes:
+      - brokercomply_pgdata:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U brokercomply -d brokercomply']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  brokercomply_pgdata:

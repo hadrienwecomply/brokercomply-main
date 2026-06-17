@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* BrokerComply brand tokens — extracted from we-comply.be (Webflow). See apps/dashboard/DESIGN_TOKENS.md */
+@theme {
+  /* Brand — mint/emerald green */
+  --color-brand-50: #eff9f5;
+  --color-brand-100: #dff2eb;
+  --color-brand-200: #bfe5d6;
+  --color-brand-300: #9fd9c2;
+  --color-brand-400: #7fccad;
+  --color-brand-500: #5fbf99;
+  --color-brand-600: #4c997a;
+  --color-brand-700: #39735c;
+  --color-brand-800: #264c3d;
+  --color-brand-900: #13261f;
+
+  /* Secondary — purple */
+  --color-purple-50: #f2f3fc;
+  --color-purple-100: #e5e7f8;
+  --color-purple-500: #7e86dc;
+  --color-purple-600: #656bb0;
+
+  /* Neutrals */
+  --color-ink: #1f1d1e;
+  --color-ink-soft: #2f2b2d;
+  --color-line: #ebebeb;
+  --color-canvas: #fafafa;
+
+  /* Status palette */
+  --color-st-todo: #9aa0a6;
+  --color-st-progress: #7e86dc;
+  --color-st-waiting: #f0ad4e;
+  --color-st-blocked: #ea384c;
+  --color-st-done: #5fbf99;
+  /* Readable muted gray (AA on white) — used for secondary text, icons, borders. */
+  --color-st-na: #6b7280;
+
+  /* Typography (next/font sets the CSS vars) */
+  --font-sans: var(--font-inter), Arial, sans-serif;
+  --font-display: var(--font-bricolage), Arial, sans-serif;
+
+  /* Radii */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  /* Larger global type scale — rem-based Tailwind sizes & spacing scale up ~6%. */
+  font-size: 17px;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.55;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+
+/* Native dialog: centered, animated, with a scrim. */
+dialog {
+  margin: auto;
+}
+dialog::backdrop {
+  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  backdrop-filter: blur(2px);
+}
+dialog[open] {
+  animation: dialog-in 180ms ease-out;
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}

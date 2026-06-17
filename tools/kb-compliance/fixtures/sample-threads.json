@@ -1,0 +1,272 @@
+{
+  "threads": [
+    {
+      "messages": [
+        {
+          "id": "msg-fitproper-q",
+          "internetMessageId": "<fitproper-1@we-comply.be>",
+          "conversationId": "conv-fitproper",
+          "subject": "Question fit & proper - nouvel administrateur",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour,\n\nNous nommons un nouvel administrateur dans notre societe de courtage. Quelles sont les exigences fit & proper a respecter et faut-il notifier la FSMA ?\n\nMerci d'avance.",
+          "from": "client.courtier@example.be",
+          "to": ["sdv@we-comply.be"],
+          "cc": [],
+          "receivedDateTime": "2025-09-10T08:30:00Z"
+        },
+        {
+          "id": "msg-fitproper-a",
+          "internetMessageId": "<fitproper-2@we-comply.be>",
+          "conversationId": "conv-fitproper",
+          "subject": "RE: Question fit & proper - nouvel administrateur",
+          "bodyContentType": "html",
+          "bodyContent": "<p>Bonjour,</p><p>Tout administrateur ou dirigeant effectif doit satisfaire en permanence aux exigences d'honorabilite professionnelle et d'expertise adequate (Loi 04/04/2014, art. 40). Vous devez evaluer le candidat via le questionnaire fit &amp; proper et notifier sa nomination a la FSMA avant l'entree en fonction. Voir la circulaire en piece jointe.</p><p>Cordialement,<br>SDV</p><blockquote>Le 10/09/2025 a ecrit client.courtier@example.be : Quelles sont les exigences fit &amp; proper ?</blockquote>",
+          "from": "sdv@we-comply.be",
+          "to": ["client.courtier@example.be"],
+          "cc": [],
+          "receivedDateTime": "2025-09-10T14:05:00Z",
+          "attachments": [
+            {
+              "id": "att-circ-pdf",
+              "name": "circulaire-fsma.pdf",
+              "contentType": "application/pdf",
+              "file": "circulaire-fsma.pdf"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "id": "msg-idd-q",
+          "internetMessageId": "<idd-1@we-comply.be>",
+          "conversationId": "conv-idd",
+          "subject": "IDD - obligations de formation continue",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour, combien d'heures de formation continue IDD nos distributeurs d'assurance doivent-ils suivre par an ?",
+          "from": "client.courtier@example.be",
+          "to": ["sdv@we-comply.be"],
+          "cc": [],
+          "receivedDateTime": "2025-11-03T09:00:00Z"
+        },
+        {
+          "id": "msg-idd-a",
+          "internetMessageId": "<idd-2@we-comply.be>",
+          "conversationId": "conv-idd",
+          "subject": "RE: IDD - obligations de formation continue",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour,\n\nSous IDD, chaque personne en contact avec le public doit suivre au minimum 15 heures de formation professionnelle continue par an. Conservez les attestations pour le controle FSMA.\n\nMet vriendelijke groeten,\nSDV",
+          "from": "sdv@we-comply.be",
+          "to": ["client.courtier@example.be"],
+          "cc": [],
+          "receivedDateTime": "2025-11-03T11:20:00Z"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "id": "msg-egr-q",
+          "internetMessageId": "<egr-1@we-comply.be>",
+          "conversationId": "conv-egr",
+          "subject": "Obligations EGR registre",
+          "bodyContentType": "text",
+          "bodyContent": "Quelles informations devons-nous tenir a jour dans le registre EGR et a quelle frequence ? Document de reference en annexe.",
+          "from": "client.courtier@example.be",
+          "to": ["mvl@we-comply.be"],
+          "cc": [],
+          "receivedDateTime": "2026-01-15T10:00:00Z",
+          "attachments": [
+            {
+              "id": "att-egr-docx",
+              "name": "circulaire-fsma.docx",
+              "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              "file": "circulaire-fsma.docx"
+            }
+          ]
+        },
+        {
+          "id": "msg-egr-a",
+          "internetMessageId": "<egr-2@we-comply.be>",
+          "conversationId": "conv-egr",
+          "subject": "RE: Obligations EGR registre",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour,\n\nLe registre EGR doit refleter en permanence l'identite des dirigeants effectifs et la structure d'actionnariat. Toute modification doit etre communiquee a la FSMA dans le mois.\n\nCordialement,\nMVL",
+          "from": "mvl@we-comply.be",
+          "to": ["client.courtier@example.be"],
+          "cc": [],
+          "receivedDateTime": "2026-01-15T16:40:00Z"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "id": "msg-mystery-q",
+          "internetMessageId": "<mystery-1@we-comply.be>",
+          "conversationId": "conv-mystery",
+          "subject": "Mystery shopping FSMA - comment se preparer",
+          "bodyContentType": "text",
+          "bodyContent": "La FSMA annonce des actions de mystery shopping. Comment devons-nous preparer nos equipes commerciales ?",
+          "from": "client.courtier@example.be",
+          "to": ["sdv@we-comply.be"],
+          "cc": [],
+          "receivedDateTime": "2025-06-20T13:15:00Z"
+        },
+        {
+          "id": "msg-mystery-a",
+          "internetMessageId": "<mystery-2@we-comply.be>",
+          "conversationId": "conv-mystery",
+          "subject": "RE: Mystery shopping FSMA - comment se preparer",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour,\n\nAssurez-vous que le devoir de conseil et l'analyse des exigences et besoins du client sont systematiquement documentes. Le mystery shopping verifie surtout la qualite de l'information precontractuelle remise.\n\nCordialement,\nSDV",
+          "from": "sdv@we-comply.be",
+          "to": ["client.courtier@example.be"],
+          "cc": [],
+          "receivedDateTime": "2025-06-21T08:45:00Z"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "id": "msg-amlok-q",
+          "internetMessageId": "<amlok-1@we-comply.be>",
+          "conversationId": "conv-amlok",
+          "subject": "AMLR - seuil d'identification d'un nouveau client",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour, a partir de quel montant devons-nous proceder a l'identification renforcee d'un nouveau client sous le reglement AMLR ?",
+          "from": "client.courtier@example.be",
+          "to": ["sdv@we-comply.be"],
+          "cc": [],
+          "receivedDateTime": "2026-02-02T09:30:00Z"
+        },
+        {
+          "id": "msg-amlok-a",
+          "internetMessageId": "<amlok-2@we-comply.be>",
+          "conversationId": "conv-amlok",
+          "subject": "RE: AMLR - seuil d'identification d'un nouveau client",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour,\n\nLes mesures de vigilance a l'egard de la clientele s'appliquent des l'entree en relation d'affaires, quel que soit le montant. Une vigilance renforcee est requise pour les clients presentant un risque eleve. Documentez l'evaluation des risques pour chaque dossier.\n\nCordialement,\nSDV",
+          "from": "sdv@we-comply.be",
+          "to": ["client.courtier@example.be"],
+          "cc": [],
+          "receivedDateTime": "2026-02-02T15:10:00Z"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "id": "msg-ctif-q",
+          "internetMessageId": "<ctif-1@we-comply.be>",
+          "conversationId": "conv-ctif",
+          "subject": "Declaration de soupcon CTIF - cas concret client",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour, un client a effectue une operation suspecte. Devons-nous transmettre une declaration de soupcon a la CTIF et sous quel delai ?",
+          "from": "client.courtier@example.be",
+          "to": ["sdv@we-comply.be"],
+          "cc": [],
+          "receivedDateTime": "2026-03-05T08:00:00Z"
+        },
+        {
+          "id": "msg-ctif-a",
+          "internetMessageId": "<ctif-2@we-comply.be>",
+          "conversationId": "conv-ctif",
+          "subject": "RE: Declaration de soupcon CTIF - cas concret client",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour,\n\nOui, toute suspicion doit faire l'objet d'une declaration a la CTIF sans delai, avant d'executer l'operation si possible. Je vous appelle pour les details du dossier.\n\nCordialement,\nSDV",
+          "from": "sdv@we-comply.be",
+          "to": ["client.courtier@example.be"],
+          "cc": [],
+          "receivedDateTime": "2026-03-05T09:30:00Z"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "id": "msg-multi-q",
+          "internetMessageId": "<multi-1@we-comply.be>",
+          "conversationId": "conv-multi",
+          "subject": "Courtier - passeport europeen / Europees paspoort",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour, nous voulons distribuer en libre prestation de services aux Pays-Bas. Quelle est la procedure de notification ?",
+          "from": "client.courtier@example.be",
+          "to": ["sdv@we-comply.be"],
+          "cc": [],
+          "receivedDateTime": "2025-12-01T10:00:00Z"
+        },
+        {
+          "id": "msg-multi-a",
+          "internetMessageId": "<multi-2@we-comply.be>",
+          "conversationId": "conv-multi",
+          "subject": "RE: Courtier - passeport europeen / Europees paspoort",
+          "bodyContentType": "text",
+          "bodyContent": "Goedemiddag,\n\nVoor het vrij verrichten van diensten in Nederland moet u de FSMA vooraf op de hoogte brengen. De FSMA stuurt uw kennisgeving door naar de Nederlandse toezichthouder (AFM) en u mag starten na een maand.\n\nMet vriendelijke groeten,\nSDV",
+          "from": "sdv@we-comply.be",
+          "to": ["client.courtier@example.be"],
+          "cc": [],
+          "receivedDateTime": "2025-12-01T14:30:00Z"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "id": "msg-div-a-q",
+          "internetMessageId": "<div-a-1@we-comply.be>",
+          "conversationId": "conv-div-a",
+          "subject": "Duree de conservation des dossiers clients",
+          "bodyContentType": "text",
+          "bodyContent": "Combien de temps devons-nous conserver les dossiers clients apres la fin du contrat ?",
+          "from": "client.courtier@example.be",
+          "to": ["sdv@we-comply.be"],
+          "cc": [],
+          "receivedDateTime": "2024-01-12T09:00:00Z"
+        },
+        {
+          "id": "msg-div-a-a",
+          "internetMessageId": "<div-a-2@we-comply.be>",
+          "conversationId": "conv-div-a",
+          "subject": "RE: Duree de conservation des dossiers clients",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour,\n\nConservez les dossiers clients pendant 10 ans apres la fin de la relation d'affaires.\n\nCordialement,\nSDV",
+          "from": "sdv@we-comply.be",
+          "to": ["client.courtier@example.be"],
+          "cc": [],
+          "receivedDateTime": "2024-01-12T11:00:00Z"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "id": "msg-div-b-q",
+          "internetMessageId": "<div-b-1@we-comply.be>",
+          "conversationId": "conv-div-b",
+          "subject": "Conservation des dossiers clients - duree",
+          "bodyContentType": "text",
+          "bodyContent": "Quelle est la duree legale de conservation des dossiers clients apres la cloture du contrat ?",
+          "from": "autre.client@example.be",
+          "to": ["mvl@we-comply.be"],
+          "cc": [],
+          "receivedDateTime": "2026-04-18T09:00:00Z"
+        },
+        {
+          "id": "msg-div-b-a",
+          "internetMessageId": "<div-b-2@we-comply.be>",
+          "conversationId": "conv-div-b",
+          "subject": "RE: Conservation des dossiers clients - duree",
+          "bodyContentType": "text",
+          "bodyContent": "Bonjour,\n\nLa duree de conservation est de 7 ans apres la fin du contrat, conformement aux obligations comptables et AML applicables.\n\nCordialement,\nMVL",
+          "from": "mvl@we-comply.be",
+          "to": ["autre.client@example.be"],
+          "cc": [],
+          "receivedDateTime": "2026-04-18T13:00:00Z"
+        }
+      ]
+    }
+  ]
+}

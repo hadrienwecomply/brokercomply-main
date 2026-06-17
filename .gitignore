@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Local data / runtime
+data/
+*.local
+*.log
+
+# Client scope allowlist (contains client PII) — keep only the example
+tools/kb-compliance/config/client-allowlist.json
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
