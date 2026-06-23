@@ -4,3 +4,5 @@ export * from './db/index.js';
 export * from './llm/index.js';
 export * from './retrieval/index.js';
 export * from './knowledge/index.js';
+export * from './roadmap/index.js';
+export * from './brokers/index.js';

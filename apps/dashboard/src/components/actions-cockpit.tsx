@@ -44,7 +44,9 @@ export function ActionsCockpit({
   officers: Officer[];
   today: string;
 }) {
-  const [officerId, setOfficerId] = useState<string>("sacha");
+  const [officerId, setOfficerId] = useState<string>(
+    () => officers.find((o) => o.role === "officer")?.id ?? "all",
+  );
   const [filter, setFilter] = useState<string>("all");
   const [tab, setTab] = useState<"cards" | "kanban">("cards");
   const [done, setDone] = useState<Set<string>>(new Set());

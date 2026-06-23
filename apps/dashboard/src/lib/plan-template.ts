@@ -20,6 +20,12 @@ export interface StepTemplate {
  * The standard 13-step action plan applied to every broker.
  * Steps 01, 02, 03.01 mirror the described Notion process ("Pilotage courtier - Full").
  * Steps 03.02 -> 10 are plausible placeholders pending their Notion description.
+ *
+ * WARNING — sub-step ORDER is persisted identity. Each sub-step is stored in the
+ * DB as `${code}-${index}` (see broker-plan.ts `substepTemplateId`). Appending a
+ * sub-step is safe; INSERTING into the middle of a `subSteps` array (or reordering)
+ * shifts every following index and silently re-maps persisted status to the wrong
+ * sub-step — it requires a data migration of `broker_plan_substeps.template_substep_id`.
  */
 export const STEP_TEMPLATES: StepTemplate[] = [
   {

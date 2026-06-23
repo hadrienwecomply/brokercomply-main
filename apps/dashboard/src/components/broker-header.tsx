@@ -3,6 +3,7 @@ import type { Broker, Officer } from "@/lib/types";
 import { brokerProgress, daysUntil, nextAction, stepStatus } from "@/lib/plan";
 import { formatDate, flag } from "@/lib/format";
 import { Avatar, ProgressRing, StatusBadge } from "./ui";
+import { EditBrokerButton } from "./edit-broker-button";
 import { cn } from "@/lib/cn";
 
 export function BrokerHeader({
@@ -26,6 +27,9 @@ export function BrokerHeader({
           {broker.societe}
         </h1>
         <span className="text-2xl">{broker.countries.map(flag).join(" ")}</span>
+        <div className="ml-auto">
+          <EditBrokerButton broker={broker} />
+        </div>
       </div>
 
       {/* Bento: next action (hero) + progress + assignee */}

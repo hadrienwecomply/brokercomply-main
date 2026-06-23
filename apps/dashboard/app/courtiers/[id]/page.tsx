@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { BROKERS, TODAY, getBroker, getOfficer } from "@/lib/mock-data";
+import { getBroker } from "@/lib/brokers.server";
+import { getOfficer } from "@/lib/officers";
 import { BrokerHeader } from "@/components/broker-header";
 import { BrokerWorkspace } from "@/components/broker-workspace";
 
-export function generateStaticParams() {
-  return BROKERS.map((b) => ({ id: b.id }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function BrokerPage({
   params,
@@ -15,11 +14,11 @@ export default async function BrokerPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const broker = getBroker(id);
+  const broker = await getBroker(id);
   if (!broker) notFound();
 
   const officer = getOfficer(broker.officerId);
-  const today = TODAY.toISOString();
+  const today = new Date().toISOString();
 
   return (
     <div className="space-y-8">

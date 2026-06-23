@@ -37,7 +37,8 @@ const dateFmt = new Intl.DateTimeFormat("fr-BE", {
 
 export function formatDate(iso?: string): string {
   if (!iso) return "—";
-  return dateFmt.format(new Date(iso));
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : dateFmt.format(d);
 }
 
 const eur = new Intl.NumberFormat("fr-BE", {

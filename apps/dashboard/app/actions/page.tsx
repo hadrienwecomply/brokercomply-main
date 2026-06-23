@@ -1,12 +1,16 @@
-import { BROKERS, OFFICERS, TODAY } from "@/lib/mock-data";
+import { listBrokers } from "@/lib/brokers.server";
+import { OFFICERS } from "@/lib/officers";
 import { ActionsCockpit } from "@/components/actions-cockpit";
 
-export default function ActionsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ActionsPage() {
+  const brokers = await listBrokers();
   return (
     <ActionsCockpit
-      brokers={BROKERS}
+      brokers={brokers}
       officers={OFFICERS}
-      today={TODAY.toISOString()}
+      today={new Date().toISOString()}
     />
   );
 }
