@@ -11,6 +11,9 @@
     "test:llm": "tsx scripts/test-llm.ts",
     "ingest": "tsx src/ingestion/run.ts",
     "distill": "tsx src/distillation/run.ts",
+    "check:sharepoint": "tsx scripts/check-sharepoint.ts",
+    "sync:sharepoint": "tsx scripts/sync-sharepoint.ts",
+    "backfill:sharepoint": "tsx scripts/backfill-sharepoint-folders.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {

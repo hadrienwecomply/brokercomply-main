@@ -19,8 +19,15 @@ data/
 # Client scope allowlist (contains client PII) — keep only the example
 tools/kb-compliance/config/client-allowlist.json
 
+# SharePoint backfill mapping (broker → existing folder path; client PII)
+tools/kb-compliance/config/sharepoint-mapping.json
+
 # Editor / OS
 .DS_Store
 .idea/
 .vscode/
 *.swp
+
+# Observer tooling locks
+.observer.lock
+**/.observer.lock

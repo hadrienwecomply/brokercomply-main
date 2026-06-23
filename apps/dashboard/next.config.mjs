@@ -11,7 +11,14 @@ const nextConfig = {
   // Compile the workspace shared package from source.
   transpilePackages: ["@brokercomply/shared"],
   // Keep Node-only deps external to the bundle (used server-side only).
-  serverExternalPackages: ["postgres", "openai", "@anthropic-ai/sdk", "dotenv"],
+  serverExternalPackages: [
+    "postgres",
+    "openai",
+    "@anthropic-ai/sdk",
+    "dotenv",
+    "@azure/identity",
+    "@microsoft/microsoft-graph-client",
+  ],
 };
 
 export default nextConfig;

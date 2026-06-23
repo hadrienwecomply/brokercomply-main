@@ -1,5 +1,6 @@
 import { sql, type SQL } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   customType,
   date,
@@ -220,6 +221,14 @@ export const brokers = pgTable(
     accountOwner: text('account_owner'),
     /** Source Notion page id, for future backfill/sync. */
     notionPageId: text('notion_page_id'),
+    /** Graph driveItem id of the broker's SharePoint folder (null until linked). */
+    sharePointFolderId: text('sharepoint_folder_id'),
+    /** Browser URL of that folder (for "open in SharePoint"). */
+    sharePointWebUrl: text('sharepoint_web_url'),
+    /** Drive-relative path of the folder (traceability + backfill linking). */
+    sharePointFolderPath: text('sharepoint_folder_path'),
+    /** 'linked' | 'pending' | 'error' | null — best-effort provisioning state. */
+    sharePointStatus: text('sharepoint_status'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -230,6 +239,62 @@ export const brokers = pgTable(
     index('idx_brokers_account_owner').on(t.accountOwner),
   ],
 );
+
+/**
+ * Per-broker SharePoint document mirror.
+ *
+ * SharePoint is the source of truth for content; this table is a read-mirror of
+ * file/folder METADATA only (no bytes), kept current by the delta sync. Items
+ * removed in SharePoint are soft-deleted here (`deleted_at`) — we never lose the
+ * record, and nothing is ever deleted remotely. Keyed by the stable Graph
+ * `drive_item_id` so the sync is idempotent (upsert on conflict).
+ */
+export const brokerDocuments = pgTable(
+  'broker_documents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    brokerId: uuid('broker_id')
+      .notNull()
+      .references(() => brokers.id, { onDelete: 'cascade' }),
+    /** Graph driveItem id — stable identity across renames/moves. */
+    driveItemId: text('drive_item_id').notNull().unique(),
+    name: text('name').notNull(),
+    /** Drive-relative path of the item. */
+    path: text('path'),
+    webUrl: text('web_url'),
+    /** Byte size (files only); folders are null. bigint to survive >2 GB files. */
+    size: bigint('size', { mode: 'number' }),
+    mimeType: text('mime_type'),
+    isFolder: boolean('is_folder').default(false).notNull(),
+    /** Graph eTag — change detection / optimistic concurrency. */
+    etag: text('etag'),
+    lastModifiedAt: timestamp('last_modified_at', { withTimezone: true }),
+    /** Set when the item disappears from SharePoint (soft delete; never hard). */
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_broker_documents_broker').on(t.brokerId),
+    index('idx_broker_documents_deleted_at').on(t.deletedAt),
+  ],
+);
+
+/**
+ * Resumable state for the SharePoint delta sync — one row PER BROKER, because
+ * the sync is folder-scoped (`/items/{folderItemId}/delta`) rather than
+ * drive-wide. Persisting `delta_link` lets each run pick up only what changed in
+ * that broker's folder since the last sweep.
+ */
+export const sharepointSyncState = pgTable('sharepoint_sync_state', {
+  brokerId: uuid('broker_id')
+    .primaryKey()
+    .references(() => brokers.id, { onDelete: 'cascade' }),
+  /** The broker folder's driveItem id the delta is scoped to. */
+  folderItemId: text('folder_item_id'),
+  deltaLink: text('delta_link'),
+  lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+});
 
 /**
  * Per-broker instance of a plan step (one row per template step, always all of
@@ -298,3 +363,7 @@ export type BrokerPlanStep = typeof brokerPlanSteps.$inferSelect;
 export type NewBrokerPlanStep = typeof brokerPlanSteps.$inferInsert;
 export type BrokerPlanSubstep = typeof brokerPlanSubsteps.$inferSelect;
 export type NewBrokerPlanSubstep = typeof brokerPlanSubsteps.$inferInsert;
+export type BrokerDocument = typeof brokerDocuments.$inferSelect;
+export type NewBrokerDocument = typeof brokerDocuments.$inferInsert;
+export type SharepointSyncState = typeof sharepointSyncState.$inferSelect;
+export type NewSharepointSyncState = typeof sharepointSyncState.$inferInsert;
