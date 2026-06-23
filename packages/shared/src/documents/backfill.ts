@@ -23,8 +23,15 @@ export interface BackfillFacts {
   mappedExists?: boolean;
   /** Drive-relative path derived from the (sanitized) company name. */
   autoPath: string;
-  /** Whether `autoPath` resolves to an existing folder. */
+  /** Whether `autoPath` resolves to an existing folder (case-insensitive). */
   autoExists: boolean;
+  /**
+   * Real name of an existing folder that fuzzily matches the company name
+   * (case/accents/spacing-insensitive) when the exact path doesn't resolve. When
+   * set, we refuse to create — it's almost certainly the same folder under a
+   * different spelling, and creating would duplicate it.
+   */
+  nearMatchName?: string;
   /** Slug/id of another broker already linked to the chosen target path, if any. */
   conflictBroker?: string;
 }
@@ -53,7 +60,13 @@ export function decideBackfillAction(facts: BackfillFacts): BackfillAction {
       path: facts.autoPath,
     };
   }
-  return facts.autoExists
-    ? { kind: 'link', path: facts.autoPath }
-    : { kind: 'create', path: facts.autoPath };
+  if (facts.autoExists) return { kind: 'link', path: facts.autoPath };
+  if (facts.nearMatchName) {
+    return {
+      kind: 'error',
+      reason: `near-match "${facts.nearMatchName}" already exists — add to mapping to link (not auto-creating, would duplicate)`,
+      path: facts.autoPath,
+    };
+  }
+  return { kind: 'create', path: facts.autoPath };
 }

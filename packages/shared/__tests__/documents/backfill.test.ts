@@ -41,9 +41,19 @@ describe('decideBackfillAction', () => {
     expect(a).toEqual({ kind: 'link', path: '01 - Clients/Acme' });
   });
 
-  it('creates the auto-named folder when absent', () => {
+  it('creates the auto-named folder when absent and no near-match', () => {
     const a = decideBackfillAction({ ...base, autoExists: false });
     expect(a).toEqual({ kind: 'create', path: '01 - Clients/Acme' });
+  });
+
+  it('refuses to create (errors) when a fuzzy near-match folder exists', () => {
+    const a = decideBackfillAction({
+      ...base,
+      autoExists: false,
+      nearMatchName: 'CAMBIER & EVRARD',
+    });
+    expect(a).toMatchObject({ kind: 'error', path: '01 - Clients/Acme' });
+    expect((a as { reason: string }).reason).toContain('CAMBIER & EVRARD');
   });
 
   it('errors on an auto path already used by another broker', () => {
