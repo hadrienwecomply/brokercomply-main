@@ -2,9 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getBroker } from "@/lib/brokers.server";
+import { listFormSubmissions } from "@/lib/formulaires.server";
 import { getOfficer } from "@/lib/officers";
 import { BrokerHeader } from "@/components/broker-header";
 import { BrokerWorkspace } from "@/components/broker-workspace";
+import { BrokerDetailTabs } from "@/components/broker-detail-tabs";
+import { FormulairePanel } from "@/components/formulaire-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +22,7 @@ export default async function BrokerPage({
 
   const officer = getOfficer(broker.officerId);
   const today = new Date().toISOString();
+  const submissions = broker.dbId ? await listFormSubmissions(broker.dbId) : [];
 
   return (
     <div className="space-y-8">
@@ -32,12 +36,11 @@ export default async function BrokerPage({
 
       <BrokerHeader broker={broker} officer={officer} today={today} />
 
-      <section className="space-y-4">
-        <h2 className="font-display text-xl font-semibold text-ink">
-          Plan d&apos;action
-        </h2>
-        <BrokerWorkspace broker={broker} today={today} />
-      </section>
+      <BrokerDetailTabs
+        formsCount={submissions.length}
+        plan={<BrokerWorkspace broker={broker} today={today} />}
+        forms={<FormulairePanel slug={broker.id} submissions={submissions} />}
+      />
     </div>
   );
 }

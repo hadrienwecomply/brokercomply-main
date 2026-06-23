@@ -75,6 +75,18 @@ const envSchema = z.object({
 
   // Freshness alerting threshold (months) — PRD default is 12.
   FRESHNESS_THRESHOLD_MONTHS: z.coerce.number().int().positive().default(12),
+
+  // Fillout form ingestion (inbound webhook). Both are required for the webhook
+  // to accept calls: an unguessable token in the URL path AND a shared-secret
+  // header. Optional here so the rest of the app boots without them configured.
+  FILLOUT_URL_TOKEN: z.string().optional(),
+  FILLOUT_WEBHOOK_SECRET: z.string().optional(),
+
+  // n8n trigger (outbound). Default workflow URL + a shared secret sent as a
+  // header so the n8n Webhook node can reject forged triggers. Per-form URLs may
+  // override N8N_WEBHOOK_URL via the dashboard form template.
+  N8N_WEBHOOK_URL: z.string().url().optional(),
+  N8N_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;
