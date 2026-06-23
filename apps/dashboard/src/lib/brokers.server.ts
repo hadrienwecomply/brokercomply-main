@@ -1,6 +1,7 @@
 import "server-only";
 import {
   createBrokerWithPlan,
+  getBrokerById,
   getBrokerBySlug,
   listBrokerPlans,
   setStepApplicable,
@@ -15,6 +16,7 @@ import {
 import { getDb } from "./db.server";
 import { assemblePlan, deriveOnboardingStatus, planBlueprint } from "./broker-plan";
 import { DEFAULT_OFFICER } from "./officers";
+import { provisionBrokerFolder } from "./sharepoint.server";
 import { brokerSlug } from "./slug";
 import type { Broker } from "./types";
 
@@ -47,6 +49,10 @@ export function toBrokerDTO(plan: BrokerPlan): Broker {
     status: row.status ?? undefined,
     mrr: row.mrr != null ? Number(row.mrr) : null,
     notionPageId: row.notionPageId ?? undefined,
+    sharePointFolderId: row.sharePointFolderId ?? undefined,
+    sharePointWebUrl: row.sharePointWebUrl ?? undefined,
+    sharePointFolderPath: row.sharePointFolderPath ?? undefined,
+    sharePointStatus: row.sharePointStatus ?? undefined,
   };
   return { ...base, onboardingStatus: deriveOnboardingStatus(base) };
 }
@@ -124,7 +130,12 @@ export async function createBroker(
     { db: getDb() },
     { broker: toNewBroker(input, owner), steps: planBlueprint() },
   );
-  return toBrokerDTO(plan);
+  // Best-effort, non-blocking: provision the broker's SharePoint folder inline
+  // (never throws; records 'linked' | 'pending' | 'error'). Re-read so the
+  // returned DTO reflects the resulting SharePoint status.
+  await provisionBrokerFolder(plan.broker.id, plan.broker.societe);
+  const fresh = await getBrokerById({ db: getDb() }, plan.broker.id);
+  return toBrokerDTO(fresh ?? plan);
 }
 
 /** Idempotent variant used by the seed (no duplicate on re-run). */

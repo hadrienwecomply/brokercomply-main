@@ -73,4 +73,9 @@ export interface Broker {
   status?: string; // lifecycle: 'onboarding' | 'active' | 'at_risk' | 'inactive'
   mrr?: number | null;
   notionPageId?: string;
+  // --- SharePoint document folder (optional; surfaced from the DB) ---
+  sharePointFolderId?: string;
+  sharePointWebUrl?: string;
+  sharePointFolderPath?: string;
+  sharePointStatus?: string; // 'linked' | 'pending' | 'error'
 }

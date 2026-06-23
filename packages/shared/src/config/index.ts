@@ -63,6 +63,19 @@ const envSchema = z.object({
         .filter(Boolean),
     ),
 
+  // SharePoint document sync (broker folders). Reuses the AZURE_* app-only
+  // credentials above, plus a per-site `Sites.Selected` write grant. Optional
+  // here; validated lazily by the SharePoint client when the feature runs.
+  // SHAREPOINT_SITE_ID is the Graph site id, e.g.
+  //   "wecomply1.sharepoint.com,<siteGuid>,<webGuid>".
+  // SHAREPOINT_ROOT_PATH is the drive-relative folder under which every broker
+  // folder lives (no leading/trailing slash).
+  SHAREPOINT_SITE_ID: z.string().optional(),
+  SHAREPOINT_ROOT_PATH: z
+    .string()
+    .default('01 - Verticales/01 - Brokercomply/01 - Clients & Prospects/01 - Clients')
+    .transform((s) => s.replace(/^\/+|\/+$/g, '')),
+
   // LLM provider — required by distillation / RAG agent (0-D, 0-F).
   LLM_PROVIDER: z.enum(['anthropic', 'openai']).default('anthropic'),
   LLM_API_KEY: z.string().optional(),

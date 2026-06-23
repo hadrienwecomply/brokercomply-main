@@ -1,0 +1,5 @@
+{
+  "_comment": "Backfill mapping: broker slug → existing SharePoint folder path (drive-relative, under the document library root). Copy to sharepoint-mapping.json (gitignored) and fill in. Brokers not listed are auto-matched by company name, then created if absent. Mapped paths that do not exist are reported as errors, never created.",
+  "elite-broker": "01 - Verticales/01 - Brokercomply/01 - Clients & Prospects/01 - Clients/Elite Broker",
+  "lifepartners": "01 - Verticales/01 - Brokercomply/01 - Clients & Prospects/01 - Clients/LifePartners SPRL"
+}

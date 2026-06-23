@@ -102,6 +102,12 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.104.2
         version: 0.104.2(zod@3.25.76)
+      '@azure/identity':
+        specifier: ^4.13.1
+        version: 4.13.1
+      '@microsoft/microsoft-graph-client':
+        specifier: ^3.0.7
+        version: 3.0.7(@azure/identity@4.13.1)
       dotenv:
         specifier: ^16.4.0
         version: 16.6.1
