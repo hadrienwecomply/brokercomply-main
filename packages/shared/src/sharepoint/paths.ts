@@ -8,6 +8,16 @@ export function trimSlashes(path: string): string {
   return path.replace(/^\/+|\/+$/g, '');
 }
 
+/**
+ * Normalize a folder name for fuzzy matching during backfill: case-insensitive,
+ * accent-insensitive, whitespace-collapsed. Lets us recognise that "Cambier &
+ * Evrard" and "CAMBIER & EVRARD" (or "Crédit"/"CREDIT") are the same folder, to
+ * avoid creating a near-duplicate when only the casing/accents/spacing differ.
+ */
+export function normalizeNameForMatch(name: string): string {
+  return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
 /** Characters SharePoint/OneDrive forbid in an item name. */
 const ILLEGAL_NAME_CHARS = /["*:<>?/\\|]/g;
 

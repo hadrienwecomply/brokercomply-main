@@ -4,6 +4,7 @@ import {
   drivePathFromParentRef,
   encodeDrivePath,
   joinPath,
+  normalizeNameForMatch,
   sanitizeFolderName,
   trimSlashes,
 } from '../../src/sharepoint/paths.js';
@@ -45,6 +46,16 @@ describe('path helpers', () => {
     expect(sanitizeFolderName('Trailing dots...')).toBe('Trailing dots');
     expect(sanitizeFolderName('  spaced  out  ')).toBe('spaced out');
     expect(sanitizeFolderName('***')).toBe('broker'); // nothing usable left
+  });
+
+  it('normalizes names for fuzzy matching (case/accents/spacing)', () => {
+    expect(normalizeNameForMatch('CAMBIER & EVRARD')).toBe(
+      normalizeNameForMatch('Cambier & Evrard'),
+    );
+    expect(normalizeNameForMatch('Crédit')).toBe(normalizeNameForMatch('CREDIT'));
+    expect(normalizeNameForMatch('  Acme   Co ')).toBe('acme co');
+    // A genuine spelling difference does NOT collide.
+    expect(normalizeNameForMatch('Evrard')).not.toBe(normalizeNameForMatch('Everard'));
   });
 
   it('handles a nested root path with spaces and ampersands', () => {
