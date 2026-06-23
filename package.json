@@ -8,6 +8,8 @@
     "node": ">=20"
   },
   "scripts": {
+    "wt": "scripts/new-worktree.sh",
+    "wt:rm": "scripts/rm-worktree.sh",
     "build": "tsc -b tsconfig.build.json",
     "clean": "tsc -b tsconfig.build.json --clean && rm -rf packages/*/dist tools/*/dist",
     "test": "vitest run",
