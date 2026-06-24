@@ -47,22 +47,15 @@
     {
       "idx": 6,
       "version": "7",
-      "when": 1782289754802,
-      "tag": "0006_little_nicolaos",
+      "when": 1782289529849,
+      "tag": "0006_shocking_clint_barton",
       "breakpoints": true
     },
     {
       "idx": 7,
       "version": "7",
-      "when": 1782290307282,
-      "tag": "0007_zippy_lockheed",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1782291070818,
-      "tag": "0008_cheerful_luminals",
+      "when": 1782302015178,
+      "tag": "0007_opposite_goblin_queen",
       "breakpoints": true
     }
   ]

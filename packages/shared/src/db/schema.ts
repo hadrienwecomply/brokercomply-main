@@ -5,6 +5,7 @@ import {
   customType,
   date,
   index,
+  integer,
   jsonb,
   numeric,
   pgTable,
@@ -349,8 +350,11 @@ export const brokerPlanSteps = pgTable(
 );
 
 /**
- * Mutable state of a plan sub-step. Static content (title, actions, email
- * template, supports) comes from the dashboard template by `template_substep_id`.
+ * A broker's task (sub-step). Forked at creation from the global task template:
+ * each broker carries its own editable copy (`title`, `email_*`) so editing the
+ * global template never mutates an in-flight plan. Supports / action bullets stay
+ * in the dashboard code, resolved by `content_key` (e.g. "01-0"); custom tasks
+ * added by hand have a null `content_key`.
  */
 export const brokerPlanSubsteps = pgTable(
   'broker_plan_substeps',
@@ -359,8 +363,19 @@ export const brokerPlanSubsteps = pgTable(
     stepId: uuid('step_id')
       .notNull()
       .references(() => brokerPlanSteps.id, { onDelete: 'cascade' }),
-    /** Template sub-step id, e.g. "01-0" (stable join key to the template). */
-    templateSubstepId: text('template_substep_id').notNull(),
+    /** Stable key to the code-side static content (supports/actions), e.g. "01-0". Null for custom tasks. */
+    contentKey: text('template_substep_id'),
+    /** Forked editable title (copied from the template at materialisation). */
+    title: text('title'),
+    /** Forked editable email template. */
+    emailSubject: text('email_subject'),
+    emailBody: text('email_body'),
+    /** Task-level due date; overrides the section deadline for this task when set. */
+    dueDate: date('due_date'),
+    /** True when the task was added by hand (not seeded from the template). */
+    isCustom: boolean('is_custom').default(false).notNull(),
+    /** Soft-delete marker; archived tasks are hidden and excluded from progress. */
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
     /** 'not_started' | 'in_progress' | 'waiting_client' | 'blocked' | 'done'. */
     status: text('status').default('not_started').notNull(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
@@ -368,16 +383,16 @@ export const brokerPlanSubsteps = pgTable(
     position: real('position').default(0).notNull(),
   },
   (t) => [
-    uniqueIndex('uq_broker_plan_substeps_step_tpl').on(t.stepId, t.templateSubstepId),
+    uniqueIndex('uq_broker_plan_substeps_step_tpl').on(t.stepId, t.contentKey),
     index('idx_broker_plan_substeps_step').on(t.stepId),
   ],
 );
 
 /**
  * Audit log of action-plan template emails sent from the dashboard. The source
- * of truth for "what we sent" (the shared sender mailbox's Sent items are not
- * ingested); also powers the "envoyé le X" badge + soft re-send warning on a
- * sub-step. We log AFTER a successful Graph send, storing the rendered content.
+ * of truth for "what we sent" (the sending officer's Sent items are ingested,
+ * but this is the canonical record); also powers the "envoyé le X" badge + soft
+ * re-send warning. We log AFTER a successful Graph send, storing the content.
  */
 export const outboundEmails = pgTable(
   'outbound_emails',
@@ -390,7 +405,7 @@ export const outboundEmails = pgTable(
     stepCode: text('step_code'),
     /** Template sub-step id, e.g. "01-0" — links the send to a sub-step. */
     substepTemplateId: text('substep_template_id'),
-    /** Sender mailbox the email was sent from (the shared mailbox). */
+    /** Sender mailbox the email was sent from (the assigned officer). */
     fromMailbox: text('from_mailbox').notNull(),
     toAddrs: jsonb('to_addrs').$type<string[]>().default([]).notNull(),
     ccAddrs: jsonb('cc_addrs').$type<string[]>().default([]).notNull(),
@@ -407,6 +422,42 @@ export const outboundEmails = pgTable(
   ],
 );
 
+/**
+ * Global timeframe config — one row per plan section (the 13 step codes). The
+ * effective section deadline is `broker.signature_date + offset_days` (parallel
+ * offsets, not a cascade), overridable per broker via `broker_plan_steps.deadline_override`.
+ * Editable from the dashboard Config tab; replaces the hard-coded `slaDays`.
+ */
+export const planStepOffsets = pgTable('plan_step_offsets', {
+  /** Section / step code, e.g. "01", "03.01". */
+  code: text('code').primaryKey(),
+  title: text('title').notNull(),
+  offsetDays: integer('offset_days').notNull(),
+  position: real('position').default(0).notNull(),
+});
+
+/**
+ * Global, editable default task list per section. Brokers are forked from this
+ * at creation (edits here affect future brokers only). Supports / action bullets
+ * stay in code, resolved by `content_key`; null for tasks added from the UI.
+ */
+export const planTaskTemplates = pgTable(
+  'plan_task_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Section / step code this task belongs to. */
+    stepCode: text('step_code').notNull(),
+    title: text('title').notNull(),
+    emailSubject: text('email_subject'),
+    emailBody: text('email_body'),
+    /** Stable key to code-side static content (supports/actions), e.g. "01-0". Null for UI-added tasks. */
+    contentKey: text('content_key'),
+    position: real('position').default(0).notNull(),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+  },
+  (t) => [index('idx_plan_task_templates_step').on(t.stepCode)],
+);
+
 export type SourceDocument = typeof sourceDocuments.$inferSelect;
 export type NewSourceDocument = typeof sourceDocuments.$inferInsert;
 export type MailSyncState = typeof mailSyncState.$inferSelect;
@@ -421,6 +472,10 @@ export type RoadmapItem = typeof roadmapItems.$inferSelect;
 export type NewRoadmapItem = typeof roadmapItems.$inferInsert;
 export type RoadmapVote = typeof roadmapVotes.$inferSelect;
 export type NewRoadmapVote = typeof roadmapVotes.$inferInsert;
+export type PlanStepOffset = typeof planStepOffsets.$inferSelect;
+export type NewPlanStepOffset = typeof planStepOffsets.$inferInsert;
+export type PlanTaskTemplate = typeof planTaskTemplates.$inferSelect;
+export type NewPlanTaskTemplate = typeof planTaskTemplates.$inferInsert;
 export type Broker = typeof brokers.$inferSelect;
 export type NewBroker = typeof brokers.$inferInsert;
 export type BrokerPlanStep = typeof brokerPlanSteps.$inferSelect;

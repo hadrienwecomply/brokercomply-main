@@ -1,30 +1,55 @@
 import "server-only";
 import {
+  addBrokerSubstep,
+  addTaskTemplate,
+  archiveBrokerSubstep,
+  archiveTaskTemplate,
   createBrokerWithPlan,
   getBrokerById,
   getBrokerBySlug,
+  getPlanGlobals,
   isPublicEmailDomain,
   listBrokerPlans,
-  setStepApplicable,
+  reorderBrokerSubsteps,
+  reorderTaskTemplates,
+  seedPlanGlobals,
   setStepDeadlineOverride,
   setSubstepStatus,
   updateBroker,
+  updateBrokerSubstep,
+  updateStepOffset,
+  updateTaskTemplate,
   upsertBrokerBySlug,
   type BrokerPatch,
   type BrokerPlan,
   type NewBroker,
+  type PlanGlobals,
+  type PlanStepOffset,
+  type SubstepContentPatch,
+  type TaskTemplatePatch,
 } from "@brokercomply/shared";
 import { getDb } from "./db.server";
 import { assemblePlan, deriveOnboardingStatus, planBlueprint } from "./broker-plan";
+import { stepOffsetSeeds, taskTemplateSeeds } from "./plan-template";
 import { DEFAULT_OFFICER } from "./officers";
 import { provisionBrokerFolder } from "./sharepoint.server";
 import { brokerSlug } from "./slug";
 import type { Broker } from "./types";
 
+/** Ensure the global template (offsets + default tasks) exists, then load it. */
+async function loadGlobals(): Promise<PlanGlobals> {
+  const db = getDb();
+  await seedPlanGlobals(
+    { db },
+    { offsets: stepOffsetSeeds(), tasks: taskTemplateSeeds() },
+  );
+  return getPlanGlobals({ db });
+}
+
 /** Map a persisted broker + its plan rows into the rich `Broker` DTO the UI uses. */
-export function toBrokerDTO(plan: BrokerPlan): Broker {
+export function toBrokerDTO(plan: BrokerPlan, offsets: PlanStepOffset[]): Broker {
   const { broker: row, steps, substeps } = plan;
-  const planSteps = assemblePlan(steps, substeps, row.signatureDate);
+  const planSteps = assemblePlan(steps, substeps, row.signatureDate, offsets);
   const base: Broker = {
     id: row.slug,
     dbId: row.id,
@@ -60,15 +85,21 @@ export function toBrokerDTO(plan: BrokerPlan): Broker {
 }
 
 export async function listBrokers(): Promise<Broker[]> {
-  const plans = await listBrokerPlans({ db: getDb() });
+  const [plans, globals] = await Promise.all([
+    listBrokerPlans({ db: getDb() }),
+    loadGlobals(),
+  ]);
   return plans
-    .map(toBrokerDTO)
+    .map((p) => toBrokerDTO(p, globals.offsets))
     .sort((a, b) => a.societe.localeCompare(b.societe, "fr"));
 }
 
 export async function getBroker(slug: string): Promise<Broker | undefined> {
-  const plan = await getBrokerBySlug({ db: getDb() }, slug);
-  return plan ? toBrokerDTO(plan) : undefined;
+  const [plan, globals] = await Promise.all([
+    getBrokerBySlug({ db: getDb() }, slug),
+    loadGlobals(),
+  ]);
+  return plan ? toBrokerDTO(plan, globals.offsets) : undefined;
 }
 
 export interface CreateBrokerInput {
@@ -123,21 +154,22 @@ function toNewBroker(input: CreateBrokerInput, owner: string): NewBroker {
   };
 }
 
-/** Create a broker and auto-instantiate its full 13-step plan. */
+/** Create a broker and auto-instantiate its full plan (forked from the template). */
 export async function createBroker(
   input: CreateBrokerInput,
   owner: string,
 ): Promise<Broker> {
+  const globals = await loadGlobals();
   const plan = await createBrokerWithPlan(
     { db: getDb() },
-    { broker: toNewBroker(input, owner), steps: planBlueprint() },
+    { broker: toNewBroker(input, owner), steps: planBlueprint(globals) },
   );
   // Best-effort, non-blocking: provision the broker's SharePoint folder inline
   // (never throws; records 'linked' | 'pending' | 'error'). Re-read so the
   // returned DTO reflects the resulting SharePoint status.
   await provisionBrokerFolder(plan.broker.id, plan.broker.societe);
   const fresh = await getBrokerById({ db: getDb() }, plan.broker.id);
-  return toBrokerDTO(fresh ?? plan);
+  return toBrokerDTO(fresh ?? plan, globals.offsets);
 }
 
 /** Idempotent variant used by the seed (no duplicate on re-run). */
@@ -145,11 +177,12 @@ export async function seedBroker(
   input: CreateBrokerInput,
   owner: string,
 ): Promise<{ broker: Broker; created: boolean }> {
+  const globals = await loadGlobals();
   const { plan, created } = await upsertBrokerBySlug(
     { db: getDb() },
-    { broker: toNewBroker(input, owner), steps: planBlueprint() },
+    { broker: toNewBroker(input, owner), steps: planBlueprint(globals) },
   );
-  return { broker: toBrokerDTO(plan), created };
+  return { broker: toBrokerDTO(plan, globals.offsets), created };
 }
 
 export interface UpdateBrokerPatch {
@@ -233,16 +266,6 @@ export async function setBrokerMatchDomains(slug: string, domains: string[]): Pr
   await updateBroker({ db: getDb() }, plan.broker.id, { matchDomains: clean });
 }
 
-export async function toggleStepApplicable(
-  slug: string,
-  stepDbId: string,
-  applicable: boolean,
-): Promise<void> {
-  const plan = await ownedPlan(slug);
-  if (!plan.steps.some((s) => s.id === stepDbId)) throw new Error("Étape introuvable");
-  await setStepApplicable({ db: getDb() }, stepDbId, applicable);
-}
-
 export async function overrideStepDeadline(
   slug: string,
   stepDbId: string,
@@ -262,4 +285,84 @@ export async function changeSubstepStatus(
   const plan = await ownedPlan(slug);
   if (!plan.substeps.some((s) => s.id === substepDbId)) throw new Error("Sous-étape introuvable");
   await setSubstepStatus({ db: getDb() }, substepDbId, status, notes !== undefined ? { notes } : {});
+}
+
+// --- Per-broker task (sub-step) CRUD, with ownership checks --------------------
+
+export async function createSubstep(
+  slug: string,
+  stepDbId: string,
+  fields: SubstepContentPatch,
+): Promise<void> {
+  const plan = await ownedPlan(slug);
+  const step = plan.steps.find((s) => s.id === stepDbId);
+  if (!step) throw new Error("Étape introuvable");
+  const siblings = plan.substeps.filter((s) => s.stepId === stepDbId && !s.archivedAt);
+  const position = siblings.length
+    ? Math.max(...siblings.map((s) => s.position)) + 1
+    : 0;
+  await addBrokerSubstep({ db: getDb() }, stepDbId, { ...fields, position });
+}
+
+export async function editSubstep(
+  slug: string,
+  substepDbId: string,
+  patch: SubstepContentPatch,
+): Promise<void> {
+  const plan = await ownedPlan(slug);
+  if (!plan.substeps.some((s) => s.id === substepDbId)) throw new Error("Sous-étape introuvable");
+  await updateBrokerSubstep({ db: getDb() }, substepDbId, patch);
+}
+
+export async function deleteSubstep(slug: string, substepDbId: string): Promise<void> {
+  const plan = await ownedPlan(slug);
+  if (!plan.substeps.some((s) => s.id === substepDbId)) throw new Error("Sous-étape introuvable");
+  await archiveBrokerSubstep({ db: getDb() }, substepDbId);
+}
+
+export async function reorderSubsteps(
+  slug: string,
+  stepDbId: string,
+  orderedIds: string[],
+): Promise<void> {
+  const plan = await ownedPlan(slug);
+  const owned = new Set(
+    plan.substeps.filter((s) => s.stepId === stepDbId).map((s) => s.id),
+  );
+  if (!orderedIds.every((id) => owned.has(id))) throw new Error("Sous-étape introuvable");
+  await reorderBrokerSubsteps({ db: getDb() }, orderedIds);
+}
+
+// --- Global plan template (Config tab) ---------------------------------------
+
+export async function getGlobals(): Promise<PlanGlobals> {
+  return loadGlobals();
+}
+
+export async function setStepOffset(code: string, offsetDays: number): Promise<void> {
+  await updateStepOffset({ db: getDb() }, code, Math.max(0, Math.round(offsetDays)));
+}
+
+export async function createTaskTemplate(
+  stepCode: string,
+  fields: TaskTemplatePatch,
+): Promise<void> {
+  const { tasks } = await loadGlobals();
+  const siblings = tasks.filter((t) => t.stepCode === stepCode);
+  const position = siblings.length
+    ? Math.max(...siblings.map((t) => t.position)) + 1
+    : 0;
+  await addTaskTemplate({ db: getDb() }, stepCode, { ...fields, position });
+}
+
+export async function editTaskTemplate(id: string, patch: TaskTemplatePatch): Promise<void> {
+  await updateTaskTemplate({ db: getDb() }, id, patch);
+}
+
+export async function deleteTaskTemplate(id: string): Promise<void> {
+  await archiveTaskTemplate({ db: getDb() }, id);
+}
+
+export async function reorderTemplateTasks(orderedIds: string[]): Promise<void> {
+  await reorderTaskTemplates({ db: getDb() }, orderedIds);
 }

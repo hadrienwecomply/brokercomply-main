@@ -5,15 +5,24 @@ import { currentOfficer } from "./officer.server";
 import {
   changeSubstepStatus,
   createBroker,
+  createSubstep,
+  createTaskTemplate,
+  deleteSubstep,
+  deleteTaskTemplate,
+  editSubstep,
+  editTaskTemplate,
   overrideStepDeadline,
   patchBroker,
+  reorderSubsteps,
+  reorderTemplateTasks,
   setBrokerMatchDomains,
-  toggleStepApplicable,
+  setStepOffset,
   type CreateBrokerInput,
   type UpdateBrokerPatch,
 } from "./brokers.server";
+import type { SubstepContentPatch, TaskTemplatePatch } from "@brokercomply/shared";
 
-/** Create a broker (auto-instantiates its 13-step plan). Returns the new slug. */
+/** Create a broker (auto-instantiates its plan). Returns the new slug. */
 export async function addBroker(input: CreateBrokerInput) {
   const societe = input.societe?.trim();
   if (!societe) throw new Error("Société requise");
@@ -36,14 +45,10 @@ export async function setMatchDomains(slug: string, domains: string[]) {
   revalidatePath(`/courtiers/${slug}/conversations`);
 }
 
-export async function setStepApplicable(slug: string, stepDbId: string, applicable: boolean) {
-  await toggleStepApplicable(slug, stepDbId, applicable);
-  revalidatePath("/");
-  revalidatePath(`/courtiers/${slug}`);
-}
-
 export async function setStepDeadline(slug: string, stepDbId: string, deadline: string | null) {
   await overrideStepDeadline(slug, stepDbId, deadline);
+  revalidatePath("/");
+  revalidatePath("/actions");
   revalidatePath(`/courtiers/${slug}`);
 }
 
@@ -57,4 +62,61 @@ export async function setSubstepStatus(
   revalidatePath("/");
   revalidatePath("/actions");
   revalidatePath(`/courtiers/${slug}`);
+}
+
+// --- Per-broker task CRUD ----------------------------------------------------
+
+export async function addSubstep(slug: string, stepDbId: string, fields: SubstepContentPatch) {
+  await createSubstep(slug, stepDbId, fields);
+  revalidatePath("/");
+  revalidatePath("/actions");
+  revalidatePath(`/courtiers/${slug}`);
+}
+
+export async function updateSubstep(slug: string, substepDbId: string, patch: SubstepContentPatch) {
+  await editSubstep(slug, substepDbId, patch);
+  revalidatePath("/");
+  revalidatePath("/actions");
+  revalidatePath(`/courtiers/${slug}`);
+}
+
+export async function removeSubstep(slug: string, substepDbId: string) {
+  await deleteSubstep(slug, substepDbId);
+  revalidatePath("/");
+  revalidatePath("/actions");
+  revalidatePath(`/courtiers/${slug}`);
+}
+
+export async function moveSubsteps(slug: string, stepDbId: string, orderedIds: string[]) {
+  await reorderSubsteps(slug, stepDbId, orderedIds);
+  revalidatePath(`/courtiers/${slug}`);
+}
+
+// --- Global template (Config tab) --------------------------------------------
+
+export async function saveStepOffset(code: string, offsetDays: number) {
+  await setStepOffset(code, offsetDays);
+  revalidatePath("/config");
+  revalidatePath("/");
+  revalidatePath("/actions");
+}
+
+export async function addTemplateTask(stepCode: string, fields: TaskTemplatePatch) {
+  await createTaskTemplate(stepCode, fields);
+  revalidatePath("/config");
+}
+
+export async function updateTemplateTask(id: string, patch: TaskTemplatePatch) {
+  await editTaskTemplate(id, patch);
+  revalidatePath("/config");
+}
+
+export async function removeTemplateTask(id: string) {
+  await deleteTaskTemplate(id);
+  revalidatePath("/config");
+}
+
+export async function moveTemplateTasks(orderedIds: string[]) {
+  await reorderTemplateTasks(orderedIds);
+  revalidatePath("/config");
 }
