@@ -1,12 +1,12 @@
 /**
- * Seed the 44 brokers from brokers.seed.json (idempotent).
+ * Bootstrap the 44 brokers from brokers.seed.json into an EMPTY database.
  *
- * Upserts by slug, so re-running never duplicates or clobbers edits. Each broker
- * gets its full 13-step plan with deterministic signature date + progress, so the
- * dashboard looks the same as the former in-memory mock — now DB-backed.
+ * Bootstrap-only by design: if any broker already exists, the script refuses to
+ * run and exits — it never wipes or overwrites real data. (The destructive
+ * --force wipe has been removed.) Re-hydrating a populated DB is not this
+ * script's job; real statuses come from the Notion import.
  *
  * Run: pnpm -F @brokercomply/dashboard exec tsx scripts/seed-brokers.ts
- *      (add --force to wipe + reseed)
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -14,7 +14,6 @@ import { dirname, join } from "node:path";
 import {
   createDb,
   brokers,
-  createBrokerWithPlan,
   seedPlanGlobals,
   upsertBrokerBySlug,
   type NewBroker,
@@ -133,13 +132,22 @@ function buildSeed(raw: RawBroker, index: number): SeededBroker {
 }
 
 async function main() {
-  const force = process.argv.includes("--force");
   const here = dirname(fileURLToPath(import.meta.url));
   const seedPath = join(here, "../src/data/brokers.seed.json");
   const raw = JSON.parse(readFileSync(seedPath, "utf8")) as { brokers: RawBroker[] };
 
   const { db, client } = createDb();
   try {
+    // Bootstrap-only guard: never touch a populated database. This protects the
+    // real broker data (and its Notion-imported statuses) from being clobbered.
+    const existing = await db.select({ id: brokers.id }).from(brokers).limit(1);
+    if (existing.length > 0) {
+      console.log(
+        "Brokers already present — bootstrap seed refuses to run (protects real data). Aborting.",
+      );
+      return;
+    }
+
     // Seed the global template (section offsets + default tasks) first, so brokers
     // fork from it. Idempotent: offsets upserted by code, tasks only when empty.
     await seedPlanGlobals(
@@ -147,23 +155,12 @@ async function main() {
       { offsets: stepOffsetSeeds(), tasks: taskTemplateSeeds() },
     );
     const seeds = raw.brokers.map((b, i) => buildSeed(b, i));
-    if (force) {
-      // Wipe + reseed atomically: a mid-loop failure must not leave 0 brokers.
-      await db.transaction(async (tx) => {
-        await tx.delete(brokers);
-        for (const seed of seeds) await createBrokerWithPlan({ db: tx }, seed);
-      });
-      console.log(`Brokers reseeded (--force): ${seeds.length} created.`);
-      return;
-    }
     let created = 0;
-    let skipped = 0;
     for (const seed of seeds) {
       const res = await upsertBrokerBySlug({ db }, seed);
       if (res.created) created++;
-      else skipped++;
     }
-    console.log(`Brokers seeded: ${created} created, ${skipped} skipped (already present).`);
+    console.log(`Bootstrapped ${created} brokers into an empty database.`);
   } finally {
     await client.end();
   }

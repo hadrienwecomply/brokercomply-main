@@ -96,6 +96,14 @@ const envSchema = z.object({
 
   // Freshness alerting threshold (months) — PRD default is 12.
   FRESHNESS_THRESHOLD_MONTHS: z.coerce.number().int().positive().default(12),
+
+  // Notion import (action-plan statuses). The internal-integration token and the
+  // two data-source ids of the "Pilotage courtier - Full" databases. Token is
+  // optional here and validated lazily by the importer; ids default to the known
+  // workspace collections so the script works out of the box.
+  NOTION_API_KEY: z.string().optional(),
+  NOTION_PLAN_DATA_SOURCE_ID: z.string().default('37aa8d30-4b11-8023-81ee-000b793545cc'),
+  NOTION_CLIENTS_DATA_SOURCE_ID: z.string().default('2c4a8d30-4b11-8182-b73c-000b02cfd7e8'),
 });
 
 export type Config = z.infer<typeof envSchema>;
