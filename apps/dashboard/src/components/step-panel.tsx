@@ -11,13 +11,14 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import type { PlanStep, SubStep, SubStepStatus, Support } from "@/lib/types";
+import type { Broker, PlanStep, SubStep, SubStepStatus, Support } from "@/lib/types";
+import type { SentEmailDTO } from "@/lib/mail.server";
 import { stepStatus, daysUntil, effectiveDeadline } from "@/lib/plan";
 import { STATUS_LABEL } from "@/lib/format";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { StatusBadge } from "./ui";
-import { EmailModal } from "./email-modal";
+import { SendEmailModal } from "./send-email-modal";
 import {
   addSubstep,
   moveSubsteps,
@@ -44,14 +45,25 @@ const STATUS_OPTIONS: SubStepStatus[] = [
 export function StepPanel({
   slug,
   step,
+  broker,
   today,
+  sentEmails,
+  mailConfigured,
+  mailRedirect,
 }: {
   slug: string;
   step: PlanStep;
+  broker: Broker;
   isCurrent?: boolean;
   today: string;
+  sentEmails: SentEmailDTO[];
+  mailConfigured: boolean;
+  mailRedirect: string | null;
 }) {
   const status = stepStatus(step);
+  /** Most recent send (if any) for a given sub-step template id. */
+  const lastSentFor = (substepId: string): string | null =>
+    sentEmails.find((e) => e.substepTemplateId === substepId)?.sentAt ?? null;
   const days = daysUntil(step.deadline, new Date(today));
   const overdue = status !== "done" && status !== "empty" && days !== null && days < 0;
   const [isPending, startTransition] = useTransition();
@@ -99,8 +111,13 @@ export function StepPanel({
             key={sub.dbId ?? sub.id}
             slug={slug}
             sub={sub}
+            step={step}
+            broker={broker}
             today={today}
             sectionDeadline={step.deadline}
+            lastSentAt={lastSentFor(sub.id)}
+            mailConfigured={mailConfigured}
+            mailRedirect={mailRedirect}
             run={run}
             onDragStart={() => (dragId.current = sub.dbId ?? sub.id)}
             onDrop={() => onDrop(sub.dbId ?? sub.id)}
@@ -198,16 +215,26 @@ function SectionDeadline({
 function TaskRow({
   slug,
   sub,
+  step,
+  broker,
   today,
   sectionDeadline,
+  lastSentAt,
+  mailConfigured,
+  mailRedirect,
   run,
   onDragStart,
   onDrop,
 }: {
   slug: string;
   sub: SubStep;
+  step: PlanStep;
+  broker: Broker;
   today: string;
   sectionDeadline?: string;
+  lastSentAt: string | null;
+  mailConfigured: boolean;
+  mailRedirect: string | null;
   run: (fn: () => Promise<unknown>) => void;
   onDragStart: () => void;
   onDrop: () => void;
@@ -295,7 +322,16 @@ function TaskRow({
 
         {(sub.emailTemplate || sub.supports?.length) && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {sub.emailTemplate && <EmailModal template={sub.emailTemplate} />}
+            {sub.emailTemplate && (
+              <SendEmailModal
+                broker={broker}
+                step={step}
+                substep={sub}
+                lastSentAt={lastSentAt}
+                configured={mailConfigured}
+                redirectTo={mailRedirect}
+              />
+            )}
             {sub.supports?.map((s, i) => {
               const Icon = SUPPORT_ICON[s.type];
               return (

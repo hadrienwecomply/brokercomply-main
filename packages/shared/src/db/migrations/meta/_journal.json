@@ -50,6 +50,13 @@
       "when": 1782289529849,
       "tag": "0006_shocking_clint_barton",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782302015178,
+      "tag": "0007_opposite_goblin_queen",
+      "breakpoints": true
     }
   ]
 }

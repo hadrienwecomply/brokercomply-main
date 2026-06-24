@@ -9,6 +9,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
@@ -59,6 +60,24 @@ export const sourceDocuments = pgTable(
     index('idx_source_documents_received_at').on(t.receivedAt),
     index('idx_source_documents_distilled_at').on(t.distilledAt),
   ],
+);
+
+/**
+ * Resumable state for the incremental email delta sync — one row per
+ * (mailbox, folder). `delta_link` is the opaque Graph `@odata.deltaLink` that
+ * lets the next run fetch only what changed since the last sweep. This is what
+ * makes a frequent cron cheap (vs re-fetching the whole mailbox each time).
+ */
+export const mailSyncState = pgTable(
+  'mail_sync_state',
+  {
+    mailbox: text('mailbox').notNull(),
+    /** Well-known folder the delta is scoped to (e.g. 'inbox', 'sentitems'). */
+    folder: text('folder').notNull(),
+    deltaLink: text('delta_link'),
+    lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+  },
+  (t) => [primaryKey({ columns: [t.mailbox, t.folder] })],
 );
 
 /**
@@ -195,6 +214,13 @@ export const brokers = pgTable(
     contactName: text('contact_name'),
     /** Contact emails (Notion: Email(s) contact). */
     emails: jsonb('emails').$type<string[]>().default([]).notNull(),
+    /**
+     * Opt-in domains for email matching, e.g. ["acme-broker.be"]. Empty by
+     * default: conversation matching is exact-email only unless an officer
+     * explicitly opts a (non-public) domain in. Public domains (gmail, outlook…)
+     * are rejected at the app layer to avoid leaking across brokers.
+     */
+    matchDomains: jsonb('match_domains').$type<string[]>().default([]).notNull(),
     phone: text('phone'),
     website: text('website'),
     /** Belgian enterprise number (Notion: BCE). Unique only when present. */
@@ -363,6 +389,40 @@ export const brokerPlanSubsteps = pgTable(
 );
 
 /**
+ * Audit log of action-plan template emails sent from the dashboard. The source
+ * of truth for "what we sent" (the sending officer's Sent items are ingested,
+ * but this is the canonical record); also powers the "envoyé le X" badge + soft
+ * re-send warning. We log AFTER a successful Graph send, storing the content.
+ */
+export const outboundEmails = pgTable(
+  'outbound_emails',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    brokerId: uuid('broker_id')
+      .notNull()
+      .references(() => brokers.id, { onDelete: 'cascade' }),
+    /** Plan step code, e.g. "01" (provenance of the template). */
+    stepCode: text('step_code'),
+    /** Template sub-step id, e.g. "01-0" — links the send to a sub-step. */
+    substepTemplateId: text('substep_template_id'),
+    /** Sender mailbox the email was sent from (the assigned officer). */
+    fromMailbox: text('from_mailbox').notNull(),
+    toAddrs: jsonb('to_addrs').$type<string[]>().default([]).notNull(),
+    ccAddrs: jsonb('cc_addrs').$type<string[]>().default([]).notNull(),
+    replyTo: text('reply_to'),
+    subject: text('subject'),
+    body: text('body'),
+    /** Officer (email) who triggered the send — attribution (cookie identity). */
+    sentByOfficer: text('sent_by_officer'),
+    sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_outbound_emails_broker').on(t.brokerId),
+    index('idx_outbound_emails_substep').on(t.brokerId, t.substepTemplateId),
+  ],
+);
+
+/**
  * Global timeframe config — one row per plan section (the 13 step codes). The
  * effective section deadline is `broker.signature_date + offset_days` (parallel
  * offsets, not a cascade), overridable per broker via `broker_plan_steps.deadline_override`.
@@ -400,6 +460,10 @@ export const planTaskTemplates = pgTable(
 
 export type SourceDocument = typeof sourceDocuments.$inferSelect;
 export type NewSourceDocument = typeof sourceDocuments.$inferInsert;
+export type MailSyncState = typeof mailSyncState.$inferSelect;
+export type NewMailSyncState = typeof mailSyncState.$inferInsert;
+export type OutboundEmail = typeof outboundEmails.$inferSelect;
+export type NewOutboundEmail = typeof outboundEmails.$inferInsert;
 export type KnowledgeUnit = typeof knowledgeUnits.$inferSelect;
 export type NewKnowledgeUnit = typeof knowledgeUnits.$inferInsert;
 export type AmlExclusionLogEntry = typeof amlExclusionLog.$inferSelect;
