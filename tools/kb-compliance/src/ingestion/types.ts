@@ -35,6 +35,8 @@ export interface RawMessage {
   folder?: string;
   /** Graph parent folder id (kept for traceability). */
   parentFolderId?: string | null;
+  /** OWA/Outlook deep link to open the original message (Graph `webLink`). */
+  webLink?: string | null;
   /** Direction relative to the officer mailboxes (set by the source). */
   direction?: MessageDirection;
 }

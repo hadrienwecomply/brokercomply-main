@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { Check, FileText, Link2, Video, CalendarClock } from "lucide-react";
-import type { PlanStep, Support } from "@/lib/types";
+import type { Broker, PlanStep, Support } from "@/lib/types";
+import type { SentEmailDTO } from "@/lib/mail.server";
 import { stepStatus, daysUntil } from "@/lib/plan";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { StatusBadge } from "./ui";
-import { EmailModal } from "./email-modal";
+import { SendEmailModal } from "./send-email-modal";
 
 const SUPPORT_ICON: Record<Support["type"], typeof FileText> = {
   pdf: FileText,
@@ -17,14 +18,25 @@ const SUPPORT_ICON: Record<Support["type"], typeof FileText> = {
 
 export function StepPanel({
   step,
+  broker,
   isCurrent,
   today,
+  sentEmails,
+  mailConfigured,
+  mailRedirect,
 }: {
   step: PlanStep;
+  broker: Broker;
   isCurrent: boolean;
   today: string;
+  sentEmails: SentEmailDTO[];
+  mailConfigured: boolean;
+  mailRedirect: string | null;
 }) {
   const status = stepStatus(step);
+  /** Most recent send (if any) for a given sub-step template id. */
+  const lastSentFor = (substepId: string): string | null =>
+    sentEmails.find((e) => e.substepTemplateId === substepId)?.sentAt ?? null;
   const days = daysUntil(step.deadline, new Date(today));
   const overdue = status !== "done" && days !== null && days < 0;
 
@@ -134,7 +146,14 @@ export function StepPanel({
                   {(sub.emailTemplate || sub.supports?.length) && (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       {sub.emailTemplate && (
-                        <EmailModal template={sub.emailTemplate} />
+                        <SendEmailModal
+                          broker={broker}
+                          step={step}
+                          substep={sub}
+                          lastSentAt={lastSentFor(sub.id)}
+                          configured={mailConfigured}
+                          redirectTo={mailRedirect}
+                        />
                       )}
                       {sub.supports?.map((s, i) => {
                         const Icon = SUPPORT_ICON[s.type];

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Broker } from "@/lib/types";
+import type { SentEmailDTO } from "@/lib/mail.server";
 import { brokerProgress } from "@/lib/plan";
 import { StepTimeline } from "./step-timeline";
 import { StepPanel } from "./step-panel";
@@ -9,9 +10,15 @@ import { StepPanel } from "./step-panel";
 export function BrokerWorkspace({
   broker,
   today,
+  sentEmails,
+  mailConfigured,
+  mailRedirect,
 }: {
   broker: Broker;
   today: string;
+  sentEmails: SentEmailDTO[];
+  mailConfigured: boolean;
+  mailRedirect: string | null;
 }) {
   const current = brokerProgress(broker).currentStep;
   const fallback =
@@ -32,8 +39,12 @@ export function BrokerWorkspace({
       <StepPanel
         key={step.code}
         step={step}
+        broker={broker}
         isCurrent={step.code === current?.code}
         today={today}
+        sentEmails={sentEmails}
+        mailConfigured={mailConfigured}
+        mailRedirect={mailRedirect}
       />
     </div>
   );

@@ -73,6 +73,8 @@ export interface Broker {
   status?: string; // lifecycle: 'onboarding' | 'active' | 'at_risk' | 'inactive'
   mrr?: number | null;
   notionPageId?: string;
+  // Opt-in (non-public) domains for email conversation matching, e.g. ["acme.be"].
+  matchDomains?: string[];
   // --- SharePoint document folder (optional; surfaced from the DB) ---
   sharePointFolderId?: string;
   sharePointWebUrl?: string;

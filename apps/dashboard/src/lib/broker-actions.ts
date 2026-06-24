@@ -7,6 +7,7 @@ import {
   createBroker,
   overrideStepDeadline,
   patchBroker,
+  setBrokerMatchDomains,
   toggleStepApplicable,
   type CreateBrokerInput,
   type UpdateBrokerPatch,
@@ -27,6 +28,12 @@ export async function saveBroker(id: string, slug: string, patch: UpdateBrokerPa
   await patchBroker(id, patch);
   revalidatePath("/");
   revalidatePath(`/courtiers/${slug}`);
+}
+
+/** Update the opt-in domains used to match a broker's email conversations. */
+export async function setMatchDomains(slug: string, domains: string[]) {
+  await setBrokerMatchDomains(slug, domains);
+  revalidatePath(`/courtiers/${slug}/conversations`);
 }
 
 export async function setStepApplicable(slug: string, stepDbId: string, applicable: boolean) {

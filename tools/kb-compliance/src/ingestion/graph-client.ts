@@ -38,11 +38,17 @@ interface GraphMessage {
   ccRecipients?: Array<{ emailAddress?: { address?: string } }>;
   receivedDateTime?: string;
   hasAttachments?: boolean;
+  /** OWA/Outlook deep link to open the original message. */
+  webLink?: string;
+  /** Present on delta pages for items deleted since the last sync. */
+  '@removed'?: { reason?: string };
 }
 
 interface MessagesPage {
   value: GraphMessage[];
   '@odata.nextLink'?: string;
+  /** Present on the final delta page; persisted to resume the next delta run. */
+  '@odata.deltaLink'?: string;
 }
 
 interface GraphAttachment {
@@ -66,6 +72,7 @@ const MESSAGE_SELECT = [
   'ccRecipients',
   'receivedDateTime',
   'hasAttachments',
+  'webLink',
 ].join(',');
 
 function addr(box?: { emailAddress?: { address?: string } }): string {
@@ -205,8 +212,52 @@ export class GraphEmailClient implements EmailSource {
       attachments,
       folder,
       parentFolderId: message.parentFolderId ?? null,
+      webLink: message.webLink ?? null,
       direction: classifyDirection(from, [...to, ...cc], this.officers),
     };
+  }
+
+  /**
+   * Incremental sync for one well-known folder using Graph delta queries.
+   *
+   * Pass the `deltaLink` persisted from the previous run to fetch only what
+   * changed since; pass `undefined` to start a fresh delta (returns the current
+   * state + an initial deltaLink). Follows `@odata.nextLink` pages, collecting
+   * changed messages, and returns the final `@odata.deltaLink` to persist.
+   * Deleted items (`@removed`) are surfaced as ids so callers can react; we do
+   * not delete from the immutable source archive.
+   */
+  async listMessagesDelta(
+    mailbox: string,
+    folder: string,
+    deltaLink?: string,
+  ): Promise<{ messages: RawMessage[]; removedIds: string[]; deltaLink: string | null }> {
+    let url: string | undefined =
+      deltaLink ??
+      `/users/${encodeURIComponent(mailbox)}/mailFolders/${encodeURIComponent(
+        folder,
+      )}/messages/delta?$select=${MESSAGE_SELECT}`;
+
+    const messages: RawMessage[] = [];
+    const removedIds: string[] = [];
+    let nextDeltaLink: string | null = null;
+
+    while (url) {
+      const page: MessagesPage = await this.get<MessagesPage>(url);
+      for (const message of page.value ?? []) {
+        if (message['@removed']) {
+          if (message.id) removedIds.push(message.id);
+          continue;
+        }
+        messages.push(await this.toRawMessage(mailbox, message, folder));
+      }
+      if (page['@odata.deltaLink']) {
+        nextDeltaLink = page['@odata.deltaLink'];
+        break;
+      }
+      url = page['@odata.nextLink'];
+    }
+    return { messages, removedIds, deltaLink: nextDeltaLink };
   }
 
   async getAttachmentContent(

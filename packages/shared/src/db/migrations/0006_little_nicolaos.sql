@@ -1,0 +1,1 @@
+ALTER TABLE "brokers" ADD COLUMN "match_domains" jsonb DEFAULT '[]'::jsonb NOT NULL;

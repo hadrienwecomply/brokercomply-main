@@ -2,15 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ListChecks, FolderOpen } from 'lucide-react';
+import { ListChecks, FolderOpen, Mail } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
-/** Tab navigation for a broker's sub-pages (Plan d'action / Documents). */
+/** Tab navigation for a broker's sub-pages (Plan d'action / Conversations / Documents). */
 export function BrokerTabs({ slug }: { slug: string }) {
   const pathname = usePathname();
   const base = `/courtiers/${slug}`;
   const tabs = [
     { href: base, label: "Plan d'action", icon: ListChecks },
+    { href: `${base}/conversations`, label: 'Conversations', icon: Mail },
     { href: `${base}/documents`, label: 'Documents', icon: FolderOpen },
   ];
 

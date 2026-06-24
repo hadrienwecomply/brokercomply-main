@@ -3,6 +3,7 @@ import {
   createBrokerWithPlan,
   getBrokerById,
   getBrokerBySlug,
+  isPublicEmailDomain,
   listBrokerPlans,
   setStepApplicable,
   setStepDeadlineOverride,
@@ -30,6 +31,7 @@ export function toBrokerDTO(plan: BrokerPlan): Broker {
     societe: row.societe,
     contact: row.contactName ?? "",
     emails: row.emails ?? [],
+    matchDomains: row.matchDomains ?? [],
     countries: row.countries ?? [],
     officerId: row.accountOwner ?? DEFAULT_OFFICER,
     signatureDate: row.signatureDate ?? "",
@@ -212,6 +214,23 @@ async function ownedPlan(slug: string): Promise<BrokerPlan> {
   const plan = await getBrokerBySlug({ db: getDb() }, slug);
   if (!plan) throw new Error("Courtier introuvable");
   return plan;
+}
+
+/**
+ * Set the opt-in domains used to match a broker's email conversations. Public
+ * providers (gmail, outlook…) are rejected server-side as a hard guard, even if
+ * the UI somehow offers them — they would leak correspondence across brokers.
+ */
+export async function setBrokerMatchDomains(slug: string, domains: string[]): Promise<void> {
+  const plan = await ownedPlan(slug);
+  const clean = Array.from(
+    new Set(
+      domains
+        .map((d) => d.trim().toLowerCase())
+        .filter((d) => d && !isPublicEmailDomain(d)),
+    ),
+  );
+  await updateBroker({ db: getDb() }, plan.broker.id, { matchDomains: clean });
 }
 
 export async function toggleStepApplicable(

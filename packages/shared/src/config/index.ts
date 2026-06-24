@@ -39,6 +39,12 @@ const envSchema = z.object({
   AZURE_CLIENT_ID: z.string().optional(),
   AZURE_CLIENT_SECRET: z.string().optional(),
 
+  // Safety guard: when set, EVERY outgoing email is redirected to this address
+  // instead of the real broker (the original recipients are shown in the body).
+  // Outside production this defaults to hr@we-comply.be (see resolveMailRedirect)
+  // so we never email a real client before go-live. Set empty in prod.
+  MAIL_REDIRECT_TO: z.string().email().optional(),
+
   // Compliance-officer mailboxes (comma-separated). Drives both the ingestion
   // scope and inbound/outbound direction classification.
   OFFICER_MAILBOXES: z

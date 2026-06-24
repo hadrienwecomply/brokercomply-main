@@ -6,5 +6,8 @@ export * from './retrieval/index.js';
 export * from './knowledge/index.js';
 export * from './roadmap/index.js';
 export * from './brokers/index.js';
+export * from './conversations/index.js';
+export * from './templates/index.js';
+export * from './mail/index.js';
 export * from './documents/index.js';
 export * from './sharepoint/index.js';
