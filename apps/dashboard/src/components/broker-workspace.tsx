@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Broker } from "@/lib/types";
-import { brokerProgress } from "@/lib/plan";
+import { brokerProgress, isActiveStep } from "@/lib/plan";
 import { StepTimeline } from "./step-timeline";
 import { StepPanel } from "./step-panel";
 
@@ -15,7 +15,7 @@ export function BrokerWorkspace({
 }) {
   const current = brokerProgress(broker).currentStep;
   const fallback =
-    [...broker.plan].reverse().find((s) => s.applicable)?.code ??
+    [...broker.plan].reverse().find(isActiveStep)?.code ??
     broker.plan[0]!.code;
   const [selected, setSelected] = useState(current?.code ?? fallback);
 
@@ -31,6 +31,7 @@ export function BrokerWorkspace({
       />
       <StepPanel
         key={step.code}
+        slug={broker.id}
         step={step}
         isCurrent={step.code === current?.code}
         today={today}

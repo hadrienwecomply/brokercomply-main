@@ -85,7 +85,7 @@ export function BrokerHeader({
                 Avancement
               </p>
               <p className="font-display text-lg font-semibold text-ink">
-                {progress.doneSteps}/{progress.applicableSteps} étapes
+                {progress.doneSteps}/{progress.activeSteps} étapes
               </p>
               {progress.currentStep && (
                 <StatusBadge status={stepStatus(progress.currentStep)} className="mt-1" />

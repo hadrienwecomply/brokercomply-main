@@ -17,15 +17,12 @@ export interface StepTemplate {
 }
 
 /**
- * The standard 13-step action plan applied to every broker.
- * Steps 01, 02, 03.01 mirror the described Notion process ("Pilotage courtier - Full").
- * Steps 03.02 -> 10 are plausible placeholders pending their Notion description.
- *
- * WARNING — sub-step ORDER is persisted identity. Each sub-step is stored in the
- * DB as `${code}-${index}` (see broker-plan.ts `substepTemplateId`). Appending a
- * sub-step is safe; INSERTING into the middle of a `subSteps` array (or reordering)
- * shifts every following index and silently re-maps persisted status to the wrong
- * sub-step — it requires a data migration of `broker_plan_substeps.template_substep_id`.
+ * The standard 13-step action plan. This is now only a SEED + static-content
+ * source: section offsets and the default task list are seeded into the DB
+ * (`plan_step_offsets`, `plan_task_templates`) on first run and edited from the
+ * Config tab. Supports / action bullets stay here, resolved by `contentKey`
+ * (`${code}-${index}`) — so reordering a `subSteps` array only changes seed order,
+ * never the identity of already-materialised broker tasks.
  */
 export const STEP_TEMPLATES: StepTemplate[] = [
   {
@@ -263,3 +260,76 @@ export const STEP_TEMPLATES: StepTemplate[] = [
     ],
   },
 ];
+
+/** Stable content key for a template sub-step, e.g. "01-0". */
+export function contentKeyFor(code: string, index: number): string {
+  return `${code}-${index}`;
+}
+
+/** Static (code-side) content keyed by `contentKey`. Supports/actions stay in code;
+ * title/email are mirrored here only as a fallback for rows not yet forked. */
+export interface StaticContent {
+  title: string;
+  emailTemplate?: EmailTemplate;
+  actions?: string[];
+  supports?: Support[];
+}
+
+/**
+ * Map of code-side static content by `contentKey`. Supports / action bullets are
+ * code-only; title + email are also kept here as a fallback for legacy broker rows
+ * whose `title`/`email_*` columns haven't been backfilled yet.
+ */
+export const CONTENT_BY_KEY: Map<string, StaticContent> = new Map(
+  STEP_TEMPLATES.flatMap((tpl) =>
+    tpl.subSteps.map((ss, j): [string, StaticContent] => [
+      contentKeyFor(tpl.code, j),
+      {
+        title: ss.title,
+        emailTemplate: ss.emailTemplate,
+        actions: ss.actions,
+        supports: ss.supports,
+      },
+    ]),
+  ),
+);
+
+export interface StepOffsetSeed {
+  code: string;
+  title: string;
+  offsetDays: number;
+  position: number;
+}
+
+export interface TaskTemplateSeed {
+  stepCode: string;
+  title: string;
+  emailSubject: string | null;
+  emailBody: string | null;
+  contentKey: string;
+  position: number;
+}
+
+/** Seed rows for `plan_step_offsets` (the 13 sections, ordered). */
+export function stepOffsetSeeds(): StepOffsetSeed[] {
+  return STEP_TEMPLATES.map((tpl, i) => ({
+    code: tpl.code,
+    title: tpl.title,
+    offsetDays: tpl.slaDays,
+    position: i,
+  }));
+}
+
+/** Seed rows for `plan_task_templates` (the default tasks per section). */
+export function taskTemplateSeeds(): TaskTemplateSeed[] {
+  return STEP_TEMPLATES.flatMap((tpl) =>
+    tpl.subSteps.map((ss, j) => ({
+      stepCode: tpl.code,
+      title: ss.title,
+      emailSubject: ss.emailTemplate?.subject ?? null,
+      emailBody: ss.emailTemplate?.body ?? null,
+      contentKey: contentKeyFor(tpl.code, j),
+      position: j,
+    })),
+  );
+}

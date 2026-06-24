@@ -15,12 +15,17 @@ import {
   createDb,
   brokers,
   createBrokerWithPlan,
+  seedPlanGlobals,
   upsertBrokerBySlug,
   type NewBroker,
   type PlanStepSeed,
 } from "@brokercomply/shared";
-import { STEP_TEMPLATES } from "../src/lib/plan-template.js";
-import { substepTemplateId } from "../src/lib/broker-plan.js";
+import {
+  STEP_TEMPLATES,
+  contentKeyFor,
+  stepOffsetSeeds,
+  taskTemplateSeeds,
+} from "../src/lib/plan-template.js";
 import { brokerSlug } from "../src/lib/slug.js";
 
 const OFFICERS = ["sdv@we-comply.be", "gr@we-comply.be"];
@@ -79,11 +84,11 @@ function buildSeed(raw: RawBroker, index: number): SeededBroker {
   const currentIdx = Math.min(applicable.length, Math.floor(adv * (applicable.length + 1)));
   applicable.forEach((tpl, k) => {
     if (k < currentIdx) {
-      tpl.subSteps.forEach((_, j) => status.set(substepTemplateId(tpl.code, j), "done"));
+      tpl.subSteps.forEach((_, j) => status.set(contentKeyFor(tpl.code, j), "done"));
     } else if (k === currentIdx) {
       const doneCount = Math.floor(rng() * tpl.subSteps.length);
       tpl.subSteps.forEach((_, j) => {
-        const id = substepTemplateId(tpl.code, j);
+        const id = contentKeyFor(tpl.code, j);
         if (j < doneCount) status.set(id, "done");
         else if (j === doneCount) {
           const r = rng();
@@ -97,9 +102,17 @@ function buildSeed(raw: RawBroker, index: number): SeededBroker {
     code: tpl.code,
     applicable: tpl.defaultApplicable,
     position: stepIdx,
-    substeps: tpl.subSteps.map((_, j) => {
-      const id = substepTemplateId(tpl.code, j);
-      return { templateSubstepId: id, position: j, status: status.get(id) ?? "not_started" };
+    substeps: tpl.subSteps.map((ss, j) => {
+      const key = contentKeyFor(tpl.code, j);
+      return {
+        contentKey: key,
+        title: ss.title,
+        emailSubject: ss.emailTemplate?.subject ?? null,
+        emailBody: ss.emailTemplate?.body ?? null,
+        isCustom: false,
+        position: j,
+        status: status.get(key) ?? "not_started",
+      };
     }),
   }));
 
@@ -127,6 +140,12 @@ async function main() {
 
   const { db, client } = createDb();
   try {
+    // Seed the global template (section offsets + default tasks) first, so brokers
+    // fork from it. Idempotent: offsets upserted by code, tasks only when empty.
+    await seedPlanGlobals(
+      { db },
+      { offsets: stepOffsetSeeds(), tasks: taskTemplateSeeds() },
+    );
     const seeds = raw.brokers.map((b, i) => buildSeed(b, i));
     if (force) {
       // Wipe + reseed atomically: a mid-loop failure must not leave 0 brokers.
