@@ -46,10 +46,12 @@ const envSchema = z.object({
   MAIL_REDIRECT_TO: z.string().email().optional(),
 
   // Compliance-officer mailboxes (comma-separated). Drives both the ingestion
-  // scope and inbound/outbound direction classification.
+  // scope and inbound/outbound direction classification. The real officers are
+  // Sacha (sdv@) and Grégory (gr@); an older config mentioned mvl@ — that was a
+  // mistake (see doc/CONTEXTE_ET_GUIDELINES.md).
   OFFICER_MAILBOXES: z
     .string()
-    .default('sdv@we-comply.be,mvl@we-comply.be')
+    .default('sdv@we-comply.be,gr@we-comply.be')
     .transform((s) =>
       s
         .split(',')
