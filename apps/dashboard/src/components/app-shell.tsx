@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, ListChecks, Zap, BookOpen, Map } from "lucide-react";
+import { LayoutGrid, ListChecks, Zap, BookOpen, Map, Settings } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const NAV = [
@@ -11,6 +11,7 @@ const NAV = [
   { href: "/faq", label: "Base de connaissances", icon: BookOpen },
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/automatisations", label: "Automatisations", icon: Zap },
+  { href: "/config", label: "Configuration", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

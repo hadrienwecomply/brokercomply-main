@@ -41,7 +41,7 @@ const STATUS: Record<StepStatus | "done", { label: string; dot: string; pill: st
   waiting_client: { label: "Attente client", dot: "bg-amber-500", pill: "bg-amber-50 text-amber-700 ring-amber-200" },
   blocked: { label: "Bloqué", dot: "bg-rose-500", pill: "bg-rose-50 text-rose-700 ring-rose-200" },
   done: { label: "Terminé", dot: "bg-[#5fbf99]", pill: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
-  not_applicable: { label: "N/A", dot: "bg-slate-300", pill: "bg-slate-50 text-slate-400 ring-slate-200" },
+  empty: { label: "Aucune tâche", dot: "bg-slate-300", pill: "bg-slate-50 text-slate-400 ring-slate-200" },
 };
 
 /** Plan macro-phases for the distribution donut. */
@@ -450,7 +450,7 @@ function TableView({
                 <td className="border-t border-slate-100 px-4 py-3.5">
                   <ProgressMeter value={r.progress.pct} />
                   <span className="mt-1 block text-xs text-slate-400">
-                    {r.progress.doneSteps}/{r.progress.applicableSteps} étapes
+                    {r.progress.doneSteps}/{r.progress.activeSteps} étapes
                   </span>
                 </td>
                 <td className="max-w-[18rem] border-t border-slate-100 px-4 py-3.5">
@@ -515,7 +515,7 @@ function CardsView({ rows }: { rows: Row[] }) {
           <div className="mt-4">
             <ProgressMeter value={r.progress.pct} />
             <p className="mt-1.5 text-xs text-slate-400">
-              {r.progress.doneSteps}/{r.progress.applicableSteps} étapes ·{" "}
+              {r.progress.doneSteps}/{r.progress.activeSteps} étapes ·{" "}
               {r.progress.currentStep ? `${r.progress.currentStep.code} ${r.progress.currentStep.title}` : "terminé"}
             </p>
           </div>

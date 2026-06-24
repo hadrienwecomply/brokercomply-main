@@ -1,10 +1,14 @@
 import type { Broker, PlanStep, StepStatus, SubStep } from "./types";
 
-/** Derive a step's status from its sub-steps. */
+/** A section with at least one (non-archived) task is "active". */
+export function isActiveStep(step: PlanStep): boolean {
+  return step.subSteps.length > 0;
+}
+
+/** Derive a step's status from its sub-steps. Empty sections are neutral. */
 export function stepStatus(step: PlanStep): StepStatus {
-  if (!step.applicable) return "not_applicable";
   const subs = step.subSteps;
-  if (subs.length === 0) return "not_started";
+  if (subs.length === 0) return "empty";
   if (subs.every((s) => s.status === "done")) return "done";
   if (subs.some((s) => s.status === "blocked")) return "blocked";
   if (subs.some((s) => s.status === "waiting_client")) return "waiting_client";
@@ -19,30 +23,35 @@ export interface BrokerProgress {
   pct: number;
   currentStep?: PlanStep;
   doneSteps: number;
-  applicableSteps: number;
+  activeSteps: number;
 }
 
-/** Progress = done sub-steps / applicable sub-steps. */
+/** Progress = done tasks / tasks across active (non-empty) sections. */
 export function brokerProgress(broker: Broker): BrokerProgress {
-  const applicable = broker.plan.filter((s) => s.applicable);
+  const active = broker.plan.filter(isActiveStep);
   let done = 0;
   let total = 0;
-  for (const step of applicable) {
+  for (const step of active) {
     total += step.subSteps.length;
     done += step.subSteps.filter((s) => s.status === "done").length;
   }
-  const currentStep = applicable.find((s) => {
-    const st = stepStatus(s);
-    return st !== "done" && st !== "not_applicable";
-  });
+  const currentStep = active.find((s) => stepStatus(s) !== "done");
   return {
     doneSubSteps: done,
     totalSubSteps: total,
     pct: total === 0 ? 0 : Math.round((done / total) * 100),
     currentStep,
-    doneSteps: applicable.filter((s) => stepStatus(s) === "done").length,
-    applicableSteps: applicable.length,
+    doneSteps: active.filter((s) => stepStatus(s) === "done").length,
+    activeSteps: active.length,
   };
+}
+
+/** A task's effective deadline: its own due date, else the section deadline. */
+export function effectiveDeadline(
+  step: PlanStep,
+  sub: SubStep,
+): string | undefined {
+  return sub.dueDate ?? step.deadline;
 }
 
 export interface NextAction {
@@ -74,11 +83,13 @@ const URGENCY: Record<string, number> = {
   not_started: 2,
 };
 
-/** Sort next actions by deadline then status urgency. Earliest deadline first. */
+/** Sort next actions by effective deadline then status urgency. Earliest first. */
 export function sortActions(actions: NextAction[]): NextAction[] {
   return [...actions].sort((a, b) => {
-    const da = a.step.deadline ? new Date(a.step.deadline).getTime() : Infinity;
-    const db = b.step.deadline ? new Date(b.step.deadline).getTime() : Infinity;
+    const ea = effectiveDeadline(a.step, a.subStep);
+    const eb = effectiveDeadline(b.step, b.subStep);
+    const da = ea ? new Date(ea).getTime() : Infinity;
+    const db = eb ? new Date(eb).getTime() : Infinity;
     if (da !== db) return da - db;
     return (URGENCY[a.subStep.status] ?? 9) - (URGENCY[b.subStep.status] ?? 9);
   });

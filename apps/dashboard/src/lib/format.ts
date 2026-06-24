@@ -6,7 +6,7 @@ export const STATUS_LABEL: Record<StepStatus, string> = {
   waiting_client: "En attente client",
   blocked: "Bloqué",
   done: "Terminé",
-  not_applicable: "Non applicable",
+  empty: "Aucune tâche",
 };
 
 /** Tailwind classes per status (text + bg + border) — AA contrast, harmonized with brand. */
@@ -16,7 +16,7 @@ export const STATUS_STYLE: Record<StepStatus, string> = {
   waiting_client: "bg-[#fdf1da] text-[#8a5300] border-[#f0ad4e]/55",
   blocked: "bg-[#fde2e5] text-[#bb1626] border-[#ea384c]/55 font-semibold",
   done: "bg-brand-100 text-brand-700 border-brand-500/45",
-  not_applicable: "bg-[#eef0f2] text-[#6b7280] border-transparent",
+  empty: "bg-[#eef0f2] text-[#6b7280] border-transparent",
 };
 
 /** Solid dot color per status. */
@@ -26,7 +26,7 @@ export const STATUS_DOT: Record<StepStatus, string> = {
   waiting_client: "bg-st-waiting",
   blocked: "bg-st-blocked",
   done: "bg-st-done",
-  not_applicable: "bg-st-na",
+  empty: "bg-st-na",
 };
 
 const dateFmt = new Intl.DateTimeFormat("fr-BE", {
