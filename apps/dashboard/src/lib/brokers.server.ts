@@ -12,7 +12,6 @@ import {
   listBrokerPlans,
   reorderBrokerSubsteps,
   reorderTaskTemplates,
-  seedPlanGlobals,
   setStepDeadlineOverride,
   setSubstepStatus,
   updateBroker,
@@ -30,20 +29,15 @@ import {
 } from "@brokercomply/shared";
 import { getDb } from "./db.server";
 import { assemblePlan, deriveOnboardingStatus, planBlueprint } from "./broker-plan";
-import { stepOffsetSeeds, taskTemplateSeeds } from "./plan-template";
 import { DEFAULT_OFFICER } from "./officers";
 import { provisionBrokerFolder } from "./sharepoint.server";
 import { brokerSlug } from "./slug";
 import type { Broker } from "./types";
 
-/** Ensure the global template (offsets + default tasks) exists, then load it. */
+/** Load the global template (offsets + default tasks). Seeding is done out of
+ * band by `scripts/seed-brokers.ts`, never on the request path. */
 async function loadGlobals(): Promise<PlanGlobals> {
-  const db = getDb();
-  await seedPlanGlobals(
-    { db },
-    { offsets: stepOffsetSeeds(), tasks: taskTemplateSeeds() },
-  );
-  return getPlanGlobals({ db });
+  return getPlanGlobals({ db: getDb() });
 }
 
 /** Map a persisted broker + its plan rows into the rich `Broker` DTO the UI uses. */

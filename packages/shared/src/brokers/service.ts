@@ -259,6 +259,34 @@ export async function setSubstepStatus(
   return row;
 }
 
+/**
+ * Bulk-reset the plan status of the given brokers to a clean baseline: every
+ * sub-step back to `not_started` (clearing completion + notes) and every section
+ * deadline override cleared. Used by the Notion import so that sections Notion
+ * does not cover end up as `not_started` rather than keeping stale values.
+ */
+export async function resetBrokerPlanStatuses(
+  { db }: BrokersServiceDeps,
+  brokerIds: string[],
+): Promise<void> {
+  if (!brokerIds.length) return;
+  const steps = await db
+    .select({ id: brokerPlanSteps.id })
+    .from(brokerPlanSteps)
+    .where(inArray(brokerPlanSteps.brokerId, brokerIds));
+  const stepIds = steps.map((s) => s.id);
+  if (stepIds.length) {
+    await db
+      .update(brokerPlanSubsteps)
+      .set({ status: 'not_started', completedAt: null, notes: null })
+      .where(inArray(brokerPlanSubsteps.stepId, stepIds));
+  }
+  await db
+    .update(brokerPlanSteps)
+    .set({ deadlineOverride: null })
+    .where(inArray(brokerPlanSteps.brokerId, brokerIds));
+}
+
 // ---------------------------------------------------------------------------
 // Global plan template (editable) — section offsets + default task list.
 // ---------------------------------------------------------------------------

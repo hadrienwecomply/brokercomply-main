@@ -22,6 +22,9 @@ tools/kb-compliance/config/client-allowlist.json
 # SharePoint backfill mapping (broker → existing folder path; client PII)
 tools/kb-compliance/config/sharepoint-mapping.json
 
+# Notion action-plan snapshot (broker names + follow-up notes; client PII)
+apps/dashboard/scripts/notion-plan-snapshot.json
+
 # Editor / OS
 .DS_Store
 .idea/
