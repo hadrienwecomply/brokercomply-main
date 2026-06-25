@@ -136,18 +136,49 @@ export async function recordSubmission(
 }
 
 export interface SubmissionStatusPatch {
-  status: string;
+  status?: string;
   n8nExecutionId?: string | null;
+  /** Result payload posted back by n8n on workflow completion (callback). */
+  n8nResult?: unknown;
+  /** When n8n reported the workflow finished. */
+  completedAt?: Date | null;
+  /** Editable review HTML rendered by the n8n diagnostic workflow. */
+  reviewHtml?: string | null;
+  /** Officer's latest corrections (the editor `edits` object). */
+  reviewEdits?: unknown;
+  /** Review lifecycle: 'pending' | 'edited' | 'pdf_requested' | 'pdf_ready'. */
+  reviewStatus?: string | null;
+  /** URL the PDF button points to (BrokerComply route for now, SharePoint later). */
+  pdfRef?: string | null;
+  /** Base64 PDF stored temporarily until the SharePoint upload is wired. */
+  pdfBase64?: string | null;
 }
 
-/** Update a submission's processing status (e.g. after the n8n trigger). */
+/**
+ * Patch a submission's processing/review fields. Every field is optional so the
+ * same updater serves the n8n trigger, the review callback, the save-edits
+ * action and the PDF callback. Returns the updated row, or undefined if the id
+ * is unknown.
+ */
 export async function updateSubmissionStatus(
   { db }: FormsServiceDeps,
   submissionId: string,
   patch: SubmissionStatusPatch,
 ): Promise<FormSubmission | undefined> {
-  const fields: Partial<FormSubmission> = { status: patch.status };
+  const fields: Partial<FormSubmission> = {};
+  if (patch.status !== undefined) fields.status = patch.status;
   if (patch.n8nExecutionId !== undefined) fields.n8nExecutionId = patch.n8nExecutionId;
+  if (patch.n8nResult !== undefined) fields.n8nResult = patch.n8nResult;
+  if (patch.completedAt !== undefined) fields.completedAt = patch.completedAt;
+  if (patch.reviewHtml !== undefined) fields.reviewHtml = patch.reviewHtml;
+  if (patch.reviewEdits !== undefined) fields.reviewEdits = patch.reviewEdits;
+  if (patch.reviewStatus !== undefined) fields.reviewStatus = patch.reviewStatus;
+  if (patch.pdfRef !== undefined) fields.pdfRef = patch.pdfRef;
+  if (patch.pdfBase64 !== undefined) fields.pdfBase64 = patch.pdfBase64;
+  if (Object.keys(fields).length === 0) {
+    const [row] = await db.select().from(formSubmissions).where(eq(formSubmissions.id, submissionId));
+    return row;
+  }
   const [row] = await db
     .update(formSubmissions)
     .set(fields)

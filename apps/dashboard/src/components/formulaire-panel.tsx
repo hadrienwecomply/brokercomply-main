@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ChevronDown, RotateCw } from "lucide-react";
+import { ChevronDown, RotateCw, PencilLine, FileDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/format";
 import { retryTrigger } from "@/lib/formulaire-actions";
@@ -14,6 +14,14 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   triggered: { label: "Déclenché", cls: "bg-brand-100 text-brand-700 border-brand-500/45" },
   failed: { label: "Échec", cls: "bg-[#fde2e5] text-[#bb1626] border-[#ea384c]/55 font-semibold" },
   done: { label: "Terminé", cls: "bg-brand-100 text-brand-700 border-brand-500/45" },
+};
+
+/** Review/PDF lifecycle pill styles. */
+const REVIEW_STATUS: Record<string, { label: string; cls: string }> = {
+  pending: { label: "Relecture à faire", cls: "bg-[#fdf1da] text-[#8a5300] border-[#f0ad4e]/55" },
+  edited: { label: "Relue", cls: "bg-brand-100 text-brand-700 border-brand-500/45" },
+  pdf_requested: { label: "PDF en cours", cls: "bg-[#eef0f2] text-[#4b5159] border-[#d3d7dc]" },
+  pdf_ready: { label: "PDF prêt", cls: "bg-[#e7f4ec] text-[#1f7a44] border-[#2f855a]/45" },
 };
 
 /** How the broker was resolved, shown as a secondary badge. */
@@ -84,7 +92,44 @@ function SubmissionRow({
           {submission.formType ?? "Formulaire"}
         </span>
         <Badge label={match.label} cls={match.cls} />
+        {submission.reviewStatus && REVIEW_STATUS[submission.reviewStatus] && (
+          <Badge {...REVIEW_STATUS[submission.reviewStatus]} />
+        )}
         <Badge label={status.label} cls={status.cls} />
+        {submission.hasReview && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(
+                `/courtiers/${slug}/formulaires/${submission.id}/review`,
+                "_blank",
+                "noopener,noreferrer",
+              );
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs font-medium text-ink-soft transition-colors hover:bg-paper"
+          >
+            <PencilLine className="size-3.5" />
+            Relecture
+          </button>
+        )}
+        {submission.pdfRef && /^(?:https?:\/\/|\/)/i.test(submission.pdfRef) && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Only open an http(s) URL or a same-origin path — guards against a
+              // `javascript:` URI executing in this origin if pdfRef is ever tainted.
+              if (submission.pdfRef && /^(?:https?:\/\/|\/)/i.test(submission.pdfRef)) {
+                window.open(submission.pdfRef, "_blank", "noopener,noreferrer");
+              }
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-xs font-medium text-ink-soft transition-colors hover:bg-paper"
+          >
+            <FileDown className="size-3.5" />
+            PDF
+          </button>
+        )}
         {submission.status === "failed" && (
           <button
             type="button"

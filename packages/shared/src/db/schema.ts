@@ -306,12 +306,34 @@ export const formSubmissions = pgTable(
     submittedAt: timestamp('submitted_at', { withTimezone: true }),
     /** How the broker was resolved: 'email' | 'domain' | 'name' | 'created' | 'manual'. */
     matchMethod: text('match_method').notNull(),
-    /** Processing lifecycle: 'received' | 'triggered' | 'failed' | 'done'. */
+    /** Processing lifecycle: 'received' | 'triggered' | 'failed' | 'done' | 'error'. */
     status: text('status').default('received').notNull(),
     /** n8n execution id returned when the workflow was triggered, if any. */
     n8nExecutionId: text('n8n_execution_id'),
     /** Untouched Fillout webhook body, kept as a recovery/audit safety net. */
     rawPayload: jsonb('raw_payload').$type<unknown>(),
+    /** Result payload posted back by n8n when the workflow finished (callback). */
+    n8nResult: jsonb('n8n_result').$type<unknown>(),
+    /** When n8n reported the workflow finished (callback timestamp). */
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    /** Editable review HTML rendered by the n8n diagnostic workflow. */
+    reviewHtml: text('review_html'),
+    /** Officer's latest corrections (the `edits` object from the editor). */
+    reviewEdits: jsonb('review_edits').$type<unknown>(),
+    /** Review lifecycle: 'pending' | 'edited' | 'pdf_requested' | 'pdf_ready'. */
+    reviewStatus: text('review_status'),
+    /**
+     * URL the "PDF" button points to. Temporarily a BrokerComply route serving
+     * the stored PDF; will become the broker's SharePoint URL once the doc-sync
+     * subsystem is merged into this branch and BrokerComply uploads it there.
+     */
+    pdfRef: text('pdf_ref'),
+    /**
+     * Base64-encoded PDF returned by the n8n PDF workflow, stored temporarily
+     * here. TEMPORARY: replaced by a SharePoint upload after the doc-sync merge,
+     * at which point this column is dropped. n8n never touches SharePoint.
+     */
+    pdfBase64: text('pdf_base64'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [

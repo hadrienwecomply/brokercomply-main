@@ -32,6 +32,16 @@ export interface FormSubmissionView {
   submittedAt: string | null;
   createdAt: string;
   n8nExecutionId: string | null;
+  /** Result posted back by n8n on completion, if any. */
+  n8nResult: unknown;
+  /** When n8n reported the workflow finished, if any. */
+  completedAt: string | null;
+  /** True once the diagnostic review HTML is available to edit. */
+  hasReview: boolean;
+  /** Review lifecycle: 'pending' | 'edited' | 'pdf_requested' | 'pdf_ready' | null. */
+  reviewStatus: string | null;
+  /** SharePoint reference of the generated PDF, if any. */
+  pdfRef: string | null;
   fields: Array<{ questionId: string; name: string | null; type: string | null; value: unknown }>;
 }
 
@@ -203,6 +213,193 @@ export async function ingestFilloutSubmission(
   };
 }
 
+export interface N8nCallbackInput {
+  /** Our DB submission id, echoed back by n8n from the trigger payload. */
+  submissionId: string;
+  /**
+   * Discriminates the callback so one route serves every n8n workflow:
+   *  - 'review' → the diagnostic workflow returns the editable review HTML
+   *  - 'pdf'    → the PDF workflow returns the generated document (P5)
+   *  - omitted  → a generic 'done' result stored in n8n_result
+   */
+  kind?: string | null;
+  /** Workflow outcome reported by n8n: 'done' (default) | 'error'. */
+  status?: string | null;
+  /** Rendered review HTML (kind='review'). */
+  html?: string | null;
+  /** Base64-encoded PDF returned by the PDF workflow (kind='pdf'). */
+  pdfBase64?: string | null;
+  /** Arbitrary result payload to persist (jsonb). */
+  result?: unknown;
+  /** Error message when the workflow failed. */
+  error?: string | null;
+}
+
+export interface N8nCallbackResult {
+  found: boolean;
+  status?: string;
+}
+
+/**
+ * Record an async result posted back by n8n once a workflow finished. Looks the
+ * submission up by our `submissionId` (the correlation key we sent in the
+ * trigger payload) and applies the right patch depending on `kind`. Returns
+ * `found: false` for an unknown submission so the caller can answer 404.
+ */
+export async function recordN8nCallback(input: N8nCallbackInput): Promise<N8nCallbackResult> {
+  const db = getDb();
+  const isError = input.status === "error";
+
+  let patch: Parameters<typeof updateSubmissionStatus>[2];
+  if (input.kind === "review") {
+    // Diagnostic workflow finished → store the editable HTML, awaiting officer review.
+    patch = {
+      status: isError ? "error" : "done",
+      reviewStatus: isError ? null : "pending",
+      reviewHtml: input.html ?? undefined,
+      n8nResult: input.result ?? null,
+      completedAt: new Date(),
+    };
+  } else if (input.kind === "pdf") {
+    // PDF workflow finished. n8n returns the PDF as base64 and never touches
+    // SharePoint. We store it temporarily and point the "PDF" button at a
+    // BrokerComply route. TODO(doc-sync): once the SharePoint subsystem is
+    // merged here, upload the PDF to the broker's folder and set pdfRef to the
+    // SharePoint URL instead (then drop the pdf_base64 column).
+    patch = isError
+      ? { reviewStatus: "edited", n8nResult: input.result ?? null, completedAt: new Date() }
+      : {
+          reviewStatus: "pdf_ready",
+          pdfBase64: input.pdfBase64 ?? undefined,
+          pdfRef: input.pdfBase64 ? `/api/reviews/${input.submissionId}/pdf/file` : undefined,
+          n8nResult: input.result ?? null,
+          completedAt: new Date(),
+        };
+  } else {
+    patch = {
+      status: isError ? "error" : "done",
+      n8nResult: input.result ?? (input.error ? { error: input.error } : null),
+      completedAt: new Date(),
+    };
+  }
+
+  const row = await updateSubmissionStatus({ db }, input.submissionId, patch);
+  if (!row) return { found: false };
+
+  const broker = await getBrokerById({ db }, row.brokerId);
+  if (broker) revalidatePath(`/courtiers/${broker.broker.slug}`);
+  return { found: true, status: patch.status ?? row.status };
+}
+
+export interface SubmissionReview {
+  html: string;
+  /** Officer's saved corrections, replayed by the editor via cfg.initialEdits. */
+  edits: unknown;
+  brokerSlug: string;
+}
+
+/** Load a submission's editable review HTML + saved edits (null if none yet). */
+export async function getSubmissionReview(submissionId: string): Promise<SubmissionReview | null> {
+  const db = getDb();
+  const existing = await getSubmissionById({ db }, submissionId);
+  if (!existing || existing.submission.reviewHtml == null) return null;
+  const broker = await getBrokerById({ db }, existing.submission.brokerId);
+  return {
+    html: existing.submission.reviewHtml,
+    edits: existing.submission.reviewEdits ?? null,
+    brokerSlug: broker?.broker.slug ?? "",
+  };
+}
+
+export interface SubmissionPdf {
+  base64: string;
+  filename: string;
+}
+
+/** Load the temporarily-stored PDF for a submission (null if none yet). */
+export async function getSubmissionPdf(submissionId: string): Promise<SubmissionPdf | null> {
+  const db = getDb();
+  const existing = await getSubmissionById({ db }, submissionId);
+  if (!existing || existing.submission.pdfBase64 == null) return null;
+  const broker = await getBrokerById({ db }, existing.submission.brokerId);
+  const slug = broker?.broker.slug ?? "rapport";
+  return { base64: existing.submission.pdfBase64, filename: `rapport-${slug}.pdf` };
+}
+
+/** Persist the officer's edits without generating a PDF ("Enregistrer"). */
+export async function saveReviewEdits(submissionId: string, edits: unknown): Promise<boolean> {
+  const db = getDb();
+  const row = await updateSubmissionStatus({ db }, submissionId, {
+    reviewEdits: edits,
+    reviewStatus: "edited",
+  });
+  if (!row) return false;
+  const broker = await getBrokerById({ db }, row.brokerId);
+  if (broker) revalidatePath(`/courtiers/${broker.broker.slug}`);
+  return true;
+}
+
+export interface RequestPdfResult {
+  ok: boolean;
+  found: boolean;
+  error?: string;
+}
+
+/**
+ * Save the latest edits and trigger the n8n PDF workflow ("Générer le PDF").
+ * The workflow renders the PDF, uploads it to the broker's SharePoint folder,
+ * then posts the reference back via the n8n callback (kind='pdf'). On any
+ * trigger failure the status rolls back to 'edited' so the officer can retry.
+ */
+export async function requestPdf(submissionId: string, edits: unknown): Promise<RequestPdfResult> {
+  const db = getDb();
+  const row = await updateSubmissionStatus({ db }, submissionId, {
+    reviewEdits: edits,
+    reviewStatus: "pdf_requested",
+  });
+  if (!row) return { ok: false, found: false };
+
+  const broker = await getBrokerById({ db }, row.brokerId);
+  const brokerPath = broker ? `/courtiers/${broker.broker.slug}` : null;
+  if (brokerPath) revalidatePath(brokerPath);
+
+  // Revert the optimistic 'pdf_requested' and refresh the UI so the badge clears.
+  const rollback = async (error: string): Promise<RequestPdfResult> => {
+    await updateSubmissionStatus({ db }, submissionId, { reviewStatus: "edited" });
+    if (brokerPath) revalidatePath(brokerPath);
+    return { ok: false, found: true, error };
+  };
+
+  const url = config.N8N_PDF_WEBHOOK_URL;
+  if (!url) return rollback("N8N_PDF_WEBHOOK_URL non configuré");
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(config.N8N_WEBHOOK_SECRET ? { "x-n8n-secret": config.N8N_WEBHOOK_SECRET } : {}),
+      },
+      body: JSON.stringify({
+        submissionId,
+        broker: broker
+          ? { id: broker.broker.id, slug: broker.broker.slug, societe: broker.broker.societe }
+          : null,
+        edits,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) return rollback(`n8n a répondu ${res.status}`);
+    return { ok: true, found: true };
+  } catch (e) {
+    return rollback(e instanceof Error ? e.message : "Échec de l'appel n8n");
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Re-fire the n8n workflow for a failed submission (UI "Rejouer" action). */
 export async function retrySubmissionTrigger(submissionId: string): Promise<string> {
   const db = getDb();
@@ -246,6 +443,11 @@ export async function listFormSubmissions(brokerDbId: string): Promise<FormSubmi
     submittedAt: submission.submittedAt ? submission.submittedAt.toISOString() : null,
     createdAt: submission.createdAt.toISOString(),
     n8nExecutionId: submission.n8nExecutionId,
+    n8nResult: submission.n8nResult,
+    completedAt: submission.completedAt ? submission.completedAt.toISOString() : null,
+    hasReview: submission.reviewHtml != null,
+    reviewStatus: submission.reviewStatus,
+    pdfRef: submission.pdfRef,
     fields: fields.map((f) => ({
       questionId: f.questionId,
       name: f.name,

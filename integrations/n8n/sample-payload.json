@@ -1,0 +1,1128 @@
+{
+  "_meta": {
+    "title": "BrokerComply → n8n — contrat de webhook (handoff)",
+    "description": "Payload que BrokerComply POST sur le nœud Webhook n8n quand un formulaire Fillout est soumis et rattaché à un courtier. Construis le nœud Webhook + le mapping à partir de l'exemple ci-dessous.",
+    "source": "packages/shared/src/integrations/n8n.ts (buildN8nPayload) + integrations/n8n/README.md"
+  },
+  "contract": {
+    "method": "POST",
+    "url": "configuré côté BrokerComply via N8N_WEBHOOK_URL (ou n8nWebhookUrl par formulaire). En local: http://localhost:5678/webhook/<path-de-ton-noeud>",
+    "headers": {
+      "content-type": "application/json",
+      "x-n8n-secret": "<N8N_WEBHOOK_SECRET partagé — à valider en Header Auth sur le nœud Webhook>"
+    },
+    "auth": "Nœud Webhook n8n → Authentication: Header Auth, nom d'en-tête 'x-n8n-secret', valeur = N8N_WEBHOOK_SECRET.",
+    "responseExpected": "N'importe quelle réponse 2xx suffit → BrokerComply marque la soumission 'triggered'. Le mode 'Respond immediately' par défaut de n8n convient. Si tu renvoies un body JSON avec executionId/id, il est stocké côté BrokerComply (optionnel). Pas de callback inverse attendu (hors scope v1).",
+    "timeoutMs": 8000
+  },
+  "callbackContract": {
+    "_meta": "Retour asynchrone n8n → BrokerComply. Quand le workflow finit, son DERNIER nœud (HTTP Request) POST le résultat ici pour faire passer la soumission de 'triggered' à 'done'/'error'. Optionnel : ne le configure que si tu veux remonter un résultat.",
+    "method": "POST",
+    "url": "<BrokerComply>/api/webhooks/n8n/<N8N_CALLBACK_TOKEN>  (en local: http://localhost:3002/api/webhooks/n8n/<token>)",
+    "headers": {
+      "content-type": "application/json",
+      "x-callback-secret": "<N8N_CALLBACK_SECRET>"
+    },
+    "auth": "Token non devinable dans l'URL (sinon 404) + header X-Callback-Secret (sinon 401). Mêmes 2 secrets partagés que le webhook entrant Fillout, mais propres au callback.",
+    "body": {
+      "submissionId": "{{ $json.submissionId }}  ← RÉÉMETTRE le submissionId reçu dans le payload de trigger (clé de corrélation)",
+      "status": "done | error",
+      "result": { "exemple": "payload libre, stocké tel quel en jsonb dans form_submissions.n8n_result" },
+      "error": "string optionnel quand status = error"
+    },
+    "effect": "submissionId connu → status 'done' (ou 'error'), result persisté, completed_at horodaté, réponse 200 {ok:true,status}. submissionId inconnu → 404.",
+    "note": "Pas de configuration de ce nœud = pas de callback : le trigger seul laisse la soumission en 'triggered'. Le submissionId est l'id DB BrokerComply (champ 'submissionId' du trigger), PAS le filloutSubmissionId."
+  },
+  "reviewPdfWorkflow": {
+    "_meta": "Relecture éditable + génération PDF. Deux workflows, tous deux branchés sur le callback #1 (ci-dessus) via le champ 'kind'.",
+    "1_diagnostic_renvoie_html": {
+      "quand": "Le workflow diagnostic, après analyse, REND le HTML éditable (comme stroh-review-full.html, peuplé avec les vraies données) et le renvoie à BrokerComply.",
+      "callback": {
+        "method": "POST",
+        "url": "<BrokerComply>/api/webhooks/n8n/<N8N_CALLBACK_TOKEN>",
+        "headers": { "x-callback-secret": "<N8N_CALLBACK_SECRET>" },
+        "body": {
+          "submissionId": "{{ $json.submissionId }}  ← id reçu dans le trigger",
+          "kind": "review",
+          "status": "done | error",
+          "html": "<!DOCTYPE html>… le HTML complet rendu (string)"
+        }
+      },
+      "effet": "BrokerComply stocke le HTML, passe review_status='pending', et affiche le bouton « Relecture » dans l'onglet Formulaires."
+    },
+    "2_template_html_exigences": {
+      "_meta": "3 ajustements OBLIGATOIRES dans le template HTML que tu rends, pour qu'il dialogue avec BrokerComply au lieu de poster direct vers n8n.",
+      "cfg_vide": "Laisser <script id=\"__cfg\">{}</script> VIDE — BrokerComply le remplace au service avec { token, saveUrl, submitUrl, pdfUrl, initialEdits, + tes champs format/metaFile préservés }.",
+      "rejouer_edits": "Au chargement, dans l'IIFE: if (cfg.initialEdits) applyEdits(cfg.initialEdits); — pour réafficher les corrections déjà sauvegardées (applyEdits existe déjà).",
+      "bouton_enregistrer": "Ajouter un bouton « Enregistrer » qui POST { token: cfg.token, edits: collectEdits() } vers cfg.saveUrl (sauvegarde serveur, sans PDF). Le bouton « Générer le PDF » existant doit POST vers cfg.submitUrl (déjà le cas)."
+    },
+    "3_workflow_pdf": {
+      "trigger": "BrokerComply POST sur N8N_PDF_WEBHOOK_URL quand l'officer clique « Générer le PDF ».",
+      "trigger_body": { "submissionId": "string (DB)", "broker": { "id": "…", "slug": "…", "societe": "…" }, "edits": "objet edits (collectEdits) corrigé" },
+      "trigger_headers": { "x-n8n-secret": "<N8N_WEBHOOK_SECRET>" },
+      "a_faire_cote_n8n": "Rendre le PDF depuis 'edits' (Gotenberg/Chromium) puis le renvoyer en BASE64 via le callback #1. NE PAS toucher SharePoint — c'est BrokerComply qui gère le stockage.",
+      "callback_pdf": {
+        "method": "POST",
+        "url": "<BrokerComply>/api/webhooks/n8n/<N8N_CALLBACK_TOKEN>",
+        "headers": { "x-callback-secret": "<N8N_CALLBACK_SECRET>" },
+        "body": {
+          "submissionId": "{{ $json.submissionId }}",
+          "kind": "pdf",
+          "status": "done | error",
+          "pdfBase64": "le PDF encodé en base64 (string)"
+        }
+      },
+      "effet": "BrokerComply stocke le PDF (temporairement en DB), passe review_status='pdf_ready', et affiche un bouton « PDF » qui sert le fichier depuis l'app. NOTE: l'envoi vers le SharePoint du courtier sera branché côté BrokerComply après le merge du sous-système doc-sync — n8n n'y touche jamais."
+    }
+  },
+  "schema": {
+    "submissionId": "string — id interne BrokerComply (DB), PAS l'id Fillout",
+    "filloutSubmissionId": "string — id Fillout d'origine",
+    "formType": "string|null — label du form-template (route par type de formulaire)",
+    "matchMethod": "'email' | 'domain' | 'name' | 'created' — comment le courtier a été résolu ('created' = auto-créé, à revoir)",
+    "broker": {
+      "id": "string (uuid DB)",
+      "slug": "string (slug normalisé)",
+      "societe": "string"
+    },
+    "answers": "Array<{ questionId:string, name:string|null, type:string|null, value: string|string[]|null }> — TOUTES les questions du formulaire"
+  },
+  "examplePayload": {
+    "submissionId": "1dda7b3e-2b77-4d84-9895-e1e46926a497",
+    "filloutSubmissionId": "76a604c6-4326-4b56-a200-5cef1e6f52f7",
+    "formType": "Diagnostic de conformité",
+    "matchMethod": "email",
+    "broker": {
+      "id": "f66d53a3-1f05-49d0-84d0-6b82fde02f3d",
+      "slug": "cabinet-durand",
+      "societe": "Cabinet Durand"
+    },
+    "answers": [
+      {
+        "questionId": "5xrk",
+        "name": "Nom de votre bureau",
+        "type": "ShortAnswer",
+        "value": "Scomm Paramedic Insurance"
+      },
+      {
+        "questionId": "3kzV",
+        "name": "Email de contact",
+        "type": "EmailInput",
+        "value": null
+      },
+      {
+        "questionId": "5MPv",
+        "name": "Combien de personnes travaillent dans votre bureau ?",
+        "type": "ShortAnswer",
+        "value": "5"
+      },
+      {
+        "questionId": "ai59",
+        "name": "Nombre de PCP",
+        "type": "ShortAnswer",
+        "value": "1"
+      },
+      {
+        "questionId": "f1hd",
+        "name": "Nombre de RD",
+        "type": "ShortAnswer",
+        "value": "1"
+      },
+      {
+        "questionId": "svg9",
+        "name": "Avez-vous désigné un haut dirigeant responsable au niveau AML ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "nH9q",
+        "name": "Avez-vous désigné un responsable AML (AMLCO) ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "wSSj",
+        "name": "Avez-vous désigné un responsable RGPD ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "fSW3",
+        "name": "Avez-vous des sous-agents sous votre responsabilité ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "mCUN",
+        "name": "Combien de sous-agents ?",
+        "type": "MultipleChoice",
+        "value": "1-3"
+      },
+      {
+        "questionId": "8V9U",
+        "name": "Effectuez-vous un contrôle sur vos sous-agents ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "un4g",
+        "name": "Avec combien de compagnies travaillez-vous actuellement ?",
+        "type": "MultipleChoice",
+        "value": "6 - 10 "
+      },
+      {
+        "questionId": "vDmy",
+        "name": "Comment choisissez-vous les compagnies ?",
+        "type": "MultipleChoice",
+        "value": "En fonction des produits disponibles"
+      },
+      {
+        "questionId": "m3fM",
+        "name": "Disposez-vous d'un programme de revue périodique des partenariats avec les compagnies pour vous assurer que leurs produits restent adaptés à vos clients ?",
+        "type": "MultipleChoice",
+        "value": "Partiellement"
+      },
+      {
+        "questionId": "pM2i",
+        "name": "Les relations avec les compagnies influencent-elles la recommandation de produits à vos clients ?",
+        "type": "MultipleChoice",
+        "value": "Partiellement"
+      },
+      {
+        "questionId": "uesL",
+        "name": "Mettez-vous régulièrement à jour votre dossier d’inscription FSMA pour refléter les changements de votre organisation ou l’évolution de vos activités ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais pas toujours immédiatement"
+      },
+      {
+        "questionId": "vZYL",
+        "name": "Conservez-vous un enregistrement de toutes les communications avec la FSMA, y compris les documents officiels soumis ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "3vkw",
+        "name": "Avez-vous déjà fait l'objet d'une inspection de la FSMA",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "mY8F",
+        "name": "Merci de préciser l'objet de l'inspection",
+        "type": "ShortAnswer",
+        "value": null
+      },
+      {
+        "questionId": "sFre",
+        "name": "Si demain, vous faites face à une inspection FSMA, vous vous sentez..",
+        "type": "MultipleChoice",
+        "value": "Moyennement prêt, nous avons des points à améliorer "
+      },
+      {
+        "questionId": "vCjm",
+        "name": "Les personnes impliqués dans la distribution d'assurance ou le responsable AML sont-ils en ordre de formation ?",
+        "type": "MultipleChoice",
+        "value": "Oui "
+      },
+      {
+        "questionId": "e9UX",
+        "name": "Possédez-vous les preuves de suivi de ces formations ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "eNWs",
+        "name": "Votre dossier contient-il des preuves attestant que ces personnes respectent les conditions de connaissances professionnelles et d'honorabilité exigées ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "r9Gq",
+        "name": "Combien de nouveaux contrats avez-vous en moyenne par mois ?",
+        "type": "MultipleChoice",
+        "value": "10-50"
+      },
+      {
+        "questionId": "9UY4",
+        "name": "Nombre de clients actifs",
+        "type": "MultipleChoice",
+        "value": "Plus de 500"
+      },
+      {
+        "questionId": "6ry5",
+        "name": "Dans quelle proportion vos contrats concernent des clients non résidents belges",
+        "type": "MultipleChoice",
+        "value": "Très rarement (<5%)"
+      },
+      {
+        "questionId": "rutK",
+        "name": "Comment se répartissent vos clients entre personnes physiques et personnes morales ?",
+        "type": "MultipleChoice",
+        "value": "75% personnes physiques - 25% personnes morales"
+      },
+      {
+        "questionId": "bAEy",
+        "name": "Quels type de produits d'assurance distribuez-vous ?",
+        "type": "Checkboxes",
+        "value": [
+          "Assurance-vie "
+        ]
+      },
+      {
+        "questionId": "aoeR",
+        "name": "Comment se répartit votre portefeuille entre produits vie et non-vie ?",
+        "type": "Checkboxes",
+        "value": null
+      },
+      {
+        "questionId": "6sZn",
+        "name": "Parmi l'assurance non-vie....",
+        "type": "Checkboxes",
+        "value": null
+      },
+      {
+        "questionId": "3SRt",
+        "name": "Parmi l'assurance-vie....",
+        "type": "Checkboxes",
+        "value": [
+          "Assurance-vie à taux garanti (branche 21) ",
+          "Assurance-vie liée à des fonds d'investissement (branche 23) ",
+          "Assurance groupe/pension complémentaire (branche 26, EIP, PLCI, etc.) "
+        ]
+      },
+      {
+        "questionId": "fDaM",
+        "name": "Avez-vous récemment repris un portefeuille d'assurance ou prévoyez-vous de le faire ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "biu4",
+        "name": "Avez-vous mis en place (prévoyez-vous de mettre en place) un contrôle spécifique à la reprise d'intermédiation ?",
+        "type": "MultipleChoice",
+        "value": null
+      },
+      {
+        "questionId": "j8jw",
+        "name": "Exercez-vous des activités dans d'autres pays européens sous le régime de la libre prestation de services (LPS) ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "7pD2",
+        "name": "Si vous avez répondu oui, dans quel pays ?",
+        "type": "ShortAnswer",
+        "value": null
+      },
+      {
+        "questionId": "sKT9",
+        "name": "Avez-vous procédé à une Évaluation Globale des Risques AML ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais elle n'est pas revue régulièrement"
+      },
+      {
+        "questionId": "7bG1",
+        "name": "Disposez-vous d'une politique AML écrite, mise à jour et approuvée par la direction ?",
+        "type": "MultipleChoice",
+        "value": "Non, mais nous envisageons de la mettre en place"
+      },
+      {
+        "questionId": "uARY",
+        "name": "Quels aspects sont couverts par vos politiques et procédures LBC/FT ?",
+        "type": "Checkboxes",
+        "value": [
+          "Évaluation Globale des Risques ",
+          "Formation et sensibilisation ",
+          "Critères d'acceptation des clients ",
+          "Identification des clients et catégorisation en profil de risque ",
+          "Analyse des faits et opérations atypiques",
+          "Déclaration de soupçons à la CTIF "
+        ]
+      },
+      {
+        "questionId": "61Hv",
+        "name": "Dans quelle mesure documentez-vous vos activités de contrôle LBC/FT (vérification d'identité, analyse des risques, etc.) ?",
+        "type": "MultipleChoice",
+        "value": "Très bien documentées"
+      },
+      {
+        "questionId": "vy4m",
+        "name": "Disposez-vous d'un plan d'action annuel en matière LBC/FT ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "eYh4",
+        "name": "Remplissez-vous bien, en temps et en heure, les enquêtes FiMIS de la FSMA ?",
+        "type": "MultipleChoice",
+        "value": "Oui, chaque année dans les délais"
+      },
+      {
+        "questionId": "9JH9",
+        "name": "Le rapport annuel d'activité de l'AMLCO est-il annuellement rédigé et présenté à la direction effective ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "nsas",
+        "name": "Ce rapport a-t-il été établi au regard des exigences de la communication FSMA 2020_12 relatif au rapport d'activité annuel de l'AMLCO?",
+        "type": "MultipleChoice",
+        "value": "Pas à notre connaissance"
+      },
+      {
+        "questionId": "xg8n",
+        "name": "Merci d'uploader vos documents (1)",
+        "type": "FileUpload",
+        "value": null
+      },
+      {
+        "questionId": "rmKi",
+        "name": "Effectuez-vous systématiquement l'identification et la vérification de l'identité de vos clients ?",
+        "type": "MultipleChoice",
+        "value": "Oui, pour tous les clients au début de la relation"
+      },
+      {
+        "questionId": "5rvs",
+        "name": "Identifiez-vous ces personnes ?",
+        "type": "Checkboxes",
+        "value": [
+          "Toutes les personnes citées ci-dessous, selon le cas ",
+          "Le client avec qui vous nouez une relation d'affaires "
+        ]
+      },
+      {
+        "questionId": "eqLW",
+        "name": "Avez-vous distingués dans vos procédures les cas de clients à haut risque ?",
+        "type": "MultipleChoice",
+        "value": "Seulement pour les PEPs"
+      },
+      {
+        "questionId": "af6o",
+        "name": "Appliquez-vous des mesures de vigilance renforcées pour les clients à haut risque ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "qePA",
+        "name": "Vos clients se voient-ils attribuer un profil de risque ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais pas systématiquement "
+      },
+      {
+        "questionId": "qAnL",
+        "name": "Combien de profil de risque avez-vous défini ?",
+        "type": "MultipleChoice",
+        "value": "3 : faible - standard - élevé "
+      },
+      {
+        "questionId": "kFTR",
+        "name": "Tenez-vous compte des clignotants sectoriels ou d'une liste de critères pour attribuer un profil de risque ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais nous les avons adaptés "
+      },
+      {
+        "questionId": "i2V6",
+        "name": "Carte d'identité (Collectez-vous ces documents à propos de vos clients qui sont des personnes physiques ?)",
+        "type": "MultipleChoice",
+        "value": "Toujours"
+      },
+      {
+        "questionId": "pzx5",
+        "name": "Preuve de domicile (Collectez-vous ces documents à propos de vos clients qui sont des personnes physiques ?)",
+        "type": "MultipleChoice",
+        "value": "Souvent"
+      },
+      {
+        "questionId": "dMcU",
+        "name": "Origine des fonds (Collectez-vous ces documents à propos de vos clients qui sont des personnes physiques ?)",
+        "type": "MultipleChoice",
+        "value": "Toujours"
+      },
+      {
+        "questionId": "cM7C",
+        "name": "Justificatifs de revenus (Collectez-vous ces documents à propos de vos clients qui sont des personnes physiques ?)",
+        "type": "MultipleChoice",
+        "value": "Toujours"
+      },
+      {
+        "questionId": "ctbU",
+        "name": "Déclarations fiscales (Collectez-vous ces documents à propos de vos clients qui sont des personnes physiques ?)",
+        "type": "MultipleChoice",
+        "value": "Souvent"
+      },
+      {
+        "questionId": "eu7z",
+        "name": "Avez-vous actuellement ou êtes-vous susceptible d'établir des relations d'affaires avec des personnes morales ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "gtvc",
+        "name": "Statuts (Collectez-vous ces documents à propos de vos clients qui sont des personnes morales ?)",
+        "type": "MultipleChoice",
+        "value": "Toujours"
+      },
+      {
+        "questionId": "afRV",
+        "name": "Liste des administrateurs et publication de leurs nomination (Collectez-vous ces documents à propos de vos clients qui sont des personnes morales ?)",
+        "type": "MultipleChoice",
+        "value": "Toujours"
+      },
+      {
+        "questionId": "fzVG",
+        "name": "Pouvoirs de représentation de la personne moral (Collectez-vous ces documents à propos de vos clients qui sont des personnes morales ?)",
+        "type": "MultipleChoice",
+        "value": "Toujours"
+      },
+      {
+        "questionId": "tnrv",
+        "name": "Liste des bénéficiaires effectifs et extrait du registre UBO (Collectez-vous ces documents à propos de vos clients qui sont des personnes morales ?)",
+        "type": "MultipleChoice",
+        "value": "Toujours"
+      },
+      {
+        "questionId": "7b49",
+        "name": "Disposez-vous d'un document de type \"KYC\" interne ou vous fondez-vous sur le questionnaire de la compagnie d'assurance ?",
+        "type": "MultipleChoice",
+        "value": "Nous nous fondons sur celui de la compagnie "
+      },
+      {
+        "questionId": "8d9b",
+        "name": "Identifiez-vous l'origine des fonds dans les opérations de vos clients ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais seulement au-delà d'un seuil financier"
+      },
+      {
+        "questionId": "pYa7",
+        "name": "Faites-vous face à des demandes des compagnies d'assurance concernant l'origine des fonds de certains de vos clients ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "iZEd",
+        "name": "Avez-vous mise en place des mesures pour y répondre ?",
+        "type": "MultipleChoice",
+        "value": null
+      },
+      {
+        "questionId": "dm6M",
+        "name": "Effectuez-vous des démarches (ex. demande de document) en cas d'évènement au contrat, par exemple un rachat ou un versement complémentaire ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais pas systématiquement "
+      },
+      {
+        "questionId": "wFXe",
+        "name": "Quel type de démarches effectuez-vous ?",
+        "type": "LongAnswer",
+        "value": null
+      },
+      {
+        "questionId": "u6wF",
+        "name": "Mettez-vous à jour les informations de vos clients ?",
+        "type": "MultipleChoice",
+        "value": "Oui, en cas d'évènement au contrat "
+      },
+      {
+        "questionId": "cVtr",
+        "name": "Sur une échelle de 1 à 10, à combien estimez-vous la complétude de vos dossiers clients (carte d'identité, informations à jour, fiche KYC, etc.) ?",
+        "type": "OpinionScale",
+        "value": 8
+      },
+      {
+        "questionId": "sufA",
+        "name": "Disposez-vous d’une liste des pays à risque, et assurez-vous sa mise à jour régulière ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "rxcs",
+        "name": "Votre bureau est-il en mesure de vérifier si un client fait l'objet d'une sanction financière ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "eCEZ",
+        "name": "Si vous constatez qu'un de vos clients fait l'objet d'une sanction financière, vous...",
+        "type": "MultipleChoice",
+        "value": "Contactez immédiatement la CTIF "
+      },
+      {
+        "questionId": "9A7K",
+        "name": "Avez-vous mis en place des directives pour analyser les opérations atypiques de vos clients ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "ws2r",
+        "name": "Ces directives définissent-elles ce qu'est une opération atypique et se fondent-elles sur les listes de scénarios d'opérations atypiques ?",
+        "type": "MultipleChoice",
+        "value": null
+      },
+      {
+        "questionId": "r4FM",
+        "name": "En cas d'opération atypique, vos procédures prévoient-elles l'établissement d'un rapport écrit ?",
+        "type": "MultipleChoice",
+        "value": null
+      },
+      {
+        "questionId": "fPnU",
+        "name": "Avez-vous mis en place des directives pour les déclarations de soupçons auprès de la CTIF ?",
+        "type": "MultipleChoice",
+        "value": "Partiellement"
+      },
+      {
+        "questionId": "izuv",
+        "name": "Avez-vous déjà fait des déclarations de soupçon à la CTIF ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "nizz",
+        "name": "Êtes-vous enregistré sur la plateforme goAML de la CTIF ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "grWJ",
+        "name": "Vos politiques et procédures AML sont-elles accessibles à tout le personnel ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "ijqP",
+        "name": "Vos collaborateurs (y compris vos sous-agents, le cas échéant) sont-ils formés pour identifier vos clients, détecter et signaler les activités suspectes ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais la formation n'est pas systématique"
+      },
+      {
+        "questionId": "sE8e",
+        "name": "Estimez-vous que vos collaborateurs (y compris vos agents, le cas échéant) comprennent et appliquent correctement vos procédures AML ?",
+        "type": "MultipleChoice",
+        "value": "Très bien "
+      },
+      {
+        "questionId": "f3bF",
+        "name": "Conservez-vous les documents relatifs aux à l'identification des clients et à leurs opérations pendant la durée légale de 10 ans ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "b4No",
+        "name": "Avez-vous défini le point de départ de la durée légale de conservation dans vos politiques et procédures AML ?",
+        "type": "MultipleChoice",
+        "value": "Pas formellement"
+      },
+      {
+        "questionId": "p1QN",
+        "name": "Vos politiques et procédures précisent-elles les informations qui doivent-être conservées (ex. document d'identité) ?",
+        "type": "MultipleChoice",
+        "value": "Pas formellement"
+      },
+      {
+        "questionId": "moTa",
+        "name": "Avez-vous mis en place des directives écrites pour garantir un comportement honnête, équitable et professionnel de la part de tous les collaborateurs ?",
+        "type": "MultipleChoice",
+        "value": "Non, il n'existe aucune directive "
+      },
+      {
+        "questionId": "o4mc",
+        "name": "Disposez-vous des documents portant sur les thèmes suivants ?",
+        "type": "Checkboxes",
+        "value": [
+          "Fiche client"
+        ]
+      },
+      {
+        "questionId": "f2M7",
+        "name": "Ces documents sont-ils transmis systématiquement à vos clients ?",
+        "type": "MultipleChoice",
+        "value": "Oui "
+      },
+      {
+        "questionId": "oqq6",
+        "name": "Dans vos communications, êtes-vous vigilant à ce que toutes les informations fournies aux clients soient correctes, claires et non trompeuses ?",
+        "type": "MultipleChoice",
+        "value": "Oui, un contrôle est effectué"
+      },
+      {
+        "questionId": "bt2h",
+        "name": "Votre bureau occupe 3 employés ou plus et fournit-il des conseils relatifs à des produits d'investissement fondés sur l'assurance (4ème pilier) ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "dEsa",
+        "name": "Avez-vous mis en place une politique en matière de durabilité ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "brvT",
+        "name": "Pour analyser l'acceptabilité d'un avantage non monétaires, tenez-vous compte du code de conduite du secteur des assurances relatif aux inducements ?",
+        "type": "MultipleChoice",
+        "value": "Pas à notre connaissance"
+      },
+      {
+        "questionId": "s6Hh",
+        "name": "Avez-vous mis en place des objectifs commerciaux ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "m8UZ",
+        "name": "Ces objectifs sont-ils fixés avec des conditions strictes ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "89dc",
+        "name": "En général, la rémunération de votre bureau en relation avec le contrat d'assurance est basée sur ..",
+        "type": "MultipleChoice",
+        "value": "Une rémunération comprise dans la prime "
+      },
+      {
+        "questionId": "tMsm",
+        "name": "Merci d'uploader vos documents",
+        "type": "FileUpload",
+        "value": null
+      },
+      {
+        "questionId": "eJiU",
+        "name": "Fournissez-vous des informations générales sur votre bureau (identité, adresse, services, etc.) aux clients avant la conclusion du contrat ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais de manière partielle ou irrégulière"
+      },
+      {
+        "questionId": "jLbd",
+        "name": "Fondez-vous vos conseils sur base d'une analyse impartiale et personnalisée ?",
+        "type": "MultipleChoice",
+        "value": "Oui "
+      },
+      {
+        "questionId": "4mpJ",
+        "name": "Les clients sont-ils informés sur la question de savoir si vos conseils sont fondés sur base d'une analyse impartiale ou non ?",
+        "type": "MultipleChoice",
+        "value": "Oui "
+      },
+      {
+        "questionId": "1n3k",
+        "name": "Communiquez-vous à votre client les noms et adresses des entreprises d'assurance avec lesquelles vous (pouvez) travailler ?",
+        "type": "MultipleChoice",
+        "value": "Oui, via notre site internet "
+      },
+      {
+        "questionId": "37y6",
+        "name": "En cas de conseil sur base d'une analyse impartiale, documentez-vous en quoi le conseil se fonde sur analyse impartiale ?",
+        "type": "MultipleChoice",
+        "value": "Partiellement"
+      },
+      {
+        "questionId": "8F7g",
+        "name": "Comment le documentez-vous ?",
+        "type": "LongAnswer",
+        "value": null
+      },
+      {
+        "questionId": "kgct",
+        "name": "Vos clients reçoivent-ils des informations précises sur les coûts et frais du contrat d’assurance ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais uniquement à la signature du contrat"
+      },
+      {
+        "questionId": "v4rJ",
+        "name": "Informez-vous les clients des frais de résiliation ou des coûts additionnels avant la signature du contrat ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais pas systématiquement"
+      },
+      {
+        "questionId": "j1cj",
+        "name": "Précisez-vous à vos client si vous fournissez un conseil ou non ?",
+        "type": "MultipleChoice",
+        "value": "Oui, c'est prévu dans notre documentation "
+      },
+      {
+        "questionId": "5TMr",
+        "name": "Informez-vous vos clients sur votre mode de rémunération ?",
+        "type": "MultipleChoice",
+        "value": "Oui, systématiquement pour chaque contrat "
+      },
+      {
+        "questionId": "tLKF",
+        "name": "Fournissez-vous à vos client un document d’information standardisé (KID, IPID, etc.) pour les produits d'assurance ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais sans application systématique"
+      },
+      {
+        "questionId": "5vcS",
+        "name": "Assurez-vous que les clients comprennent bien les risques associés aux produits d’assurance ?",
+        "type": "MultipleChoice",
+        "value": "Oui, avec explication détaillée des risques pour chaque client "
+      },
+      {
+        "questionId": "oBDV",
+        "name": "Informez-vous les clients en temps utile des changements significatifs dans les informations fournies initialement ?",
+        "type": "MultipleChoice",
+        "value": "Oui, et nous avons une procédure claire pour ces notifications"
+      },
+      {
+        "questionId": "qctE",
+        "name": "Disposez-vous d'une procédure standard pour mettre à jour les informations des clients ?",
+        "type": "MultipleChoice",
+        "value": "Nous le faisons, mais la procédure n'est pas documentée"
+      },
+      {
+        "questionId": "iMQp",
+        "name": "Analysez-vous systématiquement les exigences et besoins du client avant de proposer un contrat d’assurance ?",
+        "type": "MultipleChoice",
+        "value": "Oui, une analyse complète est réalisée"
+      },
+      {
+        "questionId": "2sCi",
+        "name": "Pour les assurances d'épargne et d'investissement, collectez-vous les informations suivantes :",
+        "type": "Checkboxes",
+        "value": [
+          "La connaissance du client en lien avec le produit ",
+          "L'expérience du client ",
+          "La situation financière (y compris la capacité à subir des pertes)",
+          "Les objectifs d'investissement (y compris la tolérance aux risques)  ",
+          "Les préférences en matière de durabilités"
+        ]
+      },
+      {
+        "questionId": "7WKu",
+        "name": "Comment collectez-vous ces informations ?",
+        "type": "MultipleChoice",
+        "value": "Via un questionnaire documenté et standardisé"
+      },
+      {
+        "questionId": "3Jyr",
+        "name": "Comment les informations sur les connaissances sont-elles collectées ?",
+        "type": "MultipleChoice",
+        "value": "Sur base d'une auto-évaluation ou d'une confirmation du client"
+      },
+      {
+        "questionId": "fbqT",
+        "name": "Distinguez-vous clairement les informations collectées dans vos différents questionnaires",
+        "type": "MultipleChoice",
+        "value": "Oui, nous veillons à ce que chaque section ait un objectif distinct"
+      },
+      {
+        "questionId": "c2p6",
+        "name": "Pour les assurances d'épargne et d'investissement, procédez-vous systématiquement à l'évaluation de l'adéquation et fournissez-vous au client une déclaration d'adéquation ?",
+        "type": "MultipleChoice",
+        "value": "Oui, pour chaque contrat  "
+      },
+      {
+        "questionId": "mpjY",
+        "name": "Cette déclaration d'adéquation explique-t-elle en quoi votre conseil est adéquat au regard de ses connaissances, expérience, situations financière et objectifs d'investissement spécifiques du client ?",
+        "type": "MultipleChoice",
+        "value": "Oui  "
+      },
+      {
+        "questionId": "1eiR",
+        "name": "Fournissez-vous à votre client une recommandation personnalisée expliquant pourquoi un produit correspondrait le mieux à ses exigences et besoins ?",
+        "type": "MultipleChoice",
+        "value": "Pas systématiquement"
+      },
+      {
+        "questionId": "7Ls5",
+        "name": "Proposez-vous à vos clients une analyse périodique de l'adéquation (par exemple, pour les assurances long terme liées à des fonds d'investissement) ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "uvSt",
+        "name": "Si vous proposez une évaluation périodique de l'adéquation, à quelle fréquence la réexaminez-vous ?",
+        "type": "MultipleChoice",
+        "value": "En cas d'évènement au contrat"
+      },
+      {
+        "questionId": "8DHr",
+        "name": "Disposez-vous d'une méthode pour suivre l’évolution des besoins du client sur la durée du contrat ?",
+        "type": "MultipleChoice",
+        "value": "Oui, via des entretiens réguliers pour réévaluer les besoins"
+      },
+      {
+        "questionId": "94iq",
+        "name": "Effectuez-vous à nouveau une évaluation d'adéquation en cas de recommandation de vente, de rachat ou de changement d'actifs sous-jacents ?",
+        "type": "MultipleChoice",
+        "value": "Oui, systématiquement "
+      },
+      {
+        "questionId": "4Yma",
+        "name": "Lorsqu'un produit est souscrit par plusieurs personnes, comment procédez-vous ?",
+        "type": "MultipleChoice",
+        "value": "Nous recueillons les informations auprès de tous les preneurs et retenons la situation la plus prudente  "
+      },
+      {
+        "questionId": "91t8",
+        "name": "Communiquez-vous à vos clients des informations à caractère publicitaires ?",
+        "type": "MultipleChoice",
+        "value": "Non"
+      },
+      {
+        "questionId": "vVKd",
+        "name": "Les informations publicitaires sont-elles identifiables comme telles et répondent-elles aux exigences d'information prévues par la loi ?",
+        "type": "MultipleChoice",
+        "value": null
+      },
+      {
+        "questionId": "9Xto",
+        "name": "Pour chacun des contrats d'assurance, êtes-vous en mesure de reconstituer, motiver et documenter l'analyse des besoins et, le cas échéant, l'évaluation de l'adéquation ?",
+        "type": "MultipleChoice",
+        "value": "Oui, pour tous les contrats "
+      },
+      {
+        "questionId": "aZdv",
+        "name": "Sur une échelle de 1 à 10, combien de vos dossiers estimez-vous ne pas être en ordre en ce qui concerne la documentation de l'analyse des besoins et l'évaluation de l'adéquation ?",
+        "type": "OpinionScale",
+        "value": 2
+      },
+      {
+        "questionId": "sca6",
+        "name": "Tenant compte de la réponse précédente, pensez-vous qu'il est nécessaire de mettre en place un plan de re-documentation ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "trim",
+        "name": "Tenez-vous un dossier client incluant les documents d'information et de souscription, l'historique des besoins et interactions ?",
+        "type": "MultipleChoice",
+        "value": "Oui, chaque client a un dossier complet et mis à jour"
+      },
+      {
+        "questionId": "9tY1",
+        "name": "Pendant combien de temps conservez-vous les données sur les exigences et besoins, les connaissances et l'expérience, la situation financière et les objectifs d'épargne ?",
+        "type": "MultipleChoice",
+        "value": "Jusqu'à la fin de la relation d'affaires ou dénouement du contrat"
+      },
+      {
+        "questionId": "1j2Z",
+        "name": "Vos collaborateurs (y compris vos sous-agents, le cas échéant) sont-ils informés de vos politiques et procédures internes en matière IDD ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais sans formalisation "
+      },
+      {
+        "questionId": "rQng",
+        "name": "Vos collaborateurs (y compris vos sous-agents, le cas échéant) suivent-ils des formations sur les règles de conduite vis-à-vis des clients ?",
+        "type": "MultipleChoice",
+        "value": "Oui mais de manière occasionnelle sans calendrier défini "
+      },
+      {
+        "questionId": "dJmi",
+        "name": "Comment vérifiez-vous que les pratiques professionnelles de vos collaborateurs respectent les règle de conduite IDD ?",
+        "type": "MultipleChoice",
+        "value": "Par des réunions d'équipe ou discussions informelles"
+      },
+      {
+        "questionId": "4WkZ",
+        "name": "Disposez-vous des documents suivants ?",
+        "type": "Checkboxes",
+        "value": [
+          "Politique de cookies (si vous avez un site internet) "
+        ]
+      },
+      {
+        "questionId": "vFPL",
+        "name": "Avez-vous une procédure pour signaler les violations de données à l'autorité compétente ?",
+        "type": "MultipleChoice",
+        "value": "Aucune procédure formalisée "
+      },
+      {
+        "questionId": "bVhz",
+        "name": "Comment garantissez-vous que vos sous-traitants respectent les exigences du RGPD ?",
+        "type": "MultipleChoice",
+        "value": "Principe de confiance, sans vérification particulière "
+      },
+      {
+        "questionId": "xxTP",
+        "name": "Quels types de données personnelles collectez-vous, et avez-vous défini leur base légale de traitement ?",
+        "type": "MultipleChoice",
+        "value": "Uniquement des données nécessaires et documentons la base légale de chaque traitement."
+      },
+      {
+        "questionId": "nkGC",
+        "name": "Informez-vous vos clients sur l’utilisation de leurs données personnelles et leurs droits au moment de la collecte ?",
+        "type": "MultipleChoice",
+        "value": "Nous supposons qu’ils comprennent la finalité de la collecte"
+      },
+      {
+        "questionId": "wGL1",
+        "name": "Quelles mesures mettez-vous en place pour protéger les données personnelles contre les violations ?",
+        "type": "MultipleChoice",
+        "value": "Outils de sécurité tels que le chiffrement et les pare-feu"
+      },
+      {
+        "questionId": "9iG8",
+        "name": "Votre bureau rentre-t-il dans les conditions d'exemption de l'application de DORA ?",
+        "type": "MultipleChoice",
+        "value": "Nous ne savons pas comment faire l'analye"
+      },
+      {
+        "questionId": "2LG5",
+        "name": "Avez-vous mis en place de mesures pour vous conformer à DORA ?",
+        "type": "MultipleChoice",
+        "value": null
+      },
+      {
+        "questionId": "1czH",
+        "name": "Avez-vous désigné un responsable TIC ?",
+        "type": "MultipleChoice",
+        "value": null
+      },
+      {
+        "questionId": "nXJ3",
+        "name": "Avez-vous un site internet ?",
+        "type": "MultipleChoice",
+        "value": "Oui"
+      },
+      {
+        "questionId": "w5YE",
+        "name": "Merci d'indiquer le lien de votre site internet",
+        "type": "URLInput",
+        "value": "www.paramedic-insurance.be"
+      },
+      {
+        "questionId": "ieCE",
+        "name": "Parmi les problèmes suivants, lesquels représentent les défis les plus importants pour vous en matière de conformité dans votre activité de courtier en assurances ?",
+        "type": "Checkboxes",
+        "value": [
+          "Gestion des conflits d'intérêts",
+          "Adaptations aux évolutions législatives"
+        ]
+      },
+      {
+        "questionId": "8z75",
+        "name": "Y a-t-il des domaines spécifiques où vous estimez que votre bureau est moins performant ?",
+        "type": "MultiSelect",
+        "value": [
+          "Dossier FSMA "
+        ]
+      },
+      {
+        "questionId": "oq2H",
+        "name": "Quels outils ou supports supplémentaires vous aideraient à mieux respecter vos obligations réglementaires ?",
+        "type": "LongAnswer",
+        "value": "Je souhaite connaitre les procédures et avoir la documentation nécessaire en cas de contrôle. Nous travaillons honnêtement mais ne gardons pas spécialement de trace. Cf. notre derniere demande de la FSMA"
+      },
+      {
+        "questionId": "cYDi",
+        "name": "Quelles actions envisagez-vous pour améliorer votre conformité dans les 12 prochains mois ?",
+        "type": "LongAnswer",
+        "value": "S'appuyer sur vos conseils pour mettre à jour ce qu'il faut. "
+      },
+      {
+        "questionId": "5SRW",
+        "name": "Quelle est votre priorité pour le choix d'un nouveau compliance officer ?",
+        "type": "Checkboxes",
+        "value": [
+          "Mise en conformité formelle",
+          "Protection du bureau en cas de contrôle"
+        ]
+      },
+      {
+        "questionId": "3uek",
+        "name": "Sur une échelle de 1 à 5, comment évaluez-vous votre niveau de conformité ?",
+        "type": "OpinionScale",
+        "value": 4
+      },
+      {
+        "questionId": "ntaK",
+        "name": "Quel rôle attendez-vous de votre compliance officer ?",
+        "type": "Checkboxes",
+        "value": [
+          "Un partenaire de gestion intégré à la vie du bureau ",
+          "Un délégataire : je veux qu'il prenne la main sur la conformité"
+        ]
+      },
+      {
+        "questionId": "33Y3",
+        "name": "Quelle devrait être notre priorité pour les 12 prochains mois ?",
+        "type": "Checkboxes",
+        "value": [
+          "Lutte contre le blanchiment de capitaux ",
+          "Règles de conduite IDD ",
+          "Gouvernance et organisation interne  ",
+          "RGPD ",
+          "Formation et sensibilisation des collaborateurs "
+        ]
+      },
+      {
+        "questionId": "vE6R",
+        "name": "Comment préférez-vous organiser le suivi de conformité ?",
+        "type": "Checkboxes",
+        "value": [
+          "Par trimestre "
+        ]
+      },
+      {
+        "questionId": "qGCA",
+        "name": "Quelle fréquence de contact vous conviendrait ?",
+        "type": "Checkboxes",
+        "value": [
+          "Quand il y a un sujet urgent  "
+        ]
+      },
+      {
+        "questionId": "4VB5",
+        "name": "Comment préférez-vous échanger ?",
+        "type": "Checkboxes",
+        "value": [
+          "Par e-mail avec des synthèses claires",
+          "Par appels ou visios ",
+          "Via un espace partagé (Teams, SharePoint, Google Drive, etc.)"
+        ]
+      },
+      {
+        "questionId": "fdL2",
+        "name": "Souhaitez-vous la mise en place d'un espace partage pour le suivi de votre conformité ?",
+        "type": "MultipleChoice",
+        "value": "Oui, mais simple à utiliser"
+      },
+      {
+        "questionId": "8A4v",
+        "name": "Signature électronique",
+        "type": "ShortAnswer",
+        "value": "BRIO"
+      },
+      {
+        "questionId": "xA5G",
+        "name": "CRM de courtage",
+        "type": "ShortAnswer",
+        "value": "BRIO"
+      },
+      {
+        "questionId": "hwHa",
+        "name": "Autre logiciel métier",
+        "type": "ShortAnswer",
+        "value": null
+      },
+      {
+        "questionId": "tMNL",
+        "name": "Personne 1",
+        "type": "ShortAnswer",
+        "value": "Td@paramedic-insurance.be"
+      },
+      {
+        "questionId": "xxd9",
+        "name": "Personne 2",
+        "type": "ShortAnswer",
+        "value": "vd@paramedic-insurance.be"
+      },
+      {
+        "questionId": "hx7q",
+        "name": "Personne 3",
+        "type": "ShortAnswer",
+        "value": "cr@paramedic-insurance.be"
+      },
+      {
+        "questionId": "cShS",
+        "name": "Après 6 mois de collaboration, que voudriez-vous avoir atteint ?",
+        "type": "Checkboxes",
+        "value": [
+          "Un bureau prêt pour une inspection FSMA"
+        ]
+      }
+    ]
+  }
+}

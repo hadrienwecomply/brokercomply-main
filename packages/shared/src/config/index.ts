@@ -87,6 +87,17 @@ const envSchema = z.object({
   // override N8N_WEBHOOK_URL via the dashboard form template.
   N8N_WEBHOOK_URL: z.string().url().optional(),
   N8N_WEBHOOK_SECRET: z.string().optional(),
+
+  // n8n result callback (inbound webhook, the mirror of the Fillout one). When a
+  // workflow finishes, its final HTTP Request node POSTs the result back to
+  // /api/webhooks/n8n/<N8N_CALLBACK_TOKEN> with an X-Callback-Secret header.
+  N8N_CALLBACK_TOKEN: z.string().optional(),
+  N8N_CALLBACK_SECRET: z.string().optional(),
+
+  // n8n PDF workflow (outbound). The "Générer le PDF" button triggers this
+  // workflow with the reviewed edits; it renders the PDF and posts it back via
+  // the callback above (kind='pdf'). Shares N8N_WEBHOOK_SECRET as the header.
+  N8N_PDF_WEBHOOK_URL: z.string().url().optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;

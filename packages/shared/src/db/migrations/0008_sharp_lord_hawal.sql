@@ -1,0 +1,1 @@
+ALTER TABLE "form_submissions" ADD COLUMN "pdf_base64" text;

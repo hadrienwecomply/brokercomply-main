@@ -7,13 +7,21 @@ import { ingestFilloutSubmission } from "@/lib/formulaires.server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Constant-time string compare that won't throw on length mismatch. */
+/**
+ * Constant-time string compare. Pads both buffers to the same length so
+ * `timingSafeEqual` always runs — an early length-mismatch return would leak
+ * the secret's length through response timing.
+ */
 function safeEqual(a: string | null | undefined, b: string | null | undefined): boolean {
   if (!a || !b) return false;
   const ba = Buffer.from(a);
   const bb = Buffer.from(b);
-  if (ba.length !== bb.length) return false;
-  return timingSafeEqual(ba, bb);
+  const len = Math.max(ba.length, bb.length);
+  const pa = Buffer.alloc(len);
+  const pb = Buffer.alloc(len);
+  ba.copy(pa);
+  bb.copy(pb);
+  return timingSafeEqual(pa, pb) && ba.length === bb.length;
 }
 
 /**

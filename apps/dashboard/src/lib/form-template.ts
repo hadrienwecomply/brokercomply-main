@@ -33,7 +33,16 @@ export interface FormTemplate {
  *     n8nWebhookUrl: "https://n8n.example.com/webhook/onboarding",
  *   },
  */
-export const FORM_TEMPLATES: Record<string, FormTemplate> = {};
+export const FORM_TEMPLATES: Record<string, FormTemplate> = {
+  // 🇧🇪 Diagnostic de conformité. "Email de contact" is a ShortAnswer (not an
+  // EmailInput), so it must be mapped explicitly — the type heuristic won't catch it.
+  eMsizNkfBXus: {
+    label: "Diagnostic de conformité",
+    emailFieldId: "3kzV", // Email de contact
+    companyFieldId: "5xrk", // Nom de votre bureau
+    websiteFieldId: "w5YE", // Lien de votre site internet (often empty)
+  },
+};
 
 export function getFormTemplate(formId: string | null | undefined): FormTemplate | undefined {
   if (!formId) return undefined;
