@@ -486,3 +486,98 @@ export type BrokerDocument = typeof brokerDocuments.$inferSelect;
 export type NewBrokerDocument = typeof brokerDocuments.$inferInsert;
 export type SharepointSyncState = typeof sharepointSyncState.$inferSelect;
 export type NewSharepointSyncState = typeof sharepointSyncState.$inferInsert;
+
+/**
+ * A single Fillout form submission, linked to the broker it was matched to (or a
+ * broker that was auto-created from it — see `match_method='created'`). One row
+ * per Fillout submission; `fillout_submission_id` is unique so the inbound
+ * webhook is idempotent on retries. `raw_payload` keeps the untouched Fillout
+ * body as a safety net; the normalized answers live in `form_fields`.
+ */
+export const formSubmissions = pgTable(
+  'form_submissions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    brokerId: uuid('broker_id')
+      .notNull()
+      .references(() => brokers.id, { onDelete: 'cascade' }),
+    /** Fillout public form id (which form was submitted). */
+    filloutFormId: text('fillout_form_id').notNull(),
+    /** Fillout submission id — unique, drives webhook idempotency. */
+    filloutSubmissionId: text('fillout_submission_id').notNull(),
+    /** Human label derived from the form id via the dashboard form template. */
+    formType: text('form_type'),
+    /** When the form was submitted (Fillout `submissionTime`). */
+    submittedAt: timestamp('submitted_at', { withTimezone: true }),
+    /** How the broker was resolved: 'email' | 'domain' | 'name' | 'created' | 'manual'. */
+    matchMethod: text('match_method').notNull(),
+    /** Processing lifecycle: 'received' | 'triggered' | 'failed' | 'done' | 'error'. */
+    status: text('status').default('received').notNull(),
+    /** n8n execution id returned when the workflow was triggered, if any. */
+    n8nExecutionId: text('n8n_execution_id'),
+    /** Untouched Fillout webhook body, kept as a recovery/audit safety net. */
+    rawPayload: jsonb('raw_payload').$type<unknown>(),
+    /** Result payload posted back by n8n when the workflow finished (callback). */
+    n8nResult: jsonb('n8n_result').$type<unknown>(),
+    /** When n8n reported the workflow finished (callback timestamp). */
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    /** Editable review HTML rendered by the n8n diagnostic workflow. */
+    reviewHtml: text('review_html'),
+    /** Officer's latest corrections (the `edits` object from the editor). */
+    reviewEdits: jsonb('review_edits').$type<unknown>(),
+    /** Review lifecycle: 'pending' | 'edited' | 'pdf_requested' | 'pdf_ready'. */
+    reviewStatus: text('review_status'),
+    /**
+     * URL the "PDF" button points to. Temporarily a BrokerComply route serving
+     * the stored PDF; will become the broker's SharePoint URL once the doc-sync
+     * subsystem is merged into this branch and BrokerComply uploads it there.
+     */
+    pdfRef: text('pdf_ref'),
+    /**
+     * Base64-encoded PDF returned by the n8n PDF workflow, stored temporarily
+     * here. TEMPORARY: replaced by a SharePoint upload after the doc-sync merge,
+     * at which point this column is dropped. n8n never touches SharePoint.
+     */
+    pdfBase64: text('pdf_base64'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_form_submissions_fillout_submission').on(t.filloutSubmissionId),
+    index('idx_form_submissions_broker').on(t.brokerId),
+    index('idx_form_submissions_status').on(t.status),
+  ],
+);
+
+/**
+ * One answer of a form submission, normalized from Fillout's `questions[]`.
+ * `value` is jsonb because a Fillout answer can be a string, number, array
+ * (multi-select / file uploads) or object depending on the question `type`.
+ */
+export const formFields = pgTable(
+  'form_fields',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    submissionId: uuid('submission_id')
+      .notNull()
+      .references(() => formSubmissions.id, { onDelete: 'cascade' }),
+    /** Fillout question id (stable join key to the form definition). */
+    questionId: text('question_id').notNull(),
+    /** Question label as shown to the respondent (Fillout `name`). */
+    name: text('name'),
+    /** Fillout question type, e.g. 'ShortAnswer' | 'Email' | 'MultipleChoice'. */
+    type: text('type'),
+    /** Answer value — shape depends on `type` (string | number | array | object). */
+    value: jsonb('value').$type<unknown>(),
+    position: real('position').default(0).notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_form_fields_submission_question').on(t.submissionId, t.questionId),
+    index('idx_form_fields_submission').on(t.submissionId),
+  ],
+);
+
+
+export type FormSubmission = typeof formSubmissions.$inferSelect;
+export type NewFormSubmission = typeof formSubmissions.$inferInsert;
+export type FormField = typeof formFields.$inferSelect;
+export type NewFormField = typeof formFields.$inferInsert;

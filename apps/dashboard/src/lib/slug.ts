@@ -1,9 +1,6 @@
-/** URL-safe slug from a company name, e.g. "Élite Broker" → "elite-broker". */
-export function brokerSlug(societe: string): string {
-  return societe
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
+/**
+ * Broker slug helper. The implementation lives in `@brokercomply/shared` so the
+ * create path (here) and the form-ingestion name matcher use the exact same
+ * normalisation. Re-exported to keep the local `./slug` import path stable.
+ */
+export { brokerSlug } from "@brokercomply/shared";

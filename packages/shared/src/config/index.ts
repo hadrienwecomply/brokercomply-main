@@ -97,6 +97,28 @@ const envSchema = z.object({
   // Freshness alerting threshold (months) — PRD default is 12.
   FRESHNESS_THRESHOLD_MONTHS: z.coerce.number().int().positive().default(12),
 
+  // Fillout form ingestion (inbound webhook). Both are required for the webhook
+  // to accept calls: an unguessable token in the URL path AND a shared-secret
+  // header. Optional here so the rest of the app boots without them configured.
+  FILLOUT_URL_TOKEN: z.string().optional(),
+  FILLOUT_WEBHOOK_SECRET: z.string().optional(),
+
+  // n8n trigger (outbound). Default workflow URL + a shared secret sent as a
+  // header so the n8n Webhook node can reject forged triggers. Per-form URLs may
+  // override N8N_WEBHOOK_URL via the dashboard form template.
+  N8N_WEBHOOK_URL: z.string().url().optional(),
+  N8N_WEBHOOK_SECRET: z.string().optional(),
+
+  // n8n result callback (inbound webhook, the mirror of the Fillout one). When a
+  // workflow finishes, its final HTTP Request node POSTs the result back to
+  // /api/webhooks/n8n/<N8N_CALLBACK_TOKEN> with an X-Callback-Secret header.
+  N8N_CALLBACK_TOKEN: z.string().optional(),
+  N8N_CALLBACK_SECRET: z.string().optional(),
+
+  // n8n PDF workflow (outbound). The "Générer le PDF" button triggers this
+  // workflow with the reviewed edits; it renders the PDF and posts it back via
+  // the callback above (kind='pdf'). Shares N8N_WEBHOOK_SECRET as the header.
+  N8N_PDF_WEBHOOK_URL: z.string().url().optional(),
   // Notion import (action-plan statuses). The internal-integration token and the
   // two data-source ids of the "Pilotage courtier - Full" databases. Token is
   // optional here and validated lazily by the importer; ids default to the known

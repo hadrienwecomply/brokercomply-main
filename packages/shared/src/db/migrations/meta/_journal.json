@@ -57,6 +57,13 @@
       "when": 1782302015178,
       "tag": "0007_opposite_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782921559999,
+      "tag": "0008_fuzzy_eddie_brock",
+      "breakpoints": true
     }
   ]
 }
