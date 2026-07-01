@@ -77,10 +77,17 @@ function SubmissionRow({
 
   return (
     <div className="border-b border-line last:border-0">
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-paper"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setOpen((o) => !o);
+          }
+        }}
+        className="flex w-full cursor-pointer items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-paper"
       >
         <ChevronDown
           className={cn("size-4 shrink-0 text-ink-soft transition-transform", open && "rotate-180")}
@@ -146,7 +153,7 @@ function SubmissionRow({
             Rejouer
           </button>
         )}
-      </button>
+      </div>
 
       {open && (
         <div className="space-y-2 bg-paper/60 px-4 py-3 pl-12">

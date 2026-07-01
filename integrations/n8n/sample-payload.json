@@ -83,7 +83,8 @@
     "broker": {
       "id": "string (uuid DB)",
       "slug": "string (slug normalisé)",
-      "societe": "string"
+      "societe": "string",
+      "website": "string|null — site du courtier ; pilote la branche Client Enrichment (IF 'Has Website' → Site Explorer)"
     },
     "answers": "Array<{ questionId:string, name:string|null, type:string|null, value: string|string[]|null }> — TOUTES les questions du formulaire"
   },
@@ -95,7 +96,8 @@
     "broker": {
       "id": "f66d53a3-1f05-49d0-84d0-6b82fde02f3d",
       "slug": "cabinet-durand",
-      "societe": "Cabinet Durand"
+      "societe": "Cabinet Durand",
+      "website": "https://www.paramedic-insurance.be"
     },
     "answers": [
       {

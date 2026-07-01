@@ -30,7 +30,7 @@ Defined by `buildN8nPayload` in `packages/shared/src/integrations/n8n.ts`:
   "filloutSubmissionId": "sub_...",  // Fillout submission id
   "formType": "Onboarding courtier", // label from form-template.ts (or null)
   "matchMethod": "email|domain|name|created|manual",
-  "broker": { "id": "uuid", "slug": "cabinet-durand", "societe": "Cabinet Durand" },
+  "broker": { "id": "uuid", "slug": "cabinet-durand", "societe": "Cabinet Durand", "website": "https://cabinet-durand.be" },
   "answers": [
     { "questionId": "q1", "name": "Votre email", "type": "Email", "value": "..." }
   ]

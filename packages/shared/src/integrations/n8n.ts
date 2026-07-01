@@ -14,6 +14,8 @@ export interface N8nTriggerPayload {
     id: string;
     slug: string;
     societe: string;
+    /** Drives the n8n Client Enrichment branch (IF "Has Website" → Site Explorer). */
+    website: string | null;
   };
   answers: Array<{
     questionId: string;
@@ -41,7 +43,7 @@ export function buildN8nPayload(args: {
   filloutSubmissionId: string;
   formType: string | null;
   matchMethod: MatchMethod;
-  broker: { id: string; slug: string; societe: string };
+  broker: { id: string; slug: string; societe: string; website?: string | null };
   answers: Array<{ questionId: string; name?: string | null; type?: string | null; value?: unknown }>;
 }): N8nTriggerPayload {
   return {
@@ -49,7 +51,12 @@ export function buildN8nPayload(args: {
     filloutSubmissionId: args.filloutSubmissionId,
     formType: args.formType,
     matchMethod: args.matchMethod,
-    broker: { id: args.broker.id, slug: args.broker.slug, societe: args.broker.societe },
+    broker: {
+      id: args.broker.id,
+      slug: args.broker.slug,
+      societe: args.broker.societe,
+      website: args.broker.website ?? null,
+    },
     answers: args.answers.map((a) => ({
       questionId: a.questionId,
       name: a.name ?? null,
