@@ -40,29 +40,29 @@
     {
       "idx": 5,
       "version": "7",
-      "when": 1782218450480,
-      "tag": "0005_wet_gambit",
+      "when": 1782221557066,
+      "tag": "0005_daily_vin_gonzales",
       "breakpoints": true
     },
     {
       "idx": 6,
       "version": "7",
-      "when": 1782381261865,
-      "tag": "0006_clean_blue_marvel",
+      "when": 1782289529849,
+      "tag": "0006_shocking_clint_barton",
       "breakpoints": true
     },
     {
       "idx": 7,
       "version": "7",
-      "when": 1782390245131,
-      "tag": "0007_flat_gauntlet",
+      "when": 1782302015178,
+      "tag": "0007_opposite_goblin_queen",
       "breakpoints": true
     },
     {
       "idx": 8,
       "version": "7",
-      "when": 1782397112102,
-      "tag": "0008_sharp_lord_hawal",
+      "when": 1782921559999,
+      "tag": "0008_fuzzy_eddie_brock",
       "breakpoints": true
     }
   ]

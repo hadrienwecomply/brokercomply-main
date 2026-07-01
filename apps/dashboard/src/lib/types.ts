@@ -5,7 +5,8 @@ export type SubStepStatus =
   | "blocked"
   | "done";
 
-export type StepStatus = SubStepStatus | "not_applicable";
+/** A section with no (non-archived) task is "empty" — neutral, excluded from progress. */
+export type StepStatus = SubStepStatus | "empty";
 
 export interface EmailTemplate {
   subject: string;
@@ -19,10 +20,12 @@ export interface Support {
 }
 
 export interface SubStep {
-  id: string; // template id, e.g. "01-0"
+  id: string; // dbId when persisted, else the content key (e.g. "01-0")
   dbId?: string; // broker_plan_substeps.id (uuid) when persisted
   title: string;
   status: SubStepStatus;
+  dueDate?: string | null; // task-level due date; overrides the section deadline when set
+  isCustom?: boolean; // added by hand (no code-side static content)
   actions?: string[];
   emailTemplate?: EmailTemplate;
   supports?: Support[];
@@ -32,10 +35,8 @@ export interface PlanStep {
   code: string; // "01", "03.01", ...
   dbId?: string; // broker_plan_steps.id (uuid) when persisted
   title: string;
-  applicable: boolean;
-  slaDays: number;
-  deadline?: string; // ISO date — effective: deadlineOverride ?? signature + slaDays
-  deadlineOverride?: string | null; // manual extension, when set
+  deadline?: string; // ISO date — effective: deadlineOverride ?? signature + offset
+  deadlineOverride?: string | null; // manual section deadline, when set
   subSteps: SubStep[];
 }
 
@@ -73,4 +74,11 @@ export interface Broker {
   status?: string; // lifecycle: 'onboarding' | 'active' | 'at_risk' | 'inactive'
   mrr?: number | null;
   notionPageId?: string;
+  // Opt-in (non-public) domains for email conversation matching, e.g. ["acme.be"].
+  matchDomains?: string[];
+  // --- SharePoint document folder (optional; surfaced from the DB) ---
+  sharePointFolderId?: string;
+  sharePointWebUrl?: string;
+  sharePointFolderPath?: string;
+  sharePointStatus?: string; // 'linked' | 'pending' | 'error'
 }

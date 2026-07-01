@@ -1,13 +1,19 @@
-import { eq, inArray } from 'drizzle-orm';
+import { asc, eq, inArray, isNull } from 'drizzle-orm';
 import {
   brokers,
   brokerPlanSteps,
   brokerPlanSubsteps,
+  planStepOffsets,
+  planTaskTemplates,
   type Broker,
   type BrokerPlanStep,
   type BrokerPlanSubstep,
   type Db,
   type NewBroker,
+  type NewPlanStepOffset,
+  type NewPlanTaskTemplate,
+  type PlanStepOffset,
+  type PlanTaskTemplate,
 } from '../db/index.js';
 
 /** A live transaction handle, so service fns compose inside an outer transaction. */
@@ -17,9 +23,15 @@ export interface BrokersServiceDeps {
   db: Db | Tx;
 }
 
-/** Blueprint for materialising a broker's plan (built from the dashboard template). */
+/** Blueprint for materialising a broker's plan (built from the global template). */
 export interface SubstepSeed {
-  templateSubstepId: string;
+  /** Stable key to code-side static content (supports/actions); null for custom. */
+  contentKey: string | null;
+  title?: string | null;
+  emailSubject?: string | null;
+  emailBody?: string | null;
+  isCustom?: boolean;
+  dueDate?: string | null;
   position: number;
   status?: string;
 }
@@ -132,7 +144,12 @@ export async function createBrokerWithPlan(
       if (!stepId) return [];
       return s.substeps.map((ss) => ({
         stepId,
-        templateSubstepId: ss.templateSubstepId,
+        contentKey: ss.contentKey,
+        title: ss.title ?? null,
+        emailSubject: ss.emailSubject ?? null,
+        emailBody: ss.emailBody ?? null,
+        isCustom: ss.isCustom ?? false,
+        dueDate: ss.dueDate ?? null,
         status: ss.status ?? 'not_started',
         position: ss.position,
       }));
@@ -240,4 +257,224 @@ export async function setSubstepStatus(
     .where(eq(brokerPlanSubsteps.id, substepId))
     .returning();
   return row;
+}
+
+/**
+ * Bulk-reset the plan status of the given brokers to a clean baseline: every
+ * sub-step back to `not_started` (clearing completion + notes) and every section
+ * deadline override cleared. Used by the Notion import so that sections Notion
+ * does not cover end up as `not_started` rather than keeping stale values.
+ */
+export async function resetBrokerPlanStatuses(
+  { db }: BrokersServiceDeps,
+  brokerIds: string[],
+): Promise<void> {
+  if (!brokerIds.length) return;
+  const steps = await db
+    .select({ id: brokerPlanSteps.id })
+    .from(brokerPlanSteps)
+    .where(inArray(brokerPlanSteps.brokerId, brokerIds));
+  const stepIds = steps.map((s) => s.id);
+  if (stepIds.length) {
+    await db
+      .update(brokerPlanSubsteps)
+      .set({ status: 'not_started', completedAt: null, notes: null })
+      .where(inArray(brokerPlanSubsteps.stepId, stepIds));
+  }
+  await db
+    .update(brokerPlanSteps)
+    .set({ deadlineOverride: null })
+    .where(inArray(brokerPlanSteps.brokerId, brokerIds));
+}
+
+// ---------------------------------------------------------------------------
+// Global plan template (editable) — section offsets + default task list.
+// ---------------------------------------------------------------------------
+
+export interface PlanGlobals {
+  offsets: PlanStepOffset[];
+  tasks: PlanTaskTemplate[];
+}
+
+/** Load the global template: section offsets + non-archived default tasks, ordered. */
+export async function getPlanGlobals({ db }: BrokersServiceDeps): Promise<PlanGlobals> {
+  const [offsets, tasks] = await Promise.all([
+    db.select().from(planStepOffsets).orderBy(asc(planStepOffsets.position)),
+    db
+      .select()
+      .from(planTaskTemplates)
+      .where(isNull(planTaskTemplates.archivedAt))
+      .orderBy(asc(planTaskTemplates.position)),
+  ]);
+  return { offsets, tasks };
+}
+
+/**
+ * Idempotently seed the global template. Section offsets are upserted by code
+ * (existing edits kept); default tasks are inserted only when the table is empty
+ * (UUID PKs make re-seeding non-idempotent otherwise).
+ */
+export async function seedPlanGlobals(
+  { db }: BrokersServiceDeps,
+  input: { offsets: NewPlanStepOffset[]; tasks: NewPlanTaskTemplate[] },
+): Promise<void> {
+  if (input.offsets.length) {
+    await db.insert(planStepOffsets).values(input.offsets).onConflictDoNothing();
+  }
+  const existing = await db.select({ id: planTaskTemplates.id }).from(planTaskTemplates).limit(1);
+  if (existing.length === 0 && input.tasks.length) {
+    await db.insert(planTaskTemplates).values(input.tasks);
+  }
+}
+
+export async function updateStepOffset(
+  { db }: BrokersServiceDeps,
+  code: string,
+  offsetDays: number,
+): Promise<PlanStepOffset | undefined> {
+  const [row] = await db
+    .update(planStepOffsets)
+    .set({ offsetDays })
+    .where(eq(planStepOffsets.code, code))
+    .returning();
+  return row;
+}
+
+export interface TaskTemplatePatch {
+  title?: string;
+  emailSubject?: string | null;
+  emailBody?: string | null;
+}
+
+export async function addTaskTemplate(
+  { db }: BrokersServiceDeps,
+  stepCode: string,
+  fields: TaskTemplatePatch & { position?: number },
+): Promise<PlanTaskTemplate | undefined> {
+  const [row] = await db
+    .insert(planTaskTemplates)
+    .values({
+      stepCode,
+      title: fields.title ?? 'Nouvelle tâche',
+      emailSubject: fields.emailSubject ?? null,
+      emailBody: fields.emailBody ?? null,
+      contentKey: null,
+      position: fields.position ?? 9999,
+    })
+    .returning();
+  return row;
+}
+
+export async function updateTaskTemplate(
+  { db }: BrokersServiceDeps,
+  id: string,
+  patch: TaskTemplatePatch,
+): Promise<PlanTaskTemplate | undefined> {
+  const fields: Partial<NewPlanTaskTemplate> = {};
+  if (patch.title !== undefined) fields.title = patch.title;
+  if (patch.emailSubject !== undefined) fields.emailSubject = patch.emailSubject;
+  if (patch.emailBody !== undefined) fields.emailBody = patch.emailBody;
+  const [row] = await db
+    .update(planTaskTemplates)
+    .set(fields)
+    .where(eq(planTaskTemplates.id, id))
+    .returning();
+  return row;
+}
+
+export async function archiveTaskTemplate(
+  { db }: BrokersServiceDeps,
+  id: string,
+  at: Date = new Date(),
+): Promise<void> {
+  await db.update(planTaskTemplates).set({ archivedAt: at }).where(eq(planTaskTemplates.id, id));
+}
+
+/** Re-set `position` to the given order (templates of a single section). */
+export async function reorderTaskTemplates(
+  { db }: BrokersServiceDeps,
+  orderedIds: string[],
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await tx
+        .update(planTaskTemplates)
+        .set({ position: i })
+        .where(eq(planTaskTemplates.id, orderedIds[i]!));
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Per-broker tasks (forked) — add / edit / archive / reorder.
+// ---------------------------------------------------------------------------
+
+export interface SubstepContentPatch {
+  title?: string | null;
+  emailSubject?: string | null;
+  emailBody?: string | null;
+  dueDate?: string | null;
+}
+
+export async function addBrokerSubstep(
+  { db }: BrokersServiceDeps,
+  stepId: string,
+  fields: SubstepContentPatch & { position?: number },
+): Promise<BrokerPlanSubstep | undefined> {
+  const [row] = await db
+    .insert(brokerPlanSubsteps)
+    .values({
+      stepId,
+      contentKey: null,
+      title: fields.title ?? 'Nouvelle tâche',
+      emailSubject: fields.emailSubject ?? null,
+      emailBody: fields.emailBody ?? null,
+      dueDate: fields.dueDate ?? null,
+      isCustom: true,
+      status: 'not_started',
+      position: fields.position ?? 9999,
+    })
+    .returning();
+  return row;
+}
+
+export async function updateBrokerSubstep(
+  { db }: BrokersServiceDeps,
+  substepId: string,
+  patch: SubstepContentPatch,
+): Promise<BrokerPlanSubstep | undefined> {
+  const fields: Partial<BrokerPlanSubstep> = {};
+  if (patch.title !== undefined) fields.title = patch.title;
+  if (patch.emailSubject !== undefined) fields.emailSubject = patch.emailSubject;
+  if (patch.emailBody !== undefined) fields.emailBody = patch.emailBody;
+  if (patch.dueDate !== undefined) fields.dueDate = patch.dueDate;
+  const [row] = await db
+    .update(brokerPlanSubsteps)
+    .set(fields)
+    .where(eq(brokerPlanSubsteps.id, substepId))
+    .returning();
+  return row;
+}
+
+export async function archiveBrokerSubstep(
+  { db }: BrokersServiceDeps,
+  substepId: string,
+  at: Date = new Date(),
+): Promise<void> {
+  await db.update(brokerPlanSubsteps).set({ archivedAt: at }).where(eq(brokerPlanSubsteps.id, substepId));
+}
+
+/** Re-set `position` to the given order (sub-steps of a single step). */
+export async function reorderBrokerSubsteps(
+  { db }: BrokersServiceDeps,
+  orderedIds: string[],
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await tx
+        .update(brokerPlanSubsteps)
+        .set({ position: i })
+        .where(eq(brokerPlanSubsteps.id, orderedIds[i]!));
+    }
+  });
 }

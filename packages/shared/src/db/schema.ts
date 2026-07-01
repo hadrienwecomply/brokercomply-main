@@ -1,12 +1,15 @@
 import { sql, type SQL } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   customType,
   date,
   index,
+  integer,
   jsonb,
   numeric,
   pgTable,
+  primaryKey,
   real,
   text,
   timestamp,
@@ -57,6 +60,24 @@ export const sourceDocuments = pgTable(
     index('idx_source_documents_received_at').on(t.receivedAt),
     index('idx_source_documents_distilled_at').on(t.distilledAt),
   ],
+);
+
+/**
+ * Resumable state for the incremental email delta sync — one row per
+ * (mailbox, folder). `delta_link` is the opaque Graph `@odata.deltaLink` that
+ * lets the next run fetch only what changed since the last sweep. This is what
+ * makes a frequent cron cheap (vs re-fetching the whole mailbox each time).
+ */
+export const mailSyncState = pgTable(
+  'mail_sync_state',
+  {
+    mailbox: text('mailbox').notNull(),
+    /** Well-known folder the delta is scoped to (e.g. 'inbox', 'sentitems'). */
+    folder: text('folder').notNull(),
+    deltaLink: text('delta_link'),
+    lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+  },
+  (t) => [primaryKey({ columns: [t.mailbox, t.folder] })],
 );
 
 /**
@@ -193,6 +214,13 @@ export const brokers = pgTable(
     contactName: text('contact_name'),
     /** Contact emails (Notion: Email(s) contact). */
     emails: jsonb('emails').$type<string[]>().default([]).notNull(),
+    /**
+     * Opt-in domains for email matching, e.g. ["acme-broker.be"]. Empty by
+     * default: conversation matching is exact-email only unless an officer
+     * explicitly opts a (non-public) domain in. Public domains (gmail, outlook…)
+     * are rejected at the app layer to avoid leaking across brokers.
+     */
+    matchDomains: jsonb('match_domains').$type<string[]>().default([]).notNull(),
     phone: text('phone'),
     website: text('website'),
     /** Belgian enterprise number (Notion: BCE). Unique only when present. */
@@ -220,6 +248,14 @@ export const brokers = pgTable(
     accountOwner: text('account_owner'),
     /** Source Notion page id, for future backfill/sync. */
     notionPageId: text('notion_page_id'),
+    /** Graph driveItem id of the broker's SharePoint folder (null until linked). */
+    sharePointFolderId: text('sharepoint_folder_id'),
+    /** Browser URL of that folder (for "open in SharePoint"). */
+    sharePointWebUrl: text('sharepoint_web_url'),
+    /** Drive-relative path of the folder (traceability + backfill linking). */
+    sharePointFolderPath: text('sharepoint_folder_path'),
+    /** 'linked' | 'pending' | 'error' | null — best-effort provisioning state. */
+    sharePointStatus: text('sharepoint_status'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -230,6 +266,62 @@ export const brokers = pgTable(
     index('idx_brokers_account_owner').on(t.accountOwner),
   ],
 );
+
+/**
+ * Per-broker SharePoint document mirror.
+ *
+ * SharePoint is the source of truth for content; this table is a read-mirror of
+ * file/folder METADATA only (no bytes), kept current by the delta sync. Items
+ * removed in SharePoint are soft-deleted here (`deleted_at`) — we never lose the
+ * record, and nothing is ever deleted remotely. Keyed by the stable Graph
+ * `drive_item_id` so the sync is idempotent (upsert on conflict).
+ */
+export const brokerDocuments = pgTable(
+  'broker_documents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    brokerId: uuid('broker_id')
+      .notNull()
+      .references(() => brokers.id, { onDelete: 'cascade' }),
+    /** Graph driveItem id — stable identity across renames/moves. */
+    driveItemId: text('drive_item_id').notNull().unique(),
+    name: text('name').notNull(),
+    /** Drive-relative path of the item. */
+    path: text('path'),
+    webUrl: text('web_url'),
+    /** Byte size (files only); folders are null. bigint to survive >2 GB files. */
+    size: bigint('size', { mode: 'number' }),
+    mimeType: text('mime_type'),
+    isFolder: boolean('is_folder').default(false).notNull(),
+    /** Graph eTag — change detection / optimistic concurrency. */
+    etag: text('etag'),
+    lastModifiedAt: timestamp('last_modified_at', { withTimezone: true }),
+    /** Set when the item disappears from SharePoint (soft delete; never hard). */
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_broker_documents_broker').on(t.brokerId),
+    index('idx_broker_documents_deleted_at').on(t.deletedAt),
+  ],
+);
+
+/**
+ * Resumable state for the SharePoint delta sync — one row PER BROKER, because
+ * the sync is folder-scoped (`/items/{folderItemId}/delta`) rather than
+ * drive-wide. Persisting `delta_link` lets each run pick up only what changed in
+ * that broker's folder since the last sweep.
+ */
+export const sharepointSyncState = pgTable('sharepoint_sync_state', {
+  brokerId: uuid('broker_id')
+    .primaryKey()
+    .references(() => brokers.id, { onDelete: 'cascade' }),
+  /** The broker folder's driveItem id the delta is scoped to. */
+  folderItemId: text('folder_item_id'),
+  deltaLink: text('delta_link'),
+  lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+});
 
 /**
  * Per-broker instance of a plan step (one row per template step, always all of
@@ -258,8 +350,11 @@ export const brokerPlanSteps = pgTable(
 );
 
 /**
- * Mutable state of a plan sub-step. Static content (title, actions, email
- * template, supports) comes from the dashboard template by `template_substep_id`.
+ * A broker's task (sub-step). Forked at creation from the global task template:
+ * each broker carries its own editable copy (`title`, `email_*`) so editing the
+ * global template never mutates an in-flight plan. Supports / action bullets stay
+ * in the dashboard code, resolved by `content_key` (e.g. "01-0"); custom tasks
+ * added by hand have a null `content_key`.
  */
 export const brokerPlanSubsteps = pgTable(
   'broker_plan_substeps',
@@ -268,8 +363,19 @@ export const brokerPlanSubsteps = pgTable(
     stepId: uuid('step_id')
       .notNull()
       .references(() => brokerPlanSteps.id, { onDelete: 'cascade' }),
-    /** Template sub-step id, e.g. "01-0" (stable join key to the template). */
-    templateSubstepId: text('template_substep_id').notNull(),
+    /** Stable key to the code-side static content (supports/actions), e.g. "01-0". Null for custom tasks. */
+    contentKey: text('template_substep_id'),
+    /** Forked editable title (copied from the template at materialisation). */
+    title: text('title'),
+    /** Forked editable email template. */
+    emailSubject: text('email_subject'),
+    emailBody: text('email_body'),
+    /** Task-level due date; overrides the section deadline for this task when set. */
+    dueDate: date('due_date'),
+    /** True when the task was added by hand (not seeded from the template). */
+    isCustom: boolean('is_custom').default(false).notNull(),
+    /** Soft-delete marker; archived tasks are hidden and excluded from progress. */
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
     /** 'not_started' | 'in_progress' | 'waiting_client' | 'blocked' | 'done'. */
     status: text('status').default('not_started').notNull(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
@@ -277,10 +383,109 @@ export const brokerPlanSubsteps = pgTable(
     position: real('position').default(0).notNull(),
   },
   (t) => [
-    uniqueIndex('uq_broker_plan_substeps_step_tpl').on(t.stepId, t.templateSubstepId),
+    uniqueIndex('uq_broker_plan_substeps_step_tpl').on(t.stepId, t.contentKey),
     index('idx_broker_plan_substeps_step').on(t.stepId),
   ],
 );
+
+/**
+ * Audit log of action-plan template emails sent from the dashboard. The source
+ * of truth for "what we sent" (the sending officer's Sent items are ingested,
+ * but this is the canonical record); also powers the "envoyé le X" badge + soft
+ * re-send warning. We log AFTER a successful Graph send, storing the content.
+ */
+export const outboundEmails = pgTable(
+  'outbound_emails',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    brokerId: uuid('broker_id')
+      .notNull()
+      .references(() => brokers.id, { onDelete: 'cascade' }),
+    /** Plan step code, e.g. "01" (provenance of the template). */
+    stepCode: text('step_code'),
+    /** Template sub-step id, e.g. "01-0" — links the send to a sub-step. */
+    substepTemplateId: text('substep_template_id'),
+    /** Sender mailbox the email was sent from (the assigned officer). */
+    fromMailbox: text('from_mailbox').notNull(),
+    toAddrs: jsonb('to_addrs').$type<string[]>().default([]).notNull(),
+    ccAddrs: jsonb('cc_addrs').$type<string[]>().default([]).notNull(),
+    replyTo: text('reply_to'),
+    subject: text('subject'),
+    body: text('body'),
+    /** Officer (email) who triggered the send — attribution (cookie identity). */
+    sentByOfficer: text('sent_by_officer'),
+    sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_outbound_emails_broker').on(t.brokerId),
+    index('idx_outbound_emails_substep').on(t.brokerId, t.substepTemplateId),
+  ],
+);
+
+/**
+ * Global timeframe config — one row per plan section (the 13 step codes). The
+ * effective section deadline is `broker.signature_date + offset_days` (parallel
+ * offsets, not a cascade), overridable per broker via `broker_plan_steps.deadline_override`.
+ * Editable from the dashboard Config tab; replaces the hard-coded `slaDays`.
+ */
+export const planStepOffsets = pgTable('plan_step_offsets', {
+  /** Section / step code, e.g. "01", "03.01". */
+  code: text('code').primaryKey(),
+  title: text('title').notNull(),
+  offsetDays: integer('offset_days').notNull(),
+  position: real('position').default(0).notNull(),
+});
+
+/**
+ * Global, editable default task list per section. Brokers are forked from this
+ * at creation (edits here affect future brokers only). Supports / action bullets
+ * stay in code, resolved by `content_key`; null for tasks added from the UI.
+ */
+export const planTaskTemplates = pgTable(
+  'plan_task_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Section / step code this task belongs to. */
+    stepCode: text('step_code').notNull(),
+    title: text('title').notNull(),
+    emailSubject: text('email_subject'),
+    emailBody: text('email_body'),
+    /** Stable key to code-side static content (supports/actions), e.g. "01-0". Null for UI-added tasks. */
+    contentKey: text('content_key'),
+    position: real('position').default(0).notNull(),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+  },
+  (t) => [index('idx_plan_task_templates_step').on(t.stepCode)],
+);
+
+export type SourceDocument = typeof sourceDocuments.$inferSelect;
+export type NewSourceDocument = typeof sourceDocuments.$inferInsert;
+export type MailSyncState = typeof mailSyncState.$inferSelect;
+export type NewMailSyncState = typeof mailSyncState.$inferInsert;
+export type OutboundEmail = typeof outboundEmails.$inferSelect;
+export type NewOutboundEmail = typeof outboundEmails.$inferInsert;
+export type KnowledgeUnit = typeof knowledgeUnits.$inferSelect;
+export type NewKnowledgeUnit = typeof knowledgeUnits.$inferInsert;
+export type AmlExclusionLogEntry = typeof amlExclusionLog.$inferSelect;
+export type NewAmlExclusionLogEntry = typeof amlExclusionLog.$inferInsert;
+export type RoadmapItem = typeof roadmapItems.$inferSelect;
+export type NewRoadmapItem = typeof roadmapItems.$inferInsert;
+export type RoadmapVote = typeof roadmapVotes.$inferSelect;
+export type NewRoadmapVote = typeof roadmapVotes.$inferInsert;
+export type PlanStepOffset = typeof planStepOffsets.$inferSelect;
+export type NewPlanStepOffset = typeof planStepOffsets.$inferInsert;
+export type PlanTaskTemplate = typeof planTaskTemplates.$inferSelect;
+export type NewPlanTaskTemplate = typeof planTaskTemplates.$inferInsert;
+export type Broker = typeof brokers.$inferSelect;
+export type NewBroker = typeof brokers.$inferInsert;
+export type BrokerPlanStep = typeof brokerPlanSteps.$inferSelect;
+export type NewBrokerPlanStep = typeof brokerPlanSteps.$inferInsert;
+export type BrokerPlanSubstep = typeof brokerPlanSubsteps.$inferSelect;
+export type NewBrokerPlanSubstep = typeof brokerPlanSubsteps.$inferInsert;
+export type BrokerDocument = typeof brokerDocuments.$inferSelect;
+export type NewBrokerDocument = typeof brokerDocuments.$inferInsert;
+export type SharepointSyncState = typeof sharepointSyncState.$inferSelect;
+export type NewSharepointSyncState = typeof sharepointSyncState.$inferInsert;
 
 /**
  * A single Fillout form submission, linked to the broker it was matched to (or a
@@ -371,22 +576,7 @@ export const formFields = pgTable(
   ],
 );
 
-export type SourceDocument = typeof sourceDocuments.$inferSelect;
-export type NewSourceDocument = typeof sourceDocuments.$inferInsert;
-export type KnowledgeUnit = typeof knowledgeUnits.$inferSelect;
-export type NewKnowledgeUnit = typeof knowledgeUnits.$inferInsert;
-export type AmlExclusionLogEntry = typeof amlExclusionLog.$inferSelect;
-export type NewAmlExclusionLogEntry = typeof amlExclusionLog.$inferInsert;
-export type RoadmapItem = typeof roadmapItems.$inferSelect;
-export type NewRoadmapItem = typeof roadmapItems.$inferInsert;
-export type RoadmapVote = typeof roadmapVotes.$inferSelect;
-export type NewRoadmapVote = typeof roadmapVotes.$inferInsert;
-export type Broker = typeof brokers.$inferSelect;
-export type NewBroker = typeof brokers.$inferInsert;
-export type BrokerPlanStep = typeof brokerPlanSteps.$inferSelect;
-export type NewBrokerPlanStep = typeof brokerPlanSteps.$inferInsert;
-export type BrokerPlanSubstep = typeof brokerPlanSubsteps.$inferSelect;
-export type NewBrokerPlanSubstep = typeof brokerPlanSubsteps.$inferInsert;
+
 export type FormSubmission = typeof formSubmissions.$inferSelect;
 export type NewFormSubmission = typeof formSubmissions.$inferInsert;
 export type FormField = typeof formFields.$inferSelect;

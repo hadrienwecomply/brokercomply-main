@@ -1,5 +1,5 @@
 import type { Broker, PlanStep, SubStep } from "./types";
-import { brokerProgress, daysUntil, nextAction, stepStatus } from "./plan";
+import { brokerProgress, daysUntil, effectiveDeadline, nextAction, stepStatus } from "./plan";
 
 export type Bucket = "overdue" | "today" | "week" | "later";
 
@@ -62,7 +62,7 @@ export function buildCockpit(
       relances.push(broker);
       continue;
     }
-    const days = daysUntil(na.step.deadline, today);
+    const days = daysUntil(effectiveDeadline(na.step, na.subStep), today);
     actions.push({ ...na, days, bucket: bucketOf(days) });
   }
 

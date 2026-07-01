@@ -1,12 +1,13 @@
-import type { BrokerPlanStep, BrokerPlanSubstep, PlanStepSeed } from "@brokercomply/shared";
-import { STEP_TEMPLATES } from "./plan-template";
+import type {
+  BrokerPlanStep,
+  BrokerPlanSubstep,
+  PlanGlobals,
+  PlanStepOffset,
+  PlanStepSeed,
+} from "@brokercomply/shared";
+import { CONTENT_BY_KEY, stepOffsetSeeds } from "./plan-template";
 import { brokerProgress } from "./plan";
 import type { Broker, PlanStep, SubStepStatus } from "./types";
-
-/** Stable template sub-step id, e.g. "01-0" (matches the legacy mock convention). */
-export function substepTemplateId(code: string, index: number): string {
-  return `${code}-${index}`;
-}
 
 const DAY = 86_400_000;
 
@@ -15,31 +16,58 @@ function addDaysIso(isoDate: string, days: number): string {
   return new Date(base.getTime() + days * DAY).toISOString().slice(0, 10);
 }
 
-/** Effective deadline = manual override, else signature_date + sla_days. */
+/** Effective section deadline = manual override, else signature_date + offset days. */
 export function computeDeadline(
   signatureDate: string | null | undefined,
-  slaDays: number,
+  offsetDays: number,
   override: string | null | undefined,
 ): string | undefined {
   if (override) return override;
   if (!signatureDate) return undefined;
-  return addDaysIso(signatureDate, slaDays);
+  return addDaysIso(signatureDate, offsetDays);
+}
+
+/** Ordered section list, falling back to the code template when the DB is unseeded. */
+function orderedOffsets(offsets: PlanStepOffset[]): PlanStepOffset[] {
+  if (offsets.length === 0) {
+    return stepOffsetSeeds().map((s) => ({
+      code: s.code,
+      title: s.title,
+      offsetDays: s.offsetDays,
+      position: s.position,
+    }));
+  }
+  return [...offsets].sort((a, b) => a.position - b.position);
 }
 
 /**
- * The blueprint used to materialise a broker's plan in the DB: every template
- * step (applicable = its default) with every template sub-step (not_started).
+ * The blueprint used to materialise a new broker's plan: every section (from the
+ * global offsets) with its current non-archived template tasks, forked into the
+ * broker's own rows (so later template edits don't touch this broker).
  */
-export function planBlueprint(): PlanStepSeed[] {
-  return STEP_TEMPLATES.map((tpl, stepIdx) => ({
-    code: tpl.code,
-    applicable: tpl.defaultApplicable,
-    position: stepIdx,
-    substeps: tpl.subSteps.map((_, j) => ({
-      templateSubstepId: substepTemplateId(tpl.code, j),
-      position: j,
-    })),
-  }));
+export function planBlueprint(globals: PlanGlobals): PlanStepSeed[] {
+  const tasksByStep = new Map<string, PlanGlobals["tasks"]>();
+  for (const t of globals.tasks) {
+    const bucket = tasksByStep.get(t.stepCode);
+    if (bucket) bucket.push(t);
+    else tasksByStep.set(t.stepCode, [t]);
+  }
+  return orderedOffsets(globals.offsets).map((off, stepIdx) => {
+    const tasks = [...(tasksByStep.get(off.code) ?? [])].sort((a, b) => a.position - b.position);
+    return {
+      code: off.code,
+      applicable: true,
+      position: stepIdx,
+      substeps: tasks.map((t, j) => ({
+        contentKey: t.contentKey,
+        title: t.title,
+        emailSubject: t.emailSubject,
+        emailBody: t.emailBody,
+        isCustom: false,
+        position: j,
+      })),
+    };
+  });
 }
 
 function groupBy<T, K>(rows: T[], key: (r: T) => K): Map<K, T[]> {
@@ -53,43 +81,47 @@ function groupBy<T, K>(rows: T[], key: (r: T) => K): Map<K, T[]> {
 }
 
 /**
- * Rebuild the rich `PlanStep[]` the UI expects by merging persisted state
- * (applicability, sub-step status, overrides) with the static template content.
- * Steps/sub-steps absent from the DB fall back to template defaults.
+ * Rebuild the rich `PlanStep[]` the UI expects from the broker's own (forked)
+ * rows: sections come from the global offsets, tasks from `broker_plan_substeps`
+ * (archived excluded), and supports/actions are resolved from code by content key.
  */
 export function assemblePlan(
   stepRows: BrokerPlanStep[],
   substepRows: BrokerPlanSubstep[],
   signatureDate: string | null | undefined,
+  offsets: PlanStepOffset[],
 ): PlanStep[] {
   const stepByCode = new Map(stepRows.map((s) => [s.code, s]));
-  const subsByStepId = groupBy(substepRows, (s) => s.stepId);
+  const liveSubs = substepRows.filter((s) => !s.archivedAt);
+  const subsByStepId = groupBy(liveSubs, (s) => s.stepId);
 
-  return STEP_TEMPLATES.map((tpl) => {
-    const stepRow = stepByCode.get(tpl.code);
-    const dbSubs = stepRow ? (subsByStepId.get(stepRow.id) ?? []) : [];
-    const subByTpl = new Map(dbSubs.map((s) => [s.templateSubstepId, s]));
+  return orderedOffsets(offsets).map((off) => {
+    const stepRow = stepByCode.get(off.code);
     const override = stepRow?.deadlineOverride ?? null;
+    const dbSubs = stepRow ? [...(subsByStepId.get(stepRow.id) ?? [])] : [];
+    dbSubs.sort((a, b) => a.position - b.position);
 
     return {
-      code: tpl.code,
+      code: off.code,
       dbId: stepRow?.id,
-      title: tpl.title,
-      applicable: stepRow ? stepRow.applicable : tpl.defaultApplicable,
-      slaDays: tpl.slaDays,
-      deadline: computeDeadline(signatureDate, tpl.slaDays, override),
+      title: off.title,
+      deadline: computeDeadline(signatureDate, off.offsetDays, override),
       deadlineOverride: override,
-      subSteps: tpl.subSteps.map((ss, j) => {
-        const tplId = substepTemplateId(tpl.code, j);
-        const row = subByTpl.get(tplId);
+      subSteps: dbSubs.map((row) => {
+        const content = row.contentKey ? CONTENT_BY_KEY.get(row.contentKey) : undefined;
+        const hasEmail = Boolean(row.emailSubject || row.emailBody);
         return {
-          id: tplId,
-          dbId: row?.id,
-          title: ss.title,
-          status: (row?.status as SubStepStatus) ?? "not_started",
-          actions: ss.actions,
-          emailTemplate: ss.emailTemplate,
-          supports: ss.supports,
+          id: row.id,
+          dbId: row.id,
+          title: row.title ?? content?.title ?? "Tâche",
+          status: row.status as SubStepStatus,
+          dueDate: row.dueDate ?? null,
+          isCustom: row.isCustom,
+          actions: content?.actions,
+          emailTemplate: hasEmail
+            ? { subject: row.emailSubject ?? "", body: row.emailBody ?? "" }
+            : content?.emailTemplate,
+          supports: content?.supports,
         };
       }),
     };
@@ -98,8 +130,8 @@ export function assemblePlan(
 
 /**
  * Onboarding pipeline label, derived from plan progress (single source of truth).
- * Mirrors the legacy mock: once any applicable step is fully done the broker has
- * a validated plan; before that, the stage tracks step-01 sub-step completion.
+ * Once any active section is fully done the broker has a validated plan; before
+ * that, the stage tracks step-01 task completion.
  */
 export function deriveOnboardingStatus(broker: Broker): string[] {
   const { doneSteps } = brokerProgress(broker);

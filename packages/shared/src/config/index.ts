@@ -39,11 +39,19 @@ const envSchema = z.object({
   AZURE_CLIENT_ID: z.string().optional(),
   AZURE_CLIENT_SECRET: z.string().optional(),
 
+  // Safety guard: when set, EVERY outgoing email is redirected to this address
+  // instead of the real broker (the original recipients are shown in the body).
+  // Outside production this defaults to hr@we-comply.be (see resolveMailRedirect)
+  // so we never email a real client before go-live. Set empty in prod.
+  MAIL_REDIRECT_TO: z.string().email().optional(),
+
   // Compliance-officer mailboxes (comma-separated). Drives both the ingestion
-  // scope and inbound/outbound direction classification.
+  // scope and inbound/outbound direction classification. The real officers are
+  // Sacha (sdv@) and Grégory (gr@); an older config mentioned mvl@ — that was a
+  // mistake (see doc/CONTEXTE_ET_GUIDELINES.md).
   OFFICER_MAILBOXES: z
     .string()
-    .default('sdv@we-comply.be,mvl@we-comply.be')
+    .default('sdv@we-comply.be,gr@we-comply.be')
     .transform((s) =>
       s
         .split(',')
@@ -62,6 +70,19 @@ const envSchema = z.object({
         .map((x) => x.trim().toLowerCase())
         .filter(Boolean),
     ),
+
+  // SharePoint document sync (broker folders). Reuses the AZURE_* app-only
+  // credentials above, plus a per-site `Sites.Selected` write grant. Optional
+  // here; validated lazily by the SharePoint client when the feature runs.
+  // SHAREPOINT_SITE_ID is the Graph site id, e.g.
+  //   "wecomply1.sharepoint.com,<siteGuid>,<webGuid>".
+  // SHAREPOINT_ROOT_PATH is the drive-relative folder under which every broker
+  // folder lives (no leading/trailing slash).
+  SHAREPOINT_SITE_ID: z.string().optional(),
+  SHAREPOINT_ROOT_PATH: z
+    .string()
+    .default('01 - Verticales/01 - Brokercomply/01 - Clients & Prospects/01 - Clients')
+    .transform((s) => s.replace(/^\/+|\/+$/g, '')),
 
   // LLM provider — required by distillation / RAG agent (0-D, 0-F).
   LLM_PROVIDER: z.enum(['anthropic', 'openai']).default('anthropic'),
@@ -98,6 +119,13 @@ const envSchema = z.object({
   // workflow with the reviewed edits; it renders the PDF and posts it back via
   // the callback above (kind='pdf'). Shares N8N_WEBHOOK_SECRET as the header.
   N8N_PDF_WEBHOOK_URL: z.string().url().optional(),
+  // Notion import (action-plan statuses). The internal-integration token and the
+  // two data-source ids of the "Pilotage courtier - Full" databases. Token is
+  // optional here and validated lazily by the importer; ids default to the known
+  // workspace collections so the script works out of the box.
+  NOTION_API_KEY: z.string().optional(),
+  NOTION_PLAN_DATA_SOURCE_ID: z.string().default('37aa8d30-4b11-8023-81ee-000b793545cc'),
+  NOTION_CLIENTS_DATA_SOURCE_ID: z.string().default('2c4a8d30-4b11-8182-b73c-000b02cfd7e8'),
 });
 
 export type Config = z.infer<typeof envSchema>;

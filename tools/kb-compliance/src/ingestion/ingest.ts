@@ -92,6 +92,7 @@ async function storeThread(
         cc: message.cc,
         folder: message.folder ?? null,
         parentFolderId: message.parentFolderId ?? null,
+        webLink: message.webLink ?? null,
         hasAttachments: message.hasAttachments,
         attachmentNames: message.attachments.map((a) => stripNul(a.name)),
       },
@@ -107,17 +108,23 @@ async function storeThread(
 }
 
 /**
- * Ingestion pipeline: fetch → group into threads → (optional client scope) →
- * parse attachments → AML filter → store. The AML filter runs BEFORE any
- * storage; excluded threads are recorded in the exclusion ledger (message id +
- * category only, never content). Storage is idempotent (upsert on message_id).
+ * Process an already-fetched batch of messages: group into threads → (optional
+ * client scope) → parse attachments → AML filter → store. Shared by both the
+ * backfill (`runIngest`) and the incremental delta sync (`runDeltaIngest`), so
+ * the AML guard-rail and storage rules are identical on every path.
+ *
+ * The AML filter runs BEFORE any storage; excluded threads are recorded in the
+ * exclusion ledger (message id + category only, never content). Storage is
+ * idempotent (upsert on message_id).
  */
-export async function runIngest(deps: IngestDeps, options: IngestOptions): Promise<IngestStats> {
+export async function processMessages(
+  deps: IngestDeps,
+  mailbox: string,
+  messages: RawMessage[],
+): Promise<IngestStats> {
   const { source, db, clientAllowlist } = deps;
   const log = deps.log ?? (() => {});
-  const { mailbox, ...listOptions } = options;
 
-  const messages = await source.listMessages(mailbox, listOptions);
   const threads = buildThreads(messages);
   log(`Fetched ${messages.length} message(s) across ${threads.length} thread(s) from ${mailbox}`);
 
@@ -169,4 +176,14 @@ export async function runIngest(deps: IngestDeps, options: IngestOptions): Promi
     `Stored ${stats.documentsStored} document(s); ${stats.threadsOutOfScope} thread(s) out of client scope; AML-excluded ${stats.threadsExcluded} thread(s) / ${stats.messagesExcluded} message(s); parsed ${stats.attachmentsParsed} attachment(s).`,
   );
   return stats;
+}
+
+/**
+ * Backfill ingestion: fetch a (bounded) batch via `listMessages`, then run the
+ * shared processing pipeline.
+ */
+export async function runIngest(deps: IngestDeps, options: IngestOptions): Promise<IngestStats> {
+  const { mailbox, ...listOptions } = options;
+  const messages = await deps.source.listMessages(mailbox, listOptions);
+  return processMessages(deps, mailbox, messages);
 }
