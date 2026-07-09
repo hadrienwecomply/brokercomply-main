@@ -8,6 +8,7 @@ import { brokerToValues, valuesToPatch, type BrokerEditorValues } from "@/lib/br
 import type { Broker } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { BrokerFields } from "./broker-fields";
+import { BrokerColorPicker } from "./broker-color-picker";
 
 /**
  * Inline, always-available editable "Détails" section for a broker — replaces the
@@ -61,6 +62,16 @@ export function BrokerDetailsInline({ broker }: { broker: Broker }) {
 
       {open && (
         <div className="border-t border-line px-6 py-5">
+          <div className="mb-5">
+            <span className="mb-1 block text-xs font-medium text-ink-soft">
+              Couleur primaire
+            </span>
+            <BrokerColorPicker
+              brokerId={broker.dbId!}
+              slug={broker.id}
+              value={broker.primaryColor}
+            />
+          </div>
           <BrokerFields values={values} set={set} />
           <div className="mt-5 flex items-center gap-3">
             <button

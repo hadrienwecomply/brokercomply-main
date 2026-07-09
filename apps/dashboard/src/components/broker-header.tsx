@@ -23,14 +23,12 @@ export function BrokerHeader({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {broker.dbId && (
           <BrokerLogo
             brokerId={broker.dbId}
-            slug={broker.id}
             societe={broker.societe}
             hasLogo={broker.hasLogo ?? false}
-            primaryColor={broker.primaryColor}
           />
         )}
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
