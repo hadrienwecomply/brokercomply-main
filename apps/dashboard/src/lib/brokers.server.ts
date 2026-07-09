@@ -5,8 +5,11 @@ import {
   archiveBrokerSubstep,
   archiveTaskTemplate,
   createBrokerWithPlan,
+  extractLogoPalette,
   getBrokerById,
   getBrokerBySlug,
+  isEligible,
+  legibleFontColor,
   getPlanGlobals,
   isPublicEmailDomain,
   listBrokerPlans,
@@ -70,6 +73,8 @@ export function toBrokerDTO(plan: BrokerPlan, offsets: PlanStepOffset[]): Broker
     status: row.status ?? undefined,
     mrr: row.mrr != null ? Number(row.mrr) : null,
     notionPageId: row.notionPageId ?? undefined,
+    hasLogo: row.logoBase64 != null,
+    primaryColor: row.primaryColor ?? undefined,
     sharePointFolderId: row.sharePointFolderId ?? undefined,
     sharePointWebUrl: row.sharePointWebUrl ?? undefined,
     sharePointFolderPath: row.sharePointFolderPath ?? undefined,
@@ -199,6 +204,7 @@ export interface UpdateBrokerPatch {
   signatureDate?: string | null;
   lastContactDate?: string | null;
   accountOwner?: string | null;
+  primaryColor?: string | null;
 }
 
 export async function patchBroker(id: string, patch: UpdateBrokerPatch): Promise<void> {
@@ -229,7 +235,61 @@ export async function patchBroker(id: string, patch: UpdateBrokerPatch): Promise
   if (patch.lastContactDate !== undefined)
     fields.lastContactDate = patch.lastContactDate?.trim() || null;
   if (patch.accountOwner !== undefined) fields.accountOwner = patch.accountOwner?.trim() || null;
+  if (patch.primaryColor !== undefined) fields.primaryColor = normalizeHex(patch.primaryColor);
   await updateBroker({ db: getDb() }, id, fields);
+}
+
+/** Normalise a hex colour to lowercase `#rrggbb`, or null if blank/invalid. */
+function normalizeHex(raw: string | null | undefined): string | null {
+  const m = raw?.trim().match(/^#?([0-9a-fA-F]{6})$/);
+  return m ? `#${m[1].toLowerCase()}` : null;
+}
+
+/**
+ * Store a broker's PNG logo (base64, no data-URI prefix) and, when the broker has
+ * no brand colour yet, pre-fill it from the logo via vision — clamped to a
+ * legible font colour. Never throws on the vision step; a failure just leaves the
+ * colour unset (editable by hand). Returns the resulting primary colour, if any.
+ */
+export async function setBrokerLogo(
+  id: string,
+  logoBase64: string,
+  mimeType: string,
+): Promise<{ primaryColor: string | null }> {
+  await updateBroker({ db: getDb() }, id, { logoBase64, logoMimeType: mimeType });
+  const existing = await getBrokerById({ db: getDb() }, id);
+  const current = existing?.broker.primaryColor ?? null;
+  if (current) return { primaryColor: current };
+
+  const derived = await deriveLogoColor(`data:${mimeType};base64,${logoBase64}`);
+  if (derived) await updateBroker({ db: getDb() }, id, { primaryColor: derived });
+  return { primaryColor: derived };
+}
+
+/** Remove a broker's logo (leaves the primary colour untouched). */
+export async function clearBrokerLogo(id: string): Promise<void> {
+  await updateBroker({ db: getDb() }, id, { logoBase64: null, logoMimeType: null });
+}
+
+/** Load a broker's stored logo bytes for serving, or null when none. */
+export async function getBrokerLogo(
+  id: string,
+): Promise<{ base64: string; mimeType: string } | null> {
+  const plan = await getBrokerById({ db: getDb() }, id);
+  const b = plan?.broker;
+  if (!b?.logoBase64) return null;
+  return { base64: b.logoBase64, mimeType: b.logoMimeType ?? "image/png" };
+}
+
+/**
+ * Extract the logo's dominant brand colour (Anthropic vision) and clamp it to a
+ * legible font colour on white. Returns null if extraction fails or yields no
+ * usable colour — callers must treat the colour as optional.
+ */
+async function deriveLogoColor(dataUri: string): Promise<string | null> {
+  const palette = await extractLogoPalette(dataUri);
+  if (!palette?.primary || !isEligible(palette.primary)) return null;
+  return legibleFontColor(palette.primary);
 }
 
 /**

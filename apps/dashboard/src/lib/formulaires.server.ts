@@ -82,12 +82,13 @@ async function triggerAndRecord(args: {
     await updateSubmissionStatus({ db: getDb() }, args.submissionDbId, { status: "received" });
     return "received";
   }
+  const branding = await brokerBranding(args.broker.id);
   const payload = buildN8nPayload({
     submissionId: args.submissionDbId,
     filloutSubmissionId: args.filloutSubmissionId,
     formType: args.formType,
     matchMethod: args.matchMethod,
-    broker: args.broker,
+    broker: { ...args.broker, ...branding },
     answers: args.answers,
   });
   const res = await triggerN8nWorkflow({ url, secret: config.N8N_WEBHOOK_SECRET, payload });
@@ -97,6 +98,21 @@ async function triggerAndRecord(args: {
     n8nExecutionId: res.executionId,
   });
   return status;
+}
+
+/**
+ * Load a broker's branding (logo data-URI + brand colour) to personalise the n8n
+ * form/report. Best-effort: a missing broker or logo yields nulls.
+ */
+async function brokerBranding(
+  brokerId: string,
+): Promise<{ logo: string | null; primaryColor: string | null }> {
+  const b = (await getBrokerById({ db: getDb() }, brokerId))?.broker;
+  if (!b) return { logo: null, primaryColor: null };
+  const logo = b.logoBase64
+    ? `data:${b.logoMimeType ?? "image/png"};base64,${b.logoBase64}`
+    : null;
+  return { logo, primaryColor: b.primaryColor ?? null };
 }
 
 /**

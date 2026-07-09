@@ -100,7 +100,9 @@ async function runAuditJob(auditId: string): Promise<void> {
       return;
     }
 
-    const html = renderAuditHtml(result.payload);
+    // Personalise the report with the broker's logo + brand colour (kept out of
+    // stored `findings`; re-injected fresh at PDF time in case the logo changes).
+    const html = renderAuditHtml({ ...result.payload, branding: brandingFor(broker) });
     await updateWebsiteAudit({ db }, auditId, {
       status: "review_pending",
       findings: result.payload,
@@ -118,14 +120,41 @@ async function runAuditJob(auditId: string): Promise<void> {
   // No revalidatePath here: see the note above. The client polls for status.
 }
 
-/** Broker row by db id (audits store brokerId; views need slug + identity). */
-async function getBrokerBySlugId(
-  brokerDbId: string,
-): Promise<{ slug: string; societe: string; bce: string | null; fsmaNumber: string | null } | null> {
+interface AuditBroker {
+  slug: string;
+  societe: string;
+  bce: string | null;
+  fsmaNumber: string | null;
+  /** Logo as a `data:...;base64,...` URI, or null. */
+  logo: string | null;
+  primaryColor: string | null;
+}
+
+/** Broker row by db id (audits store brokerId; views need slug + identity + branding). */
+async function getBrokerBySlugId(brokerDbId: string): Promise<AuditBroker | null> {
   const found = await getBrokerById({ db: getDb() }, brokerDbId);
   if (!found) return null;
   const b = found.broker;
-  return { slug: b.slug, societe: b.societe, bce: b.bce, fsmaNumber: b.fsmaNumber };
+  const logo = b.logoBase64
+    ? `data:${b.logoMimeType ?? "image/png"};base64,${b.logoBase64}`
+    : null;
+  return {
+    slug: b.slug,
+    societe: b.societe,
+    bce: b.bce,
+    fsmaNumber: b.fsmaNumber,
+    logo,
+    primaryColor: b.primaryColor ?? null,
+  };
+}
+
+/** Build the audit `branding` slot (logo + brand colour) from a broker, or undefined. */
+function brandingFor(broker: AuditBroker | null): AuditPayload["branding"] | undefined {
+  if (!broker) return undefined;
+  const branding: NonNullable<AuditPayload["branding"]> = { firmName: broker.societe };
+  if (broker.logo) branding.logoUrl = broker.logo;
+  if (broker.primaryColor) branding.primaryColor = broker.primaryColor;
+  return branding;
 }
 
 export interface StartAuditResult {
@@ -242,6 +271,9 @@ export async function requestWebsiteAuditPdf(
   let payload: AuditPayload;
   try {
     payload = applyAuditEdits(AuditPayloadSchema.parse(base), edits);
+    // Re-inject the broker's current branding so the branded PDF matches the app.
+    const branding = brandingFor(broker);
+    if (branding) payload = { ...payload, branding: { ...payload.branding, ...branding } };
   } catch (e) {
     return rollback(
       `Modifications invalides : ${e instanceof Error ? e.message.slice(0, 200) : "format inattendu"}`,

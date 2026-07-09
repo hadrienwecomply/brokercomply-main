@@ -256,6 +256,18 @@ export const brokers = pgTable(
     sharePointFolderPath: text('sharepoint_folder_path'),
     /** 'linked' | 'pending' | 'error' | null — best-effort provisioning state. */
     sharePointStatus: text('sharepoint_status'),
+    /**
+     * Company logo, PNG only, stored inline as base64 (no `data:` prefix).
+     * TEMPORARY home — like the report PDFs, this moves to a blob/SharePoint
+     * store later. Small by construction (≤ ~2 MB, validated at the upload route).
+     */
+    logoBase64: text('logo_base64'),
+    logoMimeType: text('logo_mime_type'),
+    /**
+     * Brand primary colour (hex `#rrggbb`), used to personalise forms/reports.
+     * Pre-filled from the logo via Anthropic vision on upload, always editable.
+     */
+    primaryColor: text('primary_color'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

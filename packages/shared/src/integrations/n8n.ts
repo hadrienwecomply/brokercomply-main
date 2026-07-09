@@ -16,6 +16,10 @@ export interface N8nTriggerPayload {
     societe: string;
     /** Drives the n8n Client Enrichment branch (IF "Has Website" → Site Explorer). */
     website: string | null;
+    /** Company logo as a `data:image/png;base64,…` URI, or null. Personalises the form/report. */
+    logo: string | null;
+    /** Brand accent colour `#rrggbb` (already clamped legible), or null. */
+    primaryColor: string | null;
   };
   answers: Array<{
     questionId: string;
@@ -43,7 +47,14 @@ export function buildN8nPayload(args: {
   filloutSubmissionId: string;
   formType: string | null;
   matchMethod: MatchMethod;
-  broker: { id: string; slug: string; societe: string; website?: string | null };
+  broker: {
+    id: string;
+    slug: string;
+    societe: string;
+    website?: string | null;
+    logo?: string | null;
+    primaryColor?: string | null;
+  };
   answers: Array<{ questionId: string; name?: string | null; type?: string | null; value?: unknown }>;
 }): N8nTriggerPayload {
   return {
@@ -56,6 +67,8 @@ export function buildN8nPayload(args: {
       slug: args.broker.slug,
       societe: args.broker.societe,
       website: args.broker.website ?? null,
+      logo: args.broker.logo ?? null,
+      primaryColor: args.broker.primaryColor ?? null,
     },
     answers: args.answers.map((a) => ({
       questionId: a.questionId,

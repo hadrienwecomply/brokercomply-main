@@ -1,3 +1,4 @@
+import { isEligible, legibleFontColor } from '../branding/theme.js';
 import type { AuditPayload, Finding, Level } from './types.js';
 
 /**
@@ -89,8 +90,18 @@ function findingBlock(finding: Finding, index: { section: number; item: number }
 }
 
 export function renderAuditHtml(payload: AuditPayload): string {
-  const { audit, findings, summary } = payload;
+  const { audit, findings, summary, branding } = payload;
   const pages = audit.pages ?? {};
+
+  // Brand colour: use the broker's primary colour when it carries identity,
+  // clamped to stay legible on white (WCAG 4.5:1). Falls back to the default.
+  const brand =
+    branding?.primaryColor && isEligible(branding.primaryColor)
+      ? legibleFontColor(branding.primaryColor)
+      : "#4653c8";
+  const logoImg = branding?.logoUrl
+    ? `<img class="a-logo" src="${esc(branding.logoUrl)}" alt="${esc(branding.firmName ?? audit.entity.name)}">`
+    : "";
 
   // Group findings by their section label, preserving payload order.
   const sections: Array<{ titre: string; findings: Finding[] }> = [];
@@ -125,11 +136,12 @@ export function renderAuditHtml(payload: AuditPayload): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Audit de conformité — ${esc(audit.entity.name)}</title>
 <style>
-  :root{--ink:#1c2127;--muted:#6b7280;--line:#e3e6ea;--brand:#4653c8;--paper:#f7f8fa}
+  :root{--ink:#1c2127;--muted:#6b7280;--line:#e3e6ea;--brand:${brand};--paper:#f7f8fa}
   *{box-sizing:border-box}
   body{margin:0;font:15px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--paper)}
   .wrap{max-width:880px;margin:0 auto;padding:32px 24px 120px}
   h1{font-size:26px;margin:0 0 4px}
+  .a-logo{max-height:56px;max-width:220px;object-fit:contain;margin:0 0 12px;display:block}
   h2{font-size:19px;margin:36px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--brand)}
   h3{font-size:15.5px;margin:0;flex:1}
   .a-sub{color:var(--muted);margin:0 0 20px}
@@ -175,6 +187,7 @@ export function renderAuditHtml(payload: AuditPayload): string {
 </head>
 <body>
 <div class="wrap">
+  ${logoImg}
   <h1>Audit de conformité du site web</h1>
   <p class="a-sub">${esc(audit.entity.name)} — <a href="${esc(audit.site.url)}" rel="noopener noreferrer">${esc(audit.site.url)}</a></p>
 
