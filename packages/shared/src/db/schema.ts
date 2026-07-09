@@ -256,6 +256,18 @@ export const brokers = pgTable(
     sharePointFolderPath: text('sharepoint_folder_path'),
     /** 'linked' | 'pending' | 'error' | null — best-effort provisioning state. */
     sharePointStatus: text('sharepoint_status'),
+    /**
+     * Company logo, PNG only, stored inline as base64 (no `data:` prefix).
+     * TEMPORARY home — like the report PDFs, this moves to a blob/SharePoint
+     * store later. Small by construction (≤ ~2 MB, validated at the upload route).
+     */
+    logoBase64: text('logo_base64'),
+    logoMimeType: text('logo_mime_type'),
+    /**
+     * Brand primary colour (hex `#rrggbb`), used to personalise forms/reports.
+     * Pre-filled from the logo via Anthropic vision on upload, always editable.
+     */
+    primaryColor: text('primary_color'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -581,3 +593,54 @@ export type FormSubmission = typeof formSubmissions.$inferSelect;
 export type NewFormSubmission = typeof formSubmissions.$inferInsert;
 export type FormField = typeof formFields.$inferSelect;
 export type NewFormField = typeof formFields.$inferInsert;
+
+/**
+ * Website compliance audits — one row per audit run of a broker's public
+ * site. `findings` holds the assembled payload (contract of the skill's
+ * payload.schema.json); the review/PDF lifecycle columns mirror
+ * `form_submissions` so the editable-report + PDF machinery is shared.
+ */
+export const websiteAudits = pgTable(
+  'website_audits',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    brokerId: uuid('broker_id')
+      .notNull()
+      .references(() => brokers.id, { onDelete: 'cascade' }),
+    /** URL audited (snapshot of brokers.website at launch time). */
+    websiteUrl: text('website_url').notNull(),
+    /**
+     * Audit lifecycle: 'queued' | 'running' | 'analyzed' | 'review_pending'
+     * | 'needs_manual' | 'error'. Designed so a worker dyno can later drain
+     * 'queued' rows without a schema change.
+     */
+    status: text('status').default('queued').notNull(),
+    /** Assembled audit payload (AuditPayload JSON — findings + summary). */
+    findings: jsonb('findings').$type<unknown>(),
+    /** Raw checker constats (verdicts + evidence), kept for replay/debug. */
+    constats: jsonb('constats').$type<unknown>(),
+    /** Pages scraped / failed / to-verify, incl. visual-measurement info. */
+    pagesFetched: jsonb('pages_fetched').$type<unknown>(),
+    errorMessage: text('error_message'),
+    /** Editable review HTML rendered from `findings` (brokercomply-review/v1). */
+    reviewHtml: text('review_html'),
+    /** Officer's latest corrections (the `edits` object from the editor). */
+    reviewEdits: jsonb('review_edits').$type<unknown>(),
+    /** Review lifecycle: 'pending' | 'edited' | 'pdf_requested' | 'pdf_ready'. */
+    reviewStatus: text('review_status'),
+    /** URL the "PDF" button points to (app route serving the stored PDF). */
+    pdfRef: text('pdf_ref'),
+    /** Base64 PDF returned by the n8n rapport-reco workflow (same temporary
+     * storage approach as form_submissions.pdf_base64). */
+    pdfBase64: text('pdf_base64'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_website_audits_broker').on(t.brokerId),
+    index('idx_website_audits_status').on(t.status),
+  ],
+);
+
+export type WebsiteAuditRow = typeof websiteAudits.$inferSelect;
+export type NewWebsiteAuditRow = typeof websiteAudits.$inferInsert;

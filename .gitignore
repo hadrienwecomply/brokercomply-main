@@ -34,3 +34,6 @@ apps/dashboard/scripts/notion-plan-snapshot.json
 # Observer tooling locks
 .observer.lock
 **/.observer.lock
+
+# Local client data (leads, prospects — PII, never commit)
+local-data/

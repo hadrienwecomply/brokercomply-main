@@ -39,6 +39,12 @@ export async function saveBroker(id: string, slug: string, patch: UpdateBrokerPa
   revalidatePath(`/courtiers/${slug}`);
 }
 
+/** Set (or clear, with null) a broker's brand primary colour. */
+export async function setPrimaryColor(id: string, slug: string, hex: string | null) {
+  await patchBroker(id, { primaryColor: hex });
+  revalidatePath(`/courtiers/${slug}`);
+}
+
 /** Update the opt-in domains used to match a broker's email conversations. */
 export async function setMatchDomains(slug: string, domains: string[]) {
   await setBrokerMatchDomains(slug, domains);

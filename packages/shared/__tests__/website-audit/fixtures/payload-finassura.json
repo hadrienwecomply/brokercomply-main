@@ -1,0 +1,548 @@
+{
+  "meta": {
+    "locale": "fr-BE",
+    "version": "DRAFT",
+    "generatedAt": "2026-07-08T17:29:48.970Z"
+  },
+  "branding": {},
+  "audit": {
+    "entity": {
+      "name": "Finassura",
+      "fsmaStatus": "à confirmer"
+    },
+    "site": {
+      "url": "https://www.finassura.be/",
+      "environment": "production"
+    },
+    "date": "2026-07-08",
+    "scope": "Audit du contenu publicitaire et informatif du site tel qu'il se présente. Il ne s'agit pas d'un audit juridique exhaustif des pratiques commerciales, contractuelles ou opérationnelles, ni d'un examen de la documentation précontractuelle.",
+    "disclaimer": "Les niveaux de risque sont indicatifs et ne préjugent pas de l'appréciation d'une autorité de contrôle ou d'un juge.",
+    "pages": {
+      "analysed": [
+        "https://www.finassura.be/"
+      ],
+      "notAnalysed": [
+        {
+          "page": "http://113475.brokerweb.be/fr/",
+          "reason": "fetch failed"
+        }
+      ]
+    }
+  },
+  "findings": [
+    {
+      "id": "P01",
+      "section": "Identification et page d'accueil",
+      "title": "Slogan légal crédit",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.64 §2 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P02",
+      "section": "Identification et page d'accueil",
+      "title": "Registre FSMA et lien de vérification",
+      "level": "critique",
+      "score": {
+        "filled": 0,
+        "applicable": 3
+      },
+      "constat": "S'agissant de l'identification réglementaire de l'intermédiaire, il est constaté que la ou les qualité(s) d'intermédiaire ne sont pas mentionnées, que le numéro d'inscription auprès de la FSMA n'est pas indiqué, seul le numéro d'entreprise (BCE) figurant et qu'aucun lien de vérification vers le registre de la FSMA n'est proposé.",
+      "recommandation": "L'identification réglementaire de l'intermédiaire est incomplète. Il convient de mentionner la ou les qualité(s) sous laquelle/lesquelles l'intermédiaire exerce (crédit hypothécaire, crédit à la consommation, assurances selon le cas), d'indiquer le numéro d'inscription auprès de la FSMA, lequel doit figurer en complément — et non en substitution — du numéro d'entreprise (BCE) et de faire figurer un lien de vérification renvoyant au registre de la FSMA (www.fsma.be/fr/data-portal).",
+      "legalRefs": [
+        "art. VII.128 §1 2° CDE",
+        "art. XII.6 §1 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P02.1",
+          "label": "Qualité(s) d'intermédiaire indiquée(s)",
+          "verdict": "non_conforme",
+          "evidence": "La page principale redirige vers http://113475.brokerweb.be/fr/ sans afficher aucun contenu textuel permettant d'identifier la qualité d'intermédiaire (courtier en assurances, en crédit hypothécaire, en crédit conso, etc.). Aucune occurrence trouvée après recherche.",
+          "source": "https://www.finassura.be/",
+          "article": "art. VII.128 §1 2° CDE"
+        },
+        {
+          "id": "P02.2",
+          "label": "Numéro d'inscription FSMA indiqué",
+          "verdict": "non_conforme",
+          "evidence": "Aucune occurrence trouvée après recherche. La page ne contient qu'un lien de redirection ('Click here to continue') sans aucun numéro FSMA visible.",
+          "source": "https://www.finassura.be/",
+          "article": "art. VII.128 §1 2° CDE"
+        },
+        {
+          "id": "P02.3",
+          "label": "Lien de vérification vers le data portal FSMA (fsma.be) présent",
+          "verdict": "non_conforme",
+          "evidence": "Aucune occurrence trouvée après recherche. Aucun lien vers fsma.be n'est présent sur la page.",
+          "source": "https://www.finassura.be/",
+          "article": "art. XII.6 §1 CDE"
+        }
+      ]
+    },
+    {
+      "id": "P03",
+      "section": "Identification et page d'accueil",
+      "title": "Cohérence statut FSMA / activité promue",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. I.9 35° CDE",
+        "art. VII.161 §1 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P04",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Publicité incitative au regroupement de crédits",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.123 §2 3° CDE",
+        "art. VII.65 §1 3° CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P06",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Exemple représentatif TAEG",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.64 §1 CDE",
+        "art. VII.124 §1 et §2 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P07",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Prospectus crédit hypothécaire",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.125 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P08",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Rapidité / facilité d'obtention",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.65 §1 2° CDE",
+        "art. VII.123 §2 2° CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P13",
+      "section": "Investissement immobilier",
+      "title": "Distinction consommateur / professionnel",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.3 §2 2° CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P14",
+      "section": "Investissement immobilier",
+      "title": "Risque de requalification fiscale",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "CIR 92 art. 90 1°",
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P15",
+      "section": "Investissement immobilier",
+      "title": "Crédit in fine / bullet : communication des risques",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P16",
+      "section": "Investissement immobilier",
+      "title": "Crédit sans apport : contraintes prudentielles BNB",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "Circulaire NBB_2019_27",
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P09",
+      "section": "Assurance solde restant dû",
+      "title": "Vente groupée / libre choix de l'assureur",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.147 §1 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P10",
+      "section": "Assurance solde restant dû",
+      "title": "Qualité d'intermédiaire en assurances et FSMA assurances",
+      "level": "critique",
+      "score": {
+        "filled": 0,
+        "applicable": 2
+      },
+      "constat": "S'agissant de la qualité d'intermédiaire en assurances, il est constaté que la qualité de courtier en assurances n'est pas mentionnée et que le numéro d'inscription FSMA en assurances et son lien de vérification ne figurent pas.",
+      "recommandation": "La qualité d'intermédiaire en assurances n'est pas régulièrement indiquée. Il convient de mentionner la qualité de courtier en assurances indépendant, tant sur la page d'assurance que dans le pied de page et d'indiquer le numéro d'inscription auprès de la FSMA en assurances, assorti d'un lien de vérification.",
+      "legalRefs": [
+        "loi 4 avril 2014, art. 261/262/281"
+      ],
+      "checks": [
+        {
+          "id": "P10.1",
+          "label": "Qualité de courtier en assurances mentionnée",
+          "verdict": "non_conforme",
+          "evidence": "La page principale ne contient qu'un lien de redirection ('Click here to continue') sans aucun contenu textuel mentionnant la qualité de courtier en assurances.",
+          "source": "https://www.finassura.be/",
+          "article": "Loi 4 avril 2014, art. 261/262"
+        },
+        {
+          "id": "P10.2",
+          "label": "Numéro d'inscription FSMA assurances + lien de vérification",
+          "verdict": "non_conforme",
+          "evidence": "Aucune occurrence trouvée après recherche : aucun numéro FSMA ni lien de vérification présent sur la page. Seul contenu disponible : 'Click here to continue [http://113475.brokerweb.be/fr/]'.",
+          "source": "https://www.finassura.be/",
+          "article": "Loi 4 avril 2014, art. 281"
+        }
+      ]
+    },
+    {
+      "id": "P11",
+      "section": "Assurance solde restant dû",
+      "title": "Caractère non obligatoire de l'assurance SRD",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P12",
+      "section": "Assurance solde restant dû",
+      "title": "Droit à l'oubli",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "loi 4 avril 2019",
+        "AR 26 mai 2019 (mod. 2023)"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P17",
+      "section": "Demande de crédit et Contact",
+      "title": "Demande de crédit : nature de la démarche",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.126 §2 CDE",
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P20",
+      "section": "Demande de crédit et Contact",
+      "title": "RGPD formulaires : lien vers la politique de confidentialité",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "RGPD art. 7",
+        "RGPD art. 13"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P05",
+      "section": "Mentions légales et Cookies",
+      "title": "Voies de réclamation et organismes de médiation",
+      "level": "critique",
+      "score": {
+        "filled": 0,
+        "applicable": 3
+      },
+      "constat": "S'agissant des voies de réclamation et de médiation, il est constaté qu'aucune procédure de réclamation interne n'est communiquée et que l'organe de médiation en matière de crédit (OMBUDSFIN) n'est pas mentionné. Sous réserve de vérification, l'élément suivant n'a pu être contrôlé : Ombudsman Assurances.",
+      "recommandation": "L'information relative aux voies de réclamation et de médiation fait défaut. Il convient de décrire la procédure de réclamation interne et d'indiquer l'organe de médiation compétent en matière de crédit (OMBUDSFIN). Les points suivants devront en outre faire l'objet d'une vérification : Ombudsman Assurances.",
+      "legalRefs": [
+        "art. VII.128 §1 4° CDE"
+      ],
+      "checks": [
+        {
+          "id": "P05.1",
+          "label": "Procédure de réclamation interne communiquée",
+          "verdict": "non_conforme",
+          "evidence": "La page principale redirige vers http://113475.brokerweb.be/fr/ sans afficher aucun contenu. Aucune procédure de réclamation interne n'est trouvée sur les pages disponibles.",
+          "source": "https://www.finassura.be/",
+          "article": "art. VII.128 §1 4° CDE"
+        },
+        {
+          "id": "P05.2",
+          "label": "OMBUDSFIN mentionné (médiation crédit)",
+          "verdict": "non_conforme",
+          "evidence": "Aucune occurrence du terme 'OMBUDSFIN' trouvée après recherche. La page ne contient que le lien de redirection 'Click here to continue'.",
+          "source": "https://www.finassura.be/",
+          "article": "art. VII.128 §1 4° CDE"
+        },
+        {
+          "id": "P05.3",
+          "label": "Ombudsman des Assurances mentionné",
+          "verdict": "a_verifier",
+          "evidence": "Le statut FSMA de l'entité est inconnu (activité assurances non confirmée). Aucune occurrence de 'Ombudsman des Assurances' trouvée sur la page disponible, mais le champ d'application ne peut être déterminé avec certitude.",
+          "source": "https://www.finassura.be/",
+          "article": "art. VII.128 §1 4° CDE"
+        }
+      ]
+    },
+    {
+      "id": "P18",
+      "section": "Mentions légales et Cookies",
+      "title": "Mentions légales conformes",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 3
+      },
+      "constat": "Sous réserve de vérification, les éléments suivants n'ont pu être contrôlés : Identité de l'entité, FSMA + qualités et SPF / médiation / CCP.",
+      "recommandation": "Une vérification est requise concernant : Identité de l'entité, FSMA + qualités et SPF / médiation / CCP.",
+      "legalRefs": [
+        "art. VII.128 §1 CDE",
+        "art. XII.6 §1 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P18.1",
+          "label": "Mentions identifient l'entité auditée (pas l'agence web)",
+          "verdict": "a_verifier",
+          "evidence": "La page principale redirige vers http://113475.brokerweb.be/fr/ sans afficher de contenu textuel exploitable. Aucune mention légale accessible sur la page fournie.",
+          "source": "https://www.finassura.be/",
+          "article": "art. XII.6 §1 CDE"
+        },
+        {
+          "id": "P18.2",
+          "label": "Inscription FSMA et qualités d'intermédiaire mentionnées",
+          "verdict": "a_verifier",
+          "evidence": "La page principale redirige vers http://113475.brokerweb.be/fr/ sans afficher de contenu textuel exploitable. Aucune mention relative à la FSMA ou aux qualités d'intermédiaire accessible sur la page fournie.",
+          "source": "https://www.finassura.be/",
+          "article": "art. VII.128 §1 CDE"
+        },
+        {
+          "id": "P18.3",
+          "label": "Coordonnées SPF Économie, voies de médiation et référence CCP",
+          "verdict": "a_verifier",
+          "evidence": "La page principale redirige vers http://113475.brokerweb.be/fr/ sans afficher de contenu textuel exploitable. Aucune mention relative au SPF Économie, aux voies de médiation ou à la CCP accessible sur la page fournie.",
+          "source": "https://www.finassura.be/",
+          "article": "art. VII.128 §1 CDE"
+        }
+      ]
+    },
+    {
+      "id": "P19",
+      "section": "Mentions légales et Cookies",
+      "title": "Cookies : consentement préalable et politique",
+      "level": "critique",
+      "score": {
+        "filled": 0,
+        "applicable": 3
+      },
+      "constat": "S'agissant du dispositif relatif aux cookies, il est constaté qu'aucune bannière de consentement conforme n'est mise en place et que la politique de cookies est incomplète ou inaccessible. Sous réserve de vérification, l'élément suivant n'a pu être contrôlé : Dépôt préalable.",
+      "recommandation": "Le dispositif relatif aux cookies n'est pas conforme. Il convient de mettre en place une bannière de consentement permettant un refus aussi aisé que l'acceptation et de publier une politique de cookies complète et accessible, précisant la finalité, la durée et la base légale de chaque cookie. Les points suivants devront en outre faire l'objet d'une vérification : Dépôt préalable.",
+      "legalRefs": [
+        "loi 13 juin 2005 art. 129 §1",
+        "Recommandation APD n° 01/2020",
+        "RGPD art. 7"
+      ],
+      "checks": [
+        {
+          "id": "P19.1",
+          "label": "Bannière de consentement cookies avec refus aussi simple que l'acceptation",
+          "verdict": "non_conforme",
+          "evidence": "Mesure DOM rendu : banniereCookies = false. Aucune bannière de consentement détectée sur la page à 1280px de largeur.",
+          "source": "https://www.finassura.be/",
+          "article": "Loi 13 juin 2005 art. 129 §1 ; Recommandation APD n° 01/2020"
+        },
+        {
+          "id": "P19.2",
+          "label": "Aucun cookie non essentiel déposé avant consentement",
+          "verdict": "a_verifier",
+          "evidence": "La page principale redirige vers http://113475.brokerweb.be/fr/ et aucune analyse des cookies effectivement déposés n'est disponible dans les données fournies. Impossible de confirmer ou infirmer le dépôt de cookies non essentiels avant consentement.",
+          "source": "https://www.finassura.be/",
+          "article": "Loi 13 juin 2005 art. 129 §1 ; RGPD art. 7"
+        },
+        {
+          "id": "P19.3",
+          "label": "Politique cookies complète et accessible",
+          "verdict": "non_conforme",
+          "evidence": "Le contenu de la page se limite à 'Click here to continue [http://113475.brokerweb.be/fr/]'. Aucun lien vers une politique cookies ni aucune politique cookies n'est trouvé sur cette page.",
+          "source": "https://www.finassura.be/",
+          "article": "Recommandation APD n° 01/2020 ; RGPD art. 7"
+        }
+      ]
+    },
+    {
+      "id": "P21",
+      "section": "Mentions légales et Cookies",
+      "title": "Centrale des Crédits aux Particuliers (CCP)",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 1
+      },
+      "constat": "Sous réserve de vérification, l'élément suivant n'a pu être contrôlé : Info CCP.",
+      "recommandation": "Une vérification est requise concernant : Info CCP.",
+      "legalRefs": [
+        "art. VII.69 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P21.1",
+          "label": "Information sur la CCP avec renvoi vers la BNB",
+          "verdict": "a_verifier",
+          "evidence": "La page principale redirige vers http://113475.brokerweb.be/fr/ et ne contient aucun contenu textuel exploitable. Impossible de vérifier la présence d'une mention relative à la CCP ou à la BNB.",
+          "source": "https://www.finassura.be/",
+          "article": "art. VII.69 CDE"
+        }
+      ]
+    },
+    {
+      "id": "P22",
+      "section": "Simulateur",
+      "title": "Simulateur : avertissement de non-contractualité",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P23",
+      "section": "Articles et pages géolocalisées",
+      "title": "Articles de blog et pages géolocalisées",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VI.97 CDE",
+        "art. VII.64/VII.124 CDE"
+      ],
+      "checks": []
+    }
+  ],
+  "summary": {
+    "critiques": 4,
+    "ameliorations": 0,
+    "conformes": 0,
+    "aVerifier": 2
+  }
+}

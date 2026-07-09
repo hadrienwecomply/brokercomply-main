@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "pnpm --filter @brokercomply/shared build && next dev",
+    "dev:only": "next dev",
+    "build": "pnpm --filter @brokercomply/shared build && next build",
     "start": "next start",
     "lint": "next lint"
   },

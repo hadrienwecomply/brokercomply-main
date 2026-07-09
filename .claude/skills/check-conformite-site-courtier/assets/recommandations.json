@@ -1,0 +1,1250 @@
+{
+  "_doc": "Matrice de recommandations « gravée dans la roche ». Source unique des recos et de la structure du rapport. Le subagent ne produit que des constats (verdicts + preuves) ; la reco est déterministe : pour l'ensemble des checks 'non_conforme' d'une sous-section, on cherche une combinaison exacte dans `combinaisons` ; à défaut, on assemble les `fragments` des checks manquants (repli). Le niveau de criticité reste calculé par décompte (voir SKILL.md). Édité à la main par Hadrien.",
+  "sections": [
+    {
+      "id": "S1",
+      "titre": "Identification et page d'accueil",
+      "sousSections": [
+        "P01",
+        "P02",
+        "P03"
+      ]
+    },
+    {
+      "id": "S2",
+      "titre": "Crédit hypothécaire et sous-pages",
+      "sousSections": [
+        "P04",
+        "P06",
+        "P07",
+        "P08"
+      ]
+    },
+    {
+      "id": "S3",
+      "titre": "Investissement immobilier",
+      "sousSections": [
+        "P13",
+        "P14",
+        "P15",
+        "P16"
+      ]
+    },
+    {
+      "id": "S4",
+      "titre": "Assurance solde restant dû",
+      "sousSections": [
+        "P09",
+        "P10",
+        "P11",
+        "P12"
+      ]
+    },
+    {
+      "id": "S5",
+      "titre": "Demande de crédit et Contact",
+      "sousSections": [
+        "P17",
+        "P20"
+      ]
+    },
+    {
+      "id": "S6",
+      "titre": "Mentions légales et Cookies",
+      "sousSections": [
+        "P05",
+        "P18",
+        "P19",
+        "P21"
+      ]
+    },
+    {
+      "id": "S7",
+      "titre": "Simulateur",
+      "sousSections": [
+        "P22"
+      ]
+    },
+    {
+      "id": "S8",
+      "titre": "Articles et pages géolocalisées",
+      "sousSections": [
+        "P23"
+      ]
+    }
+  ],
+  "sousSections": {
+    "P01": {
+      "titre": "Slogan légal crédit",
+      "legalRefs": [
+        "art. VII.64 §2 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P01.1"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de reprendre la formulation légale exacte « Attention, emprunter de l'argent coûte aussi de l'argent », de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.2"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de la repositionner dans la zone de contenu principale, à proximité immédiate de la première offre de crédit, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.3"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient d'en porter la taille à un niveau au moins égal à celui des accroches commerciales, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.4"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de la faire figurer sur chacune des pages promouvant un crédit, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.1",
+            "P01.2"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de reprendre la formulation légale exacte « Attention, emprunter de l'argent coûte aussi de l'argent » et de la repositionner dans la zone de contenu principale, à proximité immédiate de la première offre de crédit, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.1",
+            "P01.3"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de reprendre la formulation légale exacte « Attention, emprunter de l'argent coûte aussi de l'argent » et d'en porter la taille à un niveau au moins égal à celui des accroches commerciales, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.1",
+            "P01.4"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de reprendre la formulation légale exacte « Attention, emprunter de l'argent coûte aussi de l'argent » et de la faire figurer sur chacune des pages promouvant un crédit, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.2",
+            "P01.3"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de la repositionner dans la zone de contenu principale, à proximité immédiate de la première offre de crédit et d'en porter la taille à un niveau au moins égal à celui des accroches commerciales, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.2",
+            "P01.4"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de la repositionner dans la zone de contenu principale, à proximité immédiate de la première offre de crédit et de la faire figurer sur chacune des pages promouvant un crédit, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.3",
+            "P01.4"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient d'en porter la taille à un niveau au moins égal à celui des accroches commerciales et de la faire figurer sur chacune des pages promouvant un crédit, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.1",
+            "P01.2",
+            "P01.3"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de reprendre la formulation légale exacte « Attention, emprunter de l'argent coûte aussi de l'argent », de la repositionner dans la zone de contenu principale, à proximité immédiate de la première offre de crédit et d'en porter la taille à un niveau au moins égal à celui des accroches commerciales, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.1",
+            "P01.2",
+            "P01.4"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de reprendre la formulation légale exacte « Attention, emprunter de l'argent coûte aussi de l'argent », de la repositionner dans la zone de contenu principale, à proximité immédiate de la première offre de crédit et de la faire figurer sur chacune des pages promouvant un crédit, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.1",
+            "P01.3",
+            "P01.4"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de reprendre la formulation légale exacte « Attention, emprunter de l'argent coûte aussi de l'argent », d'en porter la taille à un niveau au moins égal à celui des accroches commerciales et de la faire figurer sur chacune des pages promouvant un crédit, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.2",
+            "P01.3",
+            "P01.4"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de la repositionner dans la zone de contenu principale, à proximité immédiate de la première offre de crédit, d'en porter la taille à un niveau au moins égal à celui des accroches commerciales et de la faire figurer sur chacune des pages promouvant un crédit, de manière à en garantir la lisibilité et la visibilité effective."
+        },
+        {
+          "manquants": [
+            "P01.1",
+            "P01.2",
+            "P01.3",
+            "P01.4"
+          ],
+          "reco": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de reprendre la formulation légale exacte « Attention, emprunter de l'argent coûte aussi de l'argent », de la repositionner dans la zone de contenu principale, à proximité immédiate de la première offre de crédit, d'en porter la taille à un niveau au moins égal à celui des accroches commerciales et de la faire figurer sur chacune des pages promouvant un crédit, de manière à en garantir la lisibilité et la visibilité effective."
+        }
+      ],
+      "constatLead": "S'agissant de la mention légale relative au coût du crédit, il est constaté",
+      "checks": {
+        "P01.1": {
+          "label": "Formulation",
+          "constatClause": "sa formulation ne correspond pas à la formulation légale exacte"
+        },
+        "P01.2": {
+          "label": "Emplacement",
+          "constatClause": "elle ne figure que dans le pied de page, en dehors de la zone de contenu principale"
+        },
+        "P01.3": {
+          "label": "Taille",
+          "constatClause": "sa taille est inférieure à celle des accroches commerciales de la page"
+        },
+        "P01.4": {
+          "label": "Présence",
+          "constatClause": "elle est absente de certaines pages promouvant un crédit"
+        }
+      }
+    },
+    "P02": {
+      "titre": "Registre FSMA et lien de vérification",
+      "legalRefs": [
+        "art. VII.128 §1 2° CDE",
+        "art. XII.6 §1 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P02.1"
+          ],
+          "reco": "L'identification réglementaire de l'intermédiaire est incomplète. Il convient de mentionner la ou les qualité(s) sous laquelle/lesquelles l'intermédiaire exerce (crédit hypothécaire, crédit à la consommation, assurances selon le cas)."
+        },
+        {
+          "manquants": [
+            "P02.2"
+          ],
+          "reco": "L'identification réglementaire de l'intermédiaire est incomplète. Il convient d'indiquer le numéro d'inscription auprès de la FSMA, lequel doit figurer en complément — et non en substitution — du numéro d'entreprise (BCE)."
+        },
+        {
+          "manquants": [
+            "P02.3"
+          ],
+          "reco": "L'identification réglementaire de l'intermédiaire est incomplète. Il convient de faire figurer un lien de vérification renvoyant au registre de la FSMA (www.fsma.be/fr/data-portal)."
+        },
+        {
+          "manquants": [
+            "P02.1",
+            "P02.2"
+          ],
+          "reco": "L'identification réglementaire de l'intermédiaire est incomplète. Il convient de mentionner la ou les qualité(s) sous laquelle/lesquelles l'intermédiaire exerce (crédit hypothécaire, crédit à la consommation, assurances selon le cas) et d'indiquer le numéro d'inscription auprès de la FSMA, lequel doit figurer en complément — et non en substitution — du numéro d'entreprise (BCE)."
+        },
+        {
+          "manquants": [
+            "P02.1",
+            "P02.3"
+          ],
+          "reco": "L'identification réglementaire de l'intermédiaire est incomplète. Il convient de mentionner la ou les qualité(s) sous laquelle/lesquelles l'intermédiaire exerce (crédit hypothécaire, crédit à la consommation, assurances selon le cas) et de faire figurer un lien de vérification renvoyant au registre de la FSMA (www.fsma.be/fr/data-portal)."
+        },
+        {
+          "manquants": [
+            "P02.2",
+            "P02.3"
+          ],
+          "reco": "L'identification réglementaire de l'intermédiaire est incomplète. Il convient d'indiquer le numéro d'inscription auprès de la FSMA, lequel doit figurer en complément — et non en substitution — du numéro d'entreprise (BCE) et de faire figurer un lien de vérification renvoyant au registre de la FSMA (www.fsma.be/fr/data-portal)."
+        },
+        {
+          "manquants": [
+            "P02.1",
+            "P02.2",
+            "P02.3"
+          ],
+          "reco": "L'identification réglementaire de l'intermédiaire est incomplète. Il convient de mentionner la ou les qualité(s) sous laquelle/lesquelles l'intermédiaire exerce (crédit hypothécaire, crédit à la consommation, assurances selon le cas), d'indiquer le numéro d'inscription auprès de la FSMA, lequel doit figurer en complément — et non en substitution — du numéro d'entreprise (BCE) et de faire figurer un lien de vérification renvoyant au registre de la FSMA (www.fsma.be/fr/data-portal)."
+        }
+      ],
+      "constatLead": "S'agissant de l'identification réglementaire de l'intermédiaire, il est constaté",
+      "checks": {
+        "P02.1": {
+          "label": "Qualité d'intermédiaire",
+          "constatClause": "la ou les qualité(s) d'intermédiaire ne sont pas mentionnées"
+        },
+        "P02.2": {
+          "label": "Numéro FSMA",
+          "constatClause": "le numéro d'inscription auprès de la FSMA n'est pas indiqué, seul le numéro d'entreprise (BCE) figurant"
+        },
+        "P02.3": {
+          "label": "Lien de vérification",
+          "constatClause": "aucun lien de vérification vers le registre de la FSMA n'est proposé"
+        }
+      }
+    },
+    "P03": {
+      "titre": "Cohérence statut FSMA / activité promue",
+      "legalRefs": [
+        "art. I.9 35° CDE",
+        "art. VII.161 §1 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P03.1"
+          ],
+          "reco": "La cohérence entre le statut FSMA et l'activité de crédit à la consommation effectivement promue doit être assurée. Il convient de confirmer l'inscription FSMA en crédit à la consommation puis, soit solliciter cette inscription (application CABRIO) afin de maintenir la présentation active des produits, soit revoir les pages concernées pour supprimer toute présentation active et se limiter à une mise en relation avec un partenaire habilité."
+        }
+      ],
+      "constatLead": "S'agissant de la cohérence entre le statut FSMA et l'activité promue, il est constaté",
+      "checks": {
+        "P03.1": {
+          "label": "Statut / activité conso",
+          "constatClause": "le site présente activement des produits de crédit à la consommation sans que l'inscription FSMA correspondante ait pu être vérifiée"
+        }
+      }
+    },
+    "P04": {
+      "titre": "Publicité incitative au regroupement de crédits",
+      "legalRefs": [
+        "art. VII.123 §2 3° CDE",
+        "art. VII.65 §1 3° CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P04.1"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de supprimer la vignette ou la section mettant en avant le regroupement, toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.2"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de retirer les appels à l'action incitatifs, toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.3"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de neutraliser les rubriques et questions fréquentes vantant les avantages du regroupement, toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.4"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de retirer le regroupement de la liste des services mis en avant (menu, pied de page), toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.1",
+            "P04.2"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de supprimer la vignette ou la section mettant en avant le regroupement et de retirer les appels à l'action incitatifs, toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.1",
+            "P04.3"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de supprimer la vignette ou la section mettant en avant le regroupement et de neutraliser les rubriques et questions fréquentes vantant les avantages du regroupement, toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.1",
+            "P04.4"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de supprimer la vignette ou la section mettant en avant le regroupement et de retirer le regroupement de la liste des services mis en avant (menu, pied de page), toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.2",
+            "P04.3"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de retirer les appels à l'action incitatifs et de neutraliser les rubriques et questions fréquentes vantant les avantages du regroupement, toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.2",
+            "P04.4"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de retirer les appels à l'action incitatifs et de retirer le regroupement de la liste des services mis en avant (menu, pied de page), toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.3",
+            "P04.4"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de neutraliser les rubriques et questions fréquentes vantant les avantages du regroupement et de retirer le regroupement de la liste des services mis en avant (menu, pied de page), toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.1",
+            "P04.2",
+            "P04.3"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de supprimer la vignette ou la section mettant en avant le regroupement, de retirer les appels à l'action incitatifs et de neutraliser les rubriques et questions fréquentes vantant les avantages du regroupement, toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.1",
+            "P04.2",
+            "P04.4"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de supprimer la vignette ou la section mettant en avant le regroupement, de retirer les appels à l'action incitatifs et de retirer le regroupement de la liste des services mis en avant (menu, pied de page), toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.1",
+            "P04.3",
+            "P04.4"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de supprimer la vignette ou la section mettant en avant le regroupement, de neutraliser les rubriques et questions fréquentes vantant les avantages du regroupement et de retirer le regroupement de la liste des services mis en avant (menu, pied de page), toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.2",
+            "P04.3",
+            "P04.4"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de retirer les appels à l'action incitatifs, de neutraliser les rubriques et questions fréquentes vantant les avantages du regroupement et de retirer le regroupement de la liste des services mis en avant (menu, pied de page), toute information sur ce service devant demeurer strictement neutre et factuelle."
+        },
+        {
+          "manquants": [
+            "P04.1",
+            "P04.2",
+            "P04.3",
+            "P04.4"
+          ],
+          "reco": "La communication relative au regroupement de crédits revêt un caractère incitatif prohibé. Il convient de supprimer la vignette ou la section mettant en avant le regroupement, de retirer les appels à l'action incitatifs, de neutraliser les rubriques et questions fréquentes vantant les avantages du regroupement et de retirer le regroupement de la liste des services mis en avant (menu, pied de page), toute information sur ce service devant demeurer strictement neutre et factuelle."
+        }
+      ],
+      "constatLead": "S'agissant de la communication relative au regroupement de crédits, il est constaté",
+      "checks": {
+        "P04.1": {
+          "label": "Vignette",
+          "constatClause": "une vignette ou une section dédiée met le regroupement en avant"
+        },
+        "P04.2": {
+          "label": "Appel à l'action",
+          "constatClause": "des appels à l'action incitent au regroupement"
+        },
+        "P04.3": {
+          "label": "FAQ / avantages",
+          "constatClause": "des rubriques ou questions fréquentes en vantent les avantages"
+        },
+        "P04.4": {
+          "label": "Dans les services",
+          "constatClause": "le regroupement figure parmi les services mis en avant"
+        }
+      }
+    },
+    "P05": {
+      "titre": "Voies de réclamation et organismes de médiation",
+      "legalRefs": [
+        "art. VII.128 §1 4° CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P05.1"
+          ],
+          "reco": "L'information relative aux voies de réclamation et de médiation fait défaut. Il convient de décrire la procédure de réclamation interne."
+        },
+        {
+          "manquants": [
+            "P05.2"
+          ],
+          "reco": "L'information relative aux voies de réclamation et de médiation fait défaut. Il convient d'indiquer l'organe de médiation compétent en matière de crédit (OMBUDSFIN)."
+        },
+        {
+          "manquants": [
+            "P05.3"
+          ],
+          "reco": "L'information relative aux voies de réclamation et de médiation fait défaut. Il convient d'indiquer l'Ombudsman des Assurances."
+        },
+        {
+          "manquants": [
+            "P05.1",
+            "P05.2"
+          ],
+          "reco": "L'information relative aux voies de réclamation et de médiation fait défaut. Il convient de décrire la procédure de réclamation interne et d'indiquer l'organe de médiation compétent en matière de crédit (OMBUDSFIN)."
+        },
+        {
+          "manquants": [
+            "P05.1",
+            "P05.3"
+          ],
+          "reco": "L'information relative aux voies de réclamation et de médiation fait défaut. Il convient de décrire la procédure de réclamation interne et d'indiquer l'Ombudsman des Assurances."
+        },
+        {
+          "manquants": [
+            "P05.2",
+            "P05.3"
+          ],
+          "reco": "L'information relative aux voies de réclamation et de médiation fait défaut. Il convient d'indiquer l'organe de médiation compétent en matière de crédit (OMBUDSFIN) et d'indiquer l'Ombudsman des Assurances."
+        },
+        {
+          "manquants": [
+            "P05.1",
+            "P05.2",
+            "P05.3"
+          ],
+          "reco": "L'information relative aux voies de réclamation et de médiation fait défaut. Il convient de décrire la procédure de réclamation interne, d'indiquer l'organe de médiation compétent en matière de crédit (OMBUDSFIN) et d'indiquer l'Ombudsman des Assurances."
+        }
+      ],
+      "constatLead": "S'agissant des voies de réclamation et de médiation, il est constaté",
+      "checks": {
+        "P05.1": {
+          "label": "Réclamation interne",
+          "constatClause": "aucune procédure de réclamation interne n'est communiquée"
+        },
+        "P05.2": {
+          "label": "OMBUDSFIN",
+          "constatClause": "l'organe de médiation en matière de crédit (OMBUDSFIN) n'est pas mentionné"
+        },
+        "P05.3": {
+          "label": "Ombudsman Assurances",
+          "constatClause": "l'Ombudsman des Assurances n'est pas mentionné"
+        }
+      }
+    },
+    "P06": {
+      "titre": "Exemple représentatif TAEG",
+      "legalRefs": [
+        "art. VII.64 §1 CDE",
+        "art. VII.124 §1 et §2 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P06.1"
+          ],
+          "reco": "Les informations chiffrées relatives au crédit ne sont pas assorties des mentions impératives. Il convient de faire figurer sur la même page un exemple représentatif complet (type de crédit, montant, durée, TAEG, taux débiteur, mensualité et montant total dû)."
+        },
+        {
+          "manquants": [
+            "P06.2"
+          ],
+          "reco": "Les informations chiffrées relatives au crédit ne sont pas assorties des mentions impératives. Il convient de prévoir un exemple représentatif distinct pour chaque type de crédit proposé."
+        },
+        {
+          "manquants": [
+            "P06.1",
+            "P06.2"
+          ],
+          "reco": "Les informations chiffrées relatives au crédit ne sont pas assorties des mentions impératives. Il convient de faire figurer sur la même page un exemple représentatif complet (type de crédit, montant, durée, TAEG, taux débiteur, mensualité et montant total dû) et de prévoir un exemple représentatif distinct pour chaque type de crédit proposé."
+        }
+      ],
+      "constatLead": "S'agissant des informations chiffrées relatives au crédit, il est constaté",
+      "checks": {
+        "P06.1": {
+          "label": "Exemple complet",
+          "constatClause": "aucun exemple représentatif complet ne figure sur la page affichant ces chiffres"
+        },
+        "P06.2": {
+          "label": "Exemple par type",
+          "constatClause": "aucun exemple distinct n'est prévu pour chacun des types de crédit proposés"
+        }
+      }
+    },
+    "P07": {
+      "titre": "Prospectus crédit hypothécaire",
+      "legalRefs": [
+        "art. VII.125 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P07.1"
+          ],
+          "reco": "Le prospectus impératif en matière de crédit hypothécaire n'est pas mis à disposition. Il convient d'établir et publier un prospectus gratuit et accessible en permanence, reprenant les types de crédits, les sûretés, les durées, les types de taux, un exemple représentatif avec TAEG, les frais et indemnités, les indices de référence et les conséquences du non-paiement."
+        }
+      ],
+      "constatLead": "S'agissant du prospectus en matière de crédit hypothécaire, il est constaté",
+      "checks": {
+        "P07.1": {
+          "label": "Prospectus",
+          "constatClause": "aucun prospectus conforme n'est mis à la disposition du consommateur"
+        }
+      }
+    },
+    "P08": {
+      "titre": "Rapidité / facilité d'obtention",
+      "legalRefs": [
+        "art. VII.65 §1 2° CDE",
+        "art. VII.123 §2 2° CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P08.1"
+          ],
+          "reco": "La communication met en avant la rapidité d'obtention du crédit, ce qui n'est pas admis. Il convient de supprimer toute promesse chiffrée de rapidité d'octroi (par exemple « en 24 heures » ou « décision dans l'heure »)."
+        },
+        {
+          "manquants": [
+            "P08.2"
+          ],
+          "reco": "La communication met en avant la rapidité d'obtention du crédit, ce qui n'est pas admis. Il convient de recentrer le discours sur la qualité de l'analyse du dossier plutôt que sur la rapidité ou la facilité d'obtention."
+        },
+        {
+          "manquants": [
+            "P08.1",
+            "P08.2"
+          ],
+          "reco": "La communication met en avant la rapidité d'obtention du crédit, ce qui n'est pas admis. Il convient de supprimer toute promesse chiffrée de rapidité d'octroi (par exemple « en 24 heures » ou « décision dans l'heure ») et de recentrer le discours sur la qualité de l'analyse du dossier plutôt que sur la rapidité ou la facilité d'obtention."
+        }
+      ],
+      "constatLead": "S'agissant de la communication sur les délais d'obtention, il est constaté",
+      "checks": {
+        "P08.1": {
+          "label": "Rapidité chiffrée",
+          "constatClause": "des promesses chiffrées de rapidité d'octroi sont employées"
+        },
+        "P08.2": {
+          "label": "Rapidité générale",
+          "constatClause": "la rapidité ou la facilité d'obtention fait l'objet d'une mise en avant"
+        }
+      }
+    },
+    "P09": {
+      "titre": "Vente groupée / libre choix de l'assureur",
+      "legalRefs": [
+        "art. VII.147 §1 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P09.1"
+          ],
+          "reco": "L'information relative au choix de l'assureur dans le cadre de la vente groupée est incomplète. Il convient de mentionner le libre choix de l'assureur."
+        },
+        {
+          "manquants": [
+            "P09.2"
+          ],
+          "reco": "L'information relative au choix de l'assureur dans le cadre de la vente groupée est incomplète. Il convient de mentionner le droit de changer d'assureur après écoulement d'un tiers de la durée du crédit, sans perte de la réduction de taux (crédits conclus à compter du 1er juin 2024)."
+        },
+        {
+          "manquants": [
+            "P09.1",
+            "P09.2"
+          ],
+          "reco": "L'information relative au choix de l'assureur dans le cadre de la vente groupée est incomplète. Il convient de mentionner le libre choix de l'assureur et de mentionner le droit de changer d'assureur après écoulement d'un tiers de la durée du crédit, sans perte de la réduction de taux (crédits conclus à compter du 1er juin 2024)."
+        }
+      ],
+      "constatLead": "S'agissant du choix de l'assureur, il est constaté",
+      "checks": {
+        "P09.1": {
+          "label": "Libre choix",
+          "constatClause": "le libre choix de l'assureur n'est pas mentionné"
+        },
+        "P09.2": {
+          "label": "Changement après 1/3",
+          "constatClause": "le droit de changer d'assureur après un tiers de la durée n'est pas mentionné"
+        }
+      }
+    },
+    "P10": {
+      "titre": "Qualité d'intermédiaire en assurances et FSMA assurances",
+      "legalRefs": [
+        "loi 4 avril 2014, art. 261/262/281"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P10.1"
+          ],
+          "reco": "La qualité d'intermédiaire en assurances n'est pas régulièrement indiquée. Il convient de mentionner la qualité de courtier en assurances indépendant, tant sur la page d'assurance que dans le pied de page."
+        },
+        {
+          "manquants": [
+            "P10.2"
+          ],
+          "reco": "La qualité d'intermédiaire en assurances n'est pas régulièrement indiquée. Il convient d'indiquer le numéro d'inscription auprès de la FSMA en assurances, assorti d'un lien de vérification."
+        },
+        {
+          "manquants": [
+            "P10.1",
+            "P10.2"
+          ],
+          "reco": "La qualité d'intermédiaire en assurances n'est pas régulièrement indiquée. Il convient de mentionner la qualité de courtier en assurances indépendant, tant sur la page d'assurance que dans le pied de page et d'indiquer le numéro d'inscription auprès de la FSMA en assurances, assorti d'un lien de vérification."
+        }
+      ],
+      "constatLead": "S'agissant de la qualité d'intermédiaire en assurances, il est constaté",
+      "checks": {
+        "P10.1": {
+          "label": "Qualité assurances",
+          "constatClause": "la qualité de courtier en assurances n'est pas mentionnée"
+        },
+        "P10.2": {
+          "label": "Numéro FSMA assur.",
+          "constatClause": "le numéro d'inscription FSMA en assurances et son lien de vérification ne figurent pas"
+        }
+      }
+    },
+    "P11": {
+      "titre": "Caractère non obligatoire de l'assurance SRD",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P11.1"
+          ],
+          "reco": "La présentation du caractère facultatif de l'assurance solde restant dû est insuffisante. Il convient de préciser, dans le corps même du texte, que cette assurance n'est pas légalement obligatoire."
+        },
+        {
+          "manquants": [
+            "P11.2"
+          ],
+          "reco": "La présentation du caractère facultatif de l'assurance solde restant dû est insuffisante. Il convient d'éviter de la présenter comme « essentielle » ou « incontournable » sans nuance."
+        },
+        {
+          "manquants": [
+            "P11.1",
+            "P11.2"
+          ],
+          "reco": "La présentation du caractère facultatif de l'assurance solde restant dû est insuffisante. Il convient de préciser, dans le corps même du texte, que cette assurance n'est pas légalement obligatoire et d'éviter de la présenter comme « essentielle » ou « incontournable » sans nuance."
+        }
+      ],
+      "constatLead": "S'agissant du caractère facultatif de l'assurance solde restant dû, il est constaté",
+      "checks": {
+        "P11.1": {
+          "label": "Corps de texte",
+          "constatClause": "son caractère non obligatoire n'est indiqué qu'en rubrique « questions fréquentes », et non dans le corps du texte"
+        },
+        "P11.2": {
+          "label": "Pas « essentielle »",
+          "constatClause": "elle est présentée comme essentielle ou incontournable sans nuance suffisante"
+        }
+      }
+    },
+    "P12": {
+      "titre": "Droit à l'oubli",
+      "legalRefs": [
+        "loi 4 avril 2019",
+        "AR 26 mai 2019 (mod. 2023)"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P12.1"
+          ],
+          "reco": "L'information relative au droit à l'oubli fait défaut alors que le questionnaire médical est évoqué. Il convient de mentionner le droit à l'oubli, au sein d'une question fréquente dédiée et par un renvoi dans le corps du texte."
+        },
+        {
+          "manquants": [
+            "P12.2"
+          ],
+          "reco": "L'information relative au droit à l'oubli fait défaut alors que le questionnaire médical est évoqué. Il convient de préciser le délai applicable, ramené à cinq ans depuis le 1er janvier 2025 pour la plupart des cancers."
+        },
+        {
+          "manquants": [
+            "P12.1",
+            "P12.2"
+          ],
+          "reco": "L'information relative au droit à l'oubli fait défaut alors que le questionnaire médical est évoqué. Il convient de mentionner le droit à l'oubli, au sein d'une question fréquente dédiée et par un renvoi dans le corps du texte et de préciser le délai applicable, ramené à cinq ans depuis le 1er janvier 2025 pour la plupart des cancers."
+        }
+      ],
+      "constatLead": "S'agissant du droit à l'oubli, il est constaté",
+      "checks": {
+        "P12.1": {
+          "label": "Droit à l'oubli",
+          "constatClause": "le droit à l'oubli n'est pas mentionné"
+        },
+        "P12.2": {
+          "label": "Délai",
+          "constatClause": "le délai applicable n'est pas précisé"
+        }
+      }
+    },
+    "P13": {
+      "titre": "Distinction consommateur / professionnel",
+      "legalRefs": [
+        "art. VII.3 §2 2° CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P13.1"
+          ],
+          "reco": "La distinction entre clientèle de consommateurs et clientèle professionnelle n'est pas opérée. Il convient de préciser, sur chaque page concernée, le public visé (consommateur ou professionnel)."
+        },
+        {
+          "manquants": [
+            "P13.2"
+          ],
+          "reco": "La distinction entre clientèle de consommateurs et clientèle professionnelle n'est pas opérée. Il convient d'adapter le régime applicable au public visé, en retenant, pour un public mixte, le régime le plus protecteur (Livre VII)."
+        },
+        {
+          "manquants": [
+            "P13.1",
+            "P13.2"
+          ],
+          "reco": "La distinction entre clientèle de consommateurs et clientèle professionnelle n'est pas opérée. Il convient de préciser, sur chaque page concernée, le public visé (consommateur ou professionnel) et d'adapter le régime applicable au public visé, en retenant, pour un public mixte, le régime le plus protecteur (Livre VII)."
+        }
+      ],
+      "constatLead": "S'agissant de la distinction entre consommateurs et professionnels, il est constaté",
+      "checks": {
+        "P13.1": {
+          "label": "Public précisé",
+          "constatClause": "le public visé n'est pas précisé"
+        },
+        "P13.2": {
+          "label": "Régime adapté",
+          "constatClause": "le régime applicable n'est pas adapté selon le public"
+        }
+      }
+    },
+    "P14": {
+      "titre": "Risque de requalification fiscale",
+      "legalRefs": [
+        "CIR 92 art. 90 1°",
+        "art. VI.97 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P14.1"
+          ],
+          "reco": "Le risque de requalification fiscale de l'activité d'investissement n'est pas porté à la connaissance du consommateur. Il convient d'ajouter un avertissement relatif au risque de requalification fiscale (imposition au taux progressif)."
+        },
+        {
+          "manquants": [
+            "P14.2"
+          ],
+          "reco": "Le risque de requalification fiscale de l'activité d'investissement n'est pas porté à la connaissance du consommateur. Il convient d'inviter le consommateur à consulter un conseiller fiscal préalablement à tout projet."
+        },
+        {
+          "manquants": [
+            "P14.1",
+            "P14.2"
+          ],
+          "reco": "Le risque de requalification fiscale de l'activité d'investissement n'est pas porté à la connaissance du consommateur. Il convient d'ajouter un avertissement relatif au risque de requalification fiscale (imposition au taux progressif) et d'inviter le consommateur à consulter un conseiller fiscal préalablement à tout projet."
+        }
+      ],
+      "constatLead": "S'agissant du risque de requalification fiscale, il est constaté",
+      "checks": {
+        "P14.1": {
+          "label": "Avertissement",
+          "constatClause": "aucun avertissement relatif à ce risque n'est présenté"
+        },
+        "P14.2": {
+          "label": "Conseiller fiscal",
+          "constatClause": "aucune invitation à consulter un conseiller fiscal n'est formulée"
+        }
+      }
+    },
+    "P15": {
+      "titre": "Crédit in fine / bullet : communication des risques",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P15.1"
+          ],
+          "reco": "Les risques propres au crédit in fine (ou « bullet ») ne sont pas suffisamment communiqués. Il convient d'exposer les risques spécifiques (remboursement intégral du capital à l'échéance, échec de la stratégie de sortie, saisie, risque de taux et de dépréciation)."
+        },
+        {
+          "manquants": [
+            "P15.2"
+          ],
+          "reco": "Les risques propres au crédit in fine (ou « bullet ») ne sont pas suffisamment communiqués. Il convient d'indiquer la nécessité de définir et de valider une stratégie de sortie préalablement à la souscription."
+        },
+        {
+          "manquants": [
+            "P15.1",
+            "P15.2"
+          ],
+          "reco": "Les risques propres au crédit in fine (ou « bullet ») ne sont pas suffisamment communiqués. Il convient d'exposer les risques spécifiques (remboursement intégral du capital à l'échéance, échec de la stratégie de sortie, saisie, risque de taux et de dépréciation) et d'indiquer la nécessité de définir et de valider une stratégie de sortie préalablement à la souscription."
+        }
+      ],
+      "constatLead": "S'agissant du crédit in fine, il est constaté",
+      "checks": {
+        "P15.1": {
+          "label": "Risques",
+          "constatClause": "ses risques spécifiques ne sont pas communiqués"
+        },
+        "P15.2": {
+          "label": "Stratégie de sortie",
+          "constatClause": "la nécessité d'une stratégie de sortie préalable n'est pas mentionnée"
+        }
+      }
+    },
+    "P16": {
+      "titre": "Crédit sans apport : contraintes prudentielles BNB",
+      "legalRefs": [
+        "Circulaire NBB_2019_27",
+        "art. VI.97 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P16.1"
+          ],
+          "reco": "La communication relative au crédit sans apport n'est pas suffisamment encadrée. Il convient de rappeler les quotités de référence retenues par la Banque nationale (environ 90 % pour les primo-accédants et 80 % pour les autres acquéreurs)."
+        },
+        {
+          "manquants": [
+            "P16.2"
+          ],
+          "reco": "La communication relative au crédit sans apport n'est pas suffisamment encadrée. Il convient de préciser que les quotités élevées (100 %, voire 125 %) demeurent exceptionnelles et subordonnées à un dossier solide."
+        },
+        {
+          "manquants": [
+            "P16.1",
+            "P16.2"
+          ],
+          "reco": "La communication relative au crédit sans apport n'est pas suffisamment encadrée. Il convient de rappeler les quotités de référence retenues par la Banque nationale (environ 90 % pour les primo-accédants et 80 % pour les autres acquéreurs) et de préciser que les quotités élevées (100 %, voire 125 %) demeurent exceptionnelles et subordonnées à un dossier solide."
+        }
+      ],
+      "constatLead": "S'agissant du crédit sans apport, il est constaté",
+      "checks": {
+        "P16.1": {
+          "label": "Quotités BNB",
+          "constatClause": "les quotités de référence de la Banque nationale ne sont pas rappelées"
+        },
+        "P16.2": {
+          "label": "Caractère exceptionnel",
+          "constatClause": "le caractère exceptionnel des quotités élevées n'est pas précisé"
+        }
+      }
+    },
+    "P17": {
+      "titre": "Demande de crédit : nature de la démarche",
+      "legalRefs": [
+        "art. VII.126 §2 CDE",
+        "art. VI.97 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P17.1"
+          ],
+          "reco": "La nature de la démarche proposée sous l'intitulé « demande de crédit » doit être clarifiée. Il convient de compléter le formulaire afin qu'il comporte les éléments requis (but du crédit, revenus, personnes à charge et engagements en cours)."
+        },
+        {
+          "manquants": [
+            "P17.2"
+          ],
+          "reco": "La nature de la démarche proposée sous l'intitulé « demande de crédit » doit être clarifiée. Il convient d'à défaut, en modifier l'intitulé afin qu'il reflète une simple prise de contact."
+        },
+        {
+          "manquants": [
+            "P17.1",
+            "P17.2"
+          ],
+          "reco": "La nature de la démarche proposée sous l'intitulé « demande de crédit » doit être clarifiée. Il convient de compléter le formulaire afin qu'il comporte les éléments requis (but du crédit, revenus, personnes à charge et engagements en cours) et d'à défaut, en modifier l'intitulé afin qu'il reflète une simple prise de contact."
+        }
+      ],
+      "constatLead": "S'agissant de la demande de crédit, il est constaté",
+      "checks": {
+        "P17.1": {
+          "label": "Champs art. VII.126",
+          "constatClause": "le formulaire ne comporte pas les éléments requis"
+        },
+        "P17.2": {
+          "label": "Intitulé honnête",
+          "constatClause": "l'intitulé est susceptible de laisser croire à une demande formelle de crédit"
+        }
+      }
+    },
+    "P18": {
+      "titre": "Mentions légales conformes",
+      "legalRefs": [
+        "art. VII.128 §1 CDE",
+        "art. XII.6 §1 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P18.1"
+          ],
+          "reco": "Les mentions légales ne satisfont pas aux exigences applicables à un intermédiaire. Il convient de désigner l'entité auditée comme exploitant du site, à l'exclusion de l'agence web."
+        },
+        {
+          "manquants": [
+            "P18.2"
+          ],
+          "reco": "Les mentions légales ne satisfont pas aux exigences applicables à un intermédiaire. Il convient d'y faire figurer l'inscription FSMA et les qualités d'intermédiaire."
+        },
+        {
+          "manquants": [
+            "P18.3"
+          ],
+          "reco": "Les mentions légales ne satisfont pas aux exigences applicables à un intermédiaire. Il convient d'y mentionner le SPF Économie, les voies de médiation (OMBUDSFIN et Ombudsman des Assurances) ainsi qu'une référence à la Centrale des Crédits aux Particuliers."
+        },
+        {
+          "manquants": [
+            "P18.1",
+            "P18.2"
+          ],
+          "reco": "Les mentions légales ne satisfont pas aux exigences applicables à un intermédiaire. Il convient de désigner l'entité auditée comme exploitant du site, à l'exclusion de l'agence web et d'y faire figurer l'inscription FSMA et les qualités d'intermédiaire."
+        },
+        {
+          "manquants": [
+            "P18.1",
+            "P18.3"
+          ],
+          "reco": "Les mentions légales ne satisfont pas aux exigences applicables à un intermédiaire. Il convient de désigner l'entité auditée comme exploitant du site, à l'exclusion de l'agence web et d'y mentionner le SPF Économie, les voies de médiation (OMBUDSFIN et Ombudsman des Assurances) ainsi qu'une référence à la Centrale des Crédits aux Particuliers."
+        },
+        {
+          "manquants": [
+            "P18.2",
+            "P18.3"
+          ],
+          "reco": "Les mentions légales ne satisfont pas aux exigences applicables à un intermédiaire. Il convient d'y faire figurer l'inscription FSMA et les qualités d'intermédiaire et d'y mentionner le SPF Économie, les voies de médiation (OMBUDSFIN et Ombudsman des Assurances) ainsi qu'une référence à la Centrale des Crédits aux Particuliers."
+        },
+        {
+          "manquants": [
+            "P18.1",
+            "P18.2",
+            "P18.3"
+          ],
+          "reco": "Les mentions légales ne satisfont pas aux exigences applicables à un intermédiaire. Il convient de désigner l'entité auditée comme exploitant du site, à l'exclusion de l'agence web, d'y faire figurer l'inscription FSMA et les qualités d'intermédiaire et d'y mentionner le SPF Économie, les voies de médiation (OMBUDSFIN et Ombudsman des Assurances) ainsi qu'une référence à la Centrale des Crédits aux Particuliers."
+        }
+      ],
+      "constatLead": "S'agissant des mentions légales, il est constaté",
+      "checks": {
+        "P18.1": {
+          "label": "Identité de l'entité",
+          "constatClause": "l'exploitant désigné est l'agence web et non l'entité auditée"
+        },
+        "P18.2": {
+          "label": "FSMA + qualités",
+          "constatClause": "l'inscription FSMA et les qualités d'intermédiaire n'y figurent pas"
+        },
+        "P18.3": {
+          "label": "SPF / médiation / CCP",
+          "constatClause": "le SPF Économie, les voies de médiation et la référence à la Centrale des Crédits aux Particuliers n'y figurent pas"
+        }
+      }
+    },
+    "P19": {
+      "titre": "Cookies : consentement préalable et politique",
+      "legalRefs": [
+        "loi 13 juin 2005 art. 129 §1",
+        "Recommandation APD n° 01/2020",
+        "RGPD art. 7"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P19.1"
+          ],
+          "reco": "Le dispositif relatif aux cookies n'est pas conforme. Il convient de mettre en place une bannière de consentement permettant un refus aussi aisé que l'acceptation."
+        },
+        {
+          "manquants": [
+            "P19.2"
+          ],
+          "reco": "Le dispositif relatif aux cookies n'est pas conforme. Il convient de s'assurer qu'aucun cookie non essentiel n'est déposé avant le recueil du consentement."
+        },
+        {
+          "manquants": [
+            "P19.3"
+          ],
+          "reco": "Le dispositif relatif aux cookies n'est pas conforme. Il convient de publier une politique de cookies complète et accessible, précisant la finalité, la durée et la base légale de chaque cookie."
+        },
+        {
+          "manquants": [
+            "P19.1",
+            "P19.2"
+          ],
+          "reco": "Le dispositif relatif aux cookies n'est pas conforme. Il convient de mettre en place une bannière de consentement permettant un refus aussi aisé que l'acceptation et de s'assurer qu'aucun cookie non essentiel n'est déposé avant le recueil du consentement."
+        },
+        {
+          "manquants": [
+            "P19.1",
+            "P19.3"
+          ],
+          "reco": "Le dispositif relatif aux cookies n'est pas conforme. Il convient de mettre en place une bannière de consentement permettant un refus aussi aisé que l'acceptation et de publier une politique de cookies complète et accessible, précisant la finalité, la durée et la base légale de chaque cookie."
+        },
+        {
+          "manquants": [
+            "P19.2",
+            "P19.3"
+          ],
+          "reco": "Le dispositif relatif aux cookies n'est pas conforme. Il convient de s'assurer qu'aucun cookie non essentiel n'est déposé avant le recueil du consentement et de publier une politique de cookies complète et accessible, précisant la finalité, la durée et la base légale de chaque cookie."
+        },
+        {
+          "manquants": [
+            "P19.1",
+            "P19.2",
+            "P19.3"
+          ],
+          "reco": "Le dispositif relatif aux cookies n'est pas conforme. Il convient de mettre en place une bannière de consentement permettant un refus aussi aisé que l'acceptation, de s'assurer qu'aucun cookie non essentiel n'est déposé avant le recueil du consentement et de publier une politique de cookies complète et accessible, précisant la finalité, la durée et la base légale de chaque cookie."
+        }
+      ],
+      "constatLead": "S'agissant du dispositif relatif aux cookies, il est constaté",
+      "checks": {
+        "P19.1": {
+          "label": "Bannière",
+          "constatClause": "aucune bannière de consentement conforme n'est mise en place"
+        },
+        "P19.2": {
+          "label": "Dépôt préalable",
+          "constatClause": "des cookies non essentiels sont susceptibles d'être déposés avant le consentement"
+        },
+        "P19.3": {
+          "label": "Politique complète",
+          "constatClause": "la politique de cookies est incomplète ou inaccessible"
+        }
+      }
+    },
+    "P20": {
+      "titre": "RGPD formulaires : lien vers la politique de confidentialité",
+      "legalRefs": [
+        "RGPD art. 7",
+        "RGPD art. 13"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P20.1"
+          ],
+          "reco": "L'information relative au traitement des données dans les formulaires est lacunaire. Il convient d'insérer, dans la case de consentement, un lien cliquable vers la politique de confidentialité, accessible avant toute soumission."
+        }
+      ],
+      "constatLead": "S'agissant des formulaires de collecte de données, il est constaté",
+      "checks": {
+        "P20.1": {
+          "label": "Lien confidentialité",
+          "constatClause": "la case de consentement ne comporte pas de lien accessible vers la politique de confidentialité"
+        }
+      }
+    },
+    "P21": {
+      "titre": "Centrale des Crédits aux Particuliers (CCP)",
+      "legalRefs": [
+        "art. VII.69 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P21.1"
+          ],
+          "reco": "L'information relative à la Centrale des Crédits aux Particuliers fait défaut. Il convient d'ajouter une information sur la Centrale des Crédits aux Particuliers, assortie d'un renvoi vers le site de la Banque nationale."
+        }
+      ],
+      "constatLead": "S'agissant de la Centrale des Crédits aux Particuliers, il est constaté",
+      "checks": {
+        "P21.1": {
+          "label": "Info CCP",
+          "constatClause": "aucune information sur la Centrale des Crédits aux Particuliers ne figure sur le site"
+        }
+      }
+    },
+    "P22": {
+      "titre": "Simulateur : avertissement de non-contractualité",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P22.1"
+          ],
+          "reco": "L'avertissement relatif au caractère non contractuel de la simulation est incomplet. Il convient d'indiquer que la simulation est fournie à titre indicatif et ne constitue pas une offre de crédit."
+        },
+        {
+          "manquants": [
+            "P22.2"
+          ],
+          "reco": "L'avertissement relatif au caractère non contractuel de la simulation est incomplet. Il convient de préciser que l'octroi demeure subordonné à l'acceptation du dossier par le prêteur."
+        },
+        {
+          "manquants": [
+            "P22.1",
+            "P22.2"
+          ],
+          "reco": "L'avertissement relatif au caractère non contractuel de la simulation est incomplet. Il convient d'indiquer que la simulation est fournie à titre indicatif et ne constitue pas une offre de crédit et de préciser que l'octroi demeure subordonné à l'acceptation du dossier par le prêteur."
+        }
+      ],
+      "constatLead": "S'agissant de l'avertissement du simulateur, il est constaté",
+      "checks": {
+        "P22.1": {
+          "label": "Mention indicative",
+          "constatClause": "il n'est pas indiqué que la simulation ne constitue pas une offre"
+        },
+        "P22.2": {
+          "label": "Sous réserve",
+          "constatClause": "il n'est pas précisé que l'octroi reste subordonné à l'acceptation du dossier"
+        }
+      }
+    },
+    "P23": {
+      "titre": "Articles de blog et pages géolocalisées",
+      "legalRefs": [
+        "art. VI.97 CDE",
+        "art. VII.64/VII.124 CDE"
+      ],
+      "combinaisons": [
+        {
+          "manquants": [
+            "P23.1"
+          ],
+          "reco": "Les contenus éditoriaux (articles et pages géolocalisées) appellent une mise en conformité. Il convient de soumettre ces contenus à analyse préalablement à leur mise en ligne."
+        },
+        {
+          "manquants": [
+            "P23.2"
+          ],
+          "reco": "Les contenus éditoriaux (articles et pages géolocalisées) appellent une mise en conformité. Il convient de veiller à l'équilibre de l'information, en exposant les risques au même titre que les avantages."
+        },
+        {
+          "manquants": [
+            "P23.3"
+          ],
+          "reco": "Les contenus éditoriaux (articles et pages géolocalisées) appellent une mise en conformité. Il convient de proscrire toute publicité chiffrée déguisée (mention légale et exemple représentatif requis dès qu'un chiffre est cité) et toute incitation au regroupement."
+        },
+        {
+          "manquants": [
+            "P23.1",
+            "P23.2"
+          ],
+          "reco": "Les contenus éditoriaux (articles et pages géolocalisées) appellent une mise en conformité. Il convient de soumettre ces contenus à analyse préalablement à leur mise en ligne et de veiller à l'équilibre de l'information, en exposant les risques au même titre que les avantages."
+        },
+        {
+          "manquants": [
+            "P23.1",
+            "P23.3"
+          ],
+          "reco": "Les contenus éditoriaux (articles et pages géolocalisées) appellent une mise en conformité. Il convient de soumettre ces contenus à analyse préalablement à leur mise en ligne et de proscrire toute publicité chiffrée déguisée (mention légale et exemple représentatif requis dès qu'un chiffre est cité) et toute incitation au regroupement."
+        },
+        {
+          "manquants": [
+            "P23.2",
+            "P23.3"
+          ],
+          "reco": "Les contenus éditoriaux (articles et pages géolocalisées) appellent une mise en conformité. Il convient de veiller à l'équilibre de l'information, en exposant les risques au même titre que les avantages et de proscrire toute publicité chiffrée déguisée (mention légale et exemple représentatif requis dès qu'un chiffre est cité) et toute incitation au regroupement."
+        },
+        {
+          "manquants": [
+            "P23.1",
+            "P23.2",
+            "P23.3"
+          ],
+          "reco": "Les contenus éditoriaux (articles et pages géolocalisées) appellent une mise en conformité. Il convient de soumettre ces contenus à analyse préalablement à leur mise en ligne, de veiller à l'équilibre de l'information, en exposant les risques au même titre que les avantages et de proscrire toute publicité chiffrée déguisée (mention légale et exemple représentatif requis dès qu'un chiffre est cité) et toute incitation au regroupement."
+        }
+      ],
+      "constatLead": "S'agissant des contenus éditoriaux, il est constaté",
+      "checks": {
+        "P23.1": {
+          "label": "Analysé",
+          "constatClause": "ces contenus n'ont pas été soumis à analyse"
+        },
+        "P23.2": {
+          "label": "Équilibré",
+          "constatClause": "l'équilibre de l'information n'a pu être vérifié"
+        },
+        "P23.3": {
+          "label": "Pas de pub déguisée",
+          "constatClause": "l'absence de publicité chiffrée déguisée n'a pu être vérifiée"
+        }
+      }
+    }
+  }
+}

@@ -3,7 +3,8 @@ import type { Broker, Officer } from "@/lib/types";
 import { brokerProgress, daysUntil, nextAction, stepStatus } from "@/lib/plan";
 import { formatDate, flag } from "@/lib/format";
 import { Avatar, ProgressRing, StatusBadge } from "./ui";
-import { EditBrokerButton } from "./edit-broker-button";
+import { BrokerLogo } from "./broker-logo";
+import { BrokerDetailsInline } from "./broker-details-inline";
 import { cn } from "@/lib/cn";
 
 export function BrokerHeader({
@@ -23,13 +24,19 @@ export function BrokerHeader({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
+        {broker.dbId && (
+          <BrokerLogo
+            brokerId={broker.dbId}
+            slug={broker.id}
+            societe={broker.societe}
+            hasLogo={broker.hasLogo ?? false}
+            primaryColor={broker.primaryColor}
+          />
+        )}
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">
           {broker.societe}
         </h1>
         <span className="text-2xl">{broker.countries.map(flag).join(" ")}</span>
-        <div className="ml-auto">
-          <EditBrokerButton broker={broker} />
-        </div>
       </div>
 
       {/* Bento: next action (hero) + progress + assignee */}
@@ -120,6 +127,8 @@ export function BrokerHeader({
         )}
         <Meta icon={CalendarCheck} label="Signature" value={formatDate(broker.signatureDate)} />
       </div>
+
+      {broker.dbId && <BrokerDetailsInline broker={broker} />}
     </div>
   );
 }

@@ -1,0 +1,581 @@
+{
+  "meta": {
+    "locale": "fr-BE",
+    "version": "DRAFT"
+  },
+  "branding": {
+    "firmName": "Brokercomply"
+  },
+  "audit": {
+    "entity": {
+      "name": "Créditop Conseil SRL",
+      "bce": "1017.766.461"
+    },
+    "site": {
+      "url": "https://www.creditop-conseil.be",
+      "environment": "production"
+    },
+    "auditor": "Brokercomply",
+    "date": "2026-06-16"
+  },
+  "findings": [
+    {
+      "id": "P01",
+      "section": "Identification et page d'accueil",
+      "title": "Slogan légal crédit",
+      "level": "amelioration",
+      "score": {
+        "filled": 2,
+        "applicable": 4
+      },
+      "constat": "Visible sans défilement — non conforme : footer, yTop 4458/5256, visibleSansScroll=false ; Taille ≥ accroches — non conforme : 35px vs 45,36px (1512px).",
+      "recommandation": "Le slogan est relégué en pied de page et sous-dimensionné : remontez-le près de la première offre de crédit et portez sa taille au niveau des accroches commerciales.",
+      "legalRefs": [
+        "art. VII.64 §2 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P01.1",
+          "label": "Formulation exacte",
+          "verdict": "conforme",
+          "evidence": "« Attention, emprunter de l'argent coûte aussi de l'argent »",
+          "source": "accueil"
+        },
+        {
+          "id": "P01.2",
+          "label": "Visible sans défilement",
+          "verdict": "non_conforme",
+          "evidence": "footer, yTop 4458/5256, visibleSansScroll=false",
+          "source": "accueil"
+        },
+        {
+          "id": "P01.3",
+          "label": "Taille ≥ accroches",
+          "verdict": "non_conforme",
+          "evidence": "35px vs 45,36px (1512px)",
+          "source": "accueil"
+        },
+        {
+          "id": "P01.4",
+          "label": "Présent sur chaque page crédit",
+          "verdict": "conforme",
+          "evidence": "accueil, prêt perso, regroupement",
+          "source": "multi"
+        }
+      ]
+    },
+    {
+      "id": "P02",
+      "section": "Identification et page d'accueil",
+      "title": "Registre FSMA et lien de vérification",
+      "level": "critique",
+      "score": {
+        "filled": 0,
+        "applicable": 3
+      },
+      "constat": "Qualité d'intermédiaire — non conforme : footer sans qualité d'inscription ; Numéro FSMA — non conforme : « N° entreprise : 1017.766.461 » (BCE seul) ; Lien de vérification FSMA — non conforme : aucune occurrence de fsma.be.",
+      "recommandation": "Compléter l'identification réglementaire dans le footer et les mentions légales : qualité(s) d'intermédiaire (crédit hypothécaire, assurances), numéro d'inscription FSMA, et lien de vérification vers www.fsma.be/fr/data-portal.",
+      "legalRefs": [
+        "art. VII.128 §1 2° CDE",
+        "art. XII.6 §1 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P02.1",
+          "label": "Qualité d'intermédiaire",
+          "verdict": "non_conforme",
+          "evidence": "footer sans qualité d'inscription",
+          "source": "accueil"
+        },
+        {
+          "id": "P02.2",
+          "label": "Numéro FSMA",
+          "verdict": "non_conforme",
+          "evidence": "« N° entreprise : 1017.766.461 » (BCE seul)",
+          "source": "accueil"
+        },
+        {
+          "id": "P02.3",
+          "label": "Lien de vérification FSMA",
+          "verdict": "non_conforme",
+          "evidence": "aucune occurrence de fsma.be",
+          "source": "accueil"
+        }
+      ]
+    },
+    {
+      "id": "P03",
+      "section": "Identification et page d'accueil",
+      "title": "Cohérence statut FSMA / activité promue",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 1
+      },
+      "constat": "Catégorie conso couverte par FSMA — à vérifier : conso présenté (10 000–85 000 €, TAEG), statut FSMA non vérifiable auto.",
+      "recommandation": "À vérifier manuellement : Confirmer l'inscription FSMA, puis : (A) demander l'inscription en crédit à la consommation (application CABRIO) pour conserver la présentation active, ou (B) revoir les pages concernées pour supprimer toute présentation active (montants, durées, TAEG) et se limiter à une orientation vers un partenaire habilité.",
+      "legalRefs": [
+        "art. I.9 35° CDE",
+        "art. VII.161 §1 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P03.1",
+          "label": "Catégorie conso couverte par FSMA",
+          "verdict": "a_verifier",
+          "evidence": "conso présenté (10 000–85 000 €, TAEG), statut FSMA non vérifiable auto",
+          "source": "pret-personnel"
+        }
+      ]
+    },
+    {
+      "id": "P04",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Publicité incitative au regroupement de crédits",
+      "level": "critique",
+      "score": {
+        "filled": 0,
+        "applicable": 4
+      },
+      "constat": "Absence de vignette — non conforme : « Regroupement de crédit … pour plus de facilité » ; Absence de CTA — non conforme : « Facilitez-vous la vie … » + boutons ; Absence de FAQ incitative — non conforme : « vos mensualités vont beaucoup diminuer » ; Absent des services — non conforme : présent menu + footer.",
+      "recommandation": "Le regroupement de crédits fait l'objet d'une promotion incitative à plusieurs endroits, ce qui est prohibé. Supprimer la vignette d'accueil, les call-to-action et l'entrée « Regroupement » des services mis en avant ; si le service est maintenu, le limiter à une description strictement neutre et factuelle, sans avantage mis en avant.",
+      "legalRefs": [
+        "art. VII.123 §2 3° CDE",
+        "art. VII.65 §1 3° CDE"
+      ],
+      "checks": [
+        {
+          "id": "P04.1",
+          "label": "Absence de vignette",
+          "verdict": "non_conforme",
+          "evidence": "« Regroupement de crédit … pour plus de facilité »",
+          "source": "accueil"
+        },
+        {
+          "id": "P04.2",
+          "label": "Absence de CTA",
+          "verdict": "non_conforme",
+          "evidence": "« Facilitez-vous la vie … » + boutons",
+          "source": "regroupement"
+        },
+        {
+          "id": "P04.3",
+          "label": "Absence de FAQ incitative",
+          "verdict": "non_conforme",
+          "evidence": "« vos mensualités vont beaucoup diminuer »",
+          "source": "regroupement"
+        },
+        {
+          "id": "P04.4",
+          "label": "Absent des services",
+          "verdict": "non_conforme",
+          "evidence": "présent menu + footer",
+          "source": "accueil"
+        }
+      ]
+    },
+    {
+      "id": "P06",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Exemple représentatif TAEG",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.64 §1 CDE",
+        "art. VII.124 §1 et §2 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P07",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Prospectus crédit hypothécaire",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.125 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P08",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Rapidité / facilité d'obtention",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.65 §1 2° CDE",
+        "art. VII.123 §2 2° CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P13",
+      "section": "Investissement immobilier",
+      "title": "Distinction consommateur / professionnel",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.3 §2 2° CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P14",
+      "section": "Investissement immobilier",
+      "title": "Risque de requalification fiscale",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "CIR 92 art. 90 1°",
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P15",
+      "section": "Investissement immobilier",
+      "title": "Crédit in fine / bullet : communication des risques",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P16",
+      "section": "Investissement immobilier",
+      "title": "Crédit sans apport : contraintes prudentielles BNB",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "Circulaire NBB_2019_27",
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P09",
+      "section": "Assurance solde restant dû",
+      "title": "Vente groupée / libre choix de l'assureur",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.147 §1 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P10",
+      "section": "Assurance solde restant dû",
+      "title": "Qualité d'intermédiaire en assurances et FSMA assurances",
+      "level": "critique",
+      "score": {
+        "filled": 0,
+        "applicable": 2
+      },
+      "constat": "Qualité courtier assurances — non conforme : page assurance + footer sans qualité ; Numéro FSMA assurances + lien — non conforme : absent.",
+      "recommandation": "Ajouter sur la page assurance et dans le footer : « Créditop Conseil agit comme courtier en assurances indépendant, inscrit auprès de la FSMA sous le n° [à compléter] », avec un lien vers www.fsma.be/fr/data-portal.",
+      "legalRefs": [
+        "loi 4 avril 2014, art. 261/262/281"
+      ],
+      "checks": [
+        {
+          "id": "P10.1",
+          "label": "Qualité courtier assurances",
+          "verdict": "non_conforme",
+          "evidence": "page assurance + footer sans qualité",
+          "source": "assurance-srd"
+        },
+        {
+          "id": "P10.2",
+          "label": "Numéro FSMA assurances + lien",
+          "verdict": "non_conforme",
+          "evidence": "absent",
+          "source": "assurance-srd"
+        }
+      ]
+    },
+    {
+      "id": "P11",
+      "section": "Assurance solde restant dû",
+      "title": "Caractère non obligatoire de l'assurance SRD",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P12",
+      "section": "Assurance solde restant dû",
+      "title": "Droit à l'oubli",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "loi 4 avril 2019",
+        "AR 26 mai 2019 (mod. 2023)"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P17",
+      "section": "Demande de crédit et Contact",
+      "title": "Demande de crédit : nature de la démarche",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.126 §2 CDE",
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P20",
+      "section": "Demande de crédit et Contact",
+      "title": "RGPD formulaires : lien vers la politique de confidentialité",
+      "level": "conforme",
+      "score": {
+        "filled": 1,
+        "applicable": 1
+      },
+      "constat": "Tous les sous-points applicables sont remplis.",
+      "recommandation": "",
+      "legalRefs": [
+        "RGPD art. 7",
+        "RGPD art. 13"
+      ],
+      "checks": [
+        {
+          "id": "P20.1",
+          "label": "Lien politique de confidentialité dans la case",
+          "verdict": "conforme",
+          "evidence": "« … pris connaissance de la Politique de confidentialité » (lien)",
+          "source": "demande-credit"
+        }
+      ]
+    },
+    {
+      "id": "P05",
+      "section": "Mentions légales et Cookies",
+      "title": "Voies de réclamation et organismes de médiation",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.128 §1 4° CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P18",
+      "section": "Mentions légales et Cookies",
+      "title": "Mentions légales conformes",
+      "level": "critique",
+      "score": {
+        "filled": 0,
+        "applicable": 3
+      },
+      "constat": "Identité de l'entité — non conforme : « propriété de Top On Web SA » ; FSMA + qualités — non conforme : aucune mention FSMA ; SPF/médiation/CCP — non conforme : aucune mention.",
+      "recommandation": "La page « mentions légales » est un template générique au nom de l'agence web. Restructurer en deux sections : « Mentions légales » (informations réglementaires de l'entité — identité, BCE, qualités et numéros FSMA, SPF Économie, OMBUDSFIN, Ombudsman des Assurances, CCP) et « Conditions d'utilisation du site » (CGU, au bon nom).",
+      "legalRefs": [
+        "art. VII.128 §1 CDE",
+        "art. XII.6 §1 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P18.1",
+          "label": "Identité de l'entité",
+          "verdict": "non_conforme",
+          "evidence": "« propriété de Top On Web SA »",
+          "source": "mentions-legales"
+        },
+        {
+          "id": "P18.2",
+          "label": "FSMA + qualités",
+          "verdict": "non_conforme",
+          "evidence": "aucune mention FSMA",
+          "source": "mentions-legales"
+        },
+        {
+          "id": "P18.3",
+          "label": "SPF/médiation/CCP",
+          "verdict": "non_conforme",
+          "evidence": "aucune mention",
+          "source": "mentions-legales"
+        }
+      ]
+    },
+    {
+      "id": "P19",
+      "section": "Mentions légales et Cookies",
+      "title": "Cookies : consentement préalable et politique",
+      "level": "critique",
+      "score": {
+        "filled": 1,
+        "applicable": 3
+      },
+      "constat": "Politique complète et accessible — non conforme : lien « Cookies » = ancre vide (#) ; Pas de dépôt avant consentement — à vérifier : _ga/_gid/_gat + Adwords déclarés.",
+      "recommandation": "Publier une politique cookies complète et accessible via un lien fonctionnel (finalité, durée et base légale de chaque cookie). À vérifier manuellement : S'assurer qu'aucun cookie non essentiel (Google Analytics, Adwords) n'est déposé avant le consentement opt-in.",
+      "legalRefs": [
+        "loi 13 juin 2005 art. 129 §1",
+        "Recommandation APD n° 01/2020",
+        "RGPD art. 7"
+      ],
+      "checks": [
+        {
+          "id": "P19.1",
+          "label": "Bannière de consentement",
+          "verdict": "conforme",
+          "evidence": "« Accepter / Paramétrer ou refuser »",
+          "source": "accueil"
+        },
+        {
+          "id": "P19.2",
+          "label": "Pas de dépôt avant consentement",
+          "verdict": "a_verifier",
+          "evidence": "_ga/_gid/_gat + Adwords déclarés",
+          "source": "mentions-legales"
+        },
+        {
+          "id": "P19.3",
+          "label": "Politique complète et accessible",
+          "verdict": "non_conforme",
+          "evidence": "lien « Cookies » = ancre vide (#)",
+          "source": "accueil"
+        }
+      ]
+    },
+    {
+      "id": "P21",
+      "section": "Mentions légales et Cookies",
+      "title": "Centrale des Crédits aux Particuliers (CCP)",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.69 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P22",
+      "section": "Simulateur",
+      "title": "Simulateur : avertissement de non-contractualité",
+      "level": "conforme",
+      "score": {
+        "filled": 2,
+        "applicable": 2
+      },
+      "constat": "Tous les sous-points applicables sont remplis.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P22.1",
+          "label": "Mention indicatif / pas une offre",
+          "verdict": "conforme",
+          "evidence": "« réalisé à titre indicatif » ; « sans engagement »",
+          "source": "credit-hypothecaire"
+        },
+        {
+          "id": "P22.2",
+          "label": "Sous réserve d'acceptation",
+          "verdict": "conforme",
+          "evidence": "« Sous réserve d'acceptation … par l'organisme prêteur »",
+          "source": "credit-hypothecaire"
+        }
+      ]
+    },
+    {
+      "id": "P23",
+      "section": "Articles et pages géolocalisées",
+      "title": "Articles de blog et pages géolocalisées",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Sous-section non analysée dans cette passe.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VI.97 CDE",
+        "art. VII.64/VII.124 CDE"
+      ],
+      "checks": []
+    }
+  ],
+  "summary": {
+    "critiques": 5,
+    "ameliorations": 1,
+    "conformes": 2,
+    "aVerifier": 15
+  }
+}

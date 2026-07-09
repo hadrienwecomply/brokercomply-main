@@ -1,0 +1,27 @@
+{
+  "skill_name": "check-conformite-site-courtier",
+  "notes": "Les fixtures sont un site de courtier fictif (Crédimax Conseil SRL) avec des non-conformités plantées. Statut FSMA à supposer : inscrit en crédit hypothécaire et en assurances, mais PAS en crédit à la consommation. Les chemins fixtures sont absolus.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "audit-complet-site-fictif",
+      "prompt": "Peux-tu faire un check de conformité complet de ce site de courtier belge ? C'est Crédimax Conseil SRL (BCE 0123.456.789). D'après le data portal FSMA, ils sont inscrits comme courtier en crédit hypothécaire et courtier en assurances, mais PAS en crédit à la consommation. Les pages du site sont des fichiers HTML locaux ici : /Users/hadrienrobert/Library/Application Support/Claude/local-agent-mode-sessions/759f3a99-10a6-476f-91b5-00e47f77be26/bc0c58a4-8d47-4975-996f-e4d8e83e9b20/local_2db0aaa1-1d80-4073-beb6-259aa2fbe79a/outputs/check-conformite-site-courtier-workspace/fixtures/ (index.html, credit-hypothecaire.html, pret-personnel.html, assurance-srd.html, contact.html, mentions-legales.html). Produis le rapport en Markdown.",
+      "expected_output": "Rapport Markdown structuré : synthèse chiffrée, périmètre, cadre légal, constats numérotés par rubrique. Doit détecter : slogan légal incorrect (art. VII.64 §2), absence d'exemple représentatif TAEG sur les pages chiffrées et le simulateur (VII.64/VII.124), publicité incitative au regroupement (VII.65 §1 3° / VII.123 §2 3°), incohérence statut FSMA / crédit conso promu (VII.161/I.9 35°), mentions légales = template d'agence web (VII.128/XII.6), page cookies vide + cookies non essentiels sans consentement (APD 01/2020, loi 2005), absence qualité intermédiaire assurances + droit à l'oubli (loi 4/4/2014, loi 4/4/2019), formulaire 'demande de crédit' trompeur (VII.126 §2), lien politique de confidentialité absent (RGPD).",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "focus-mentions-legales-cookies",
+      "prompt": "Vérifie la conformité de la page mentions légales et de la partie cookies de ce site : /Users/hadrienrobert/Library/Application Support/Claude/local-agent-mode-sessions/759f3a99-10a6-476f-91b5-00e47f77be26/bc0c58a4-8d47-4975-996f-e4d8e83e9b20/local_2db0aaa1-1d80-4073-beb6-259aa2fbe79a/outputs/check-conformite-site-courtier-workspace/fixtures/mentions-legales.html — c'est le site de Crédimax Conseil SRL (BCE 0123.456.789). Donne-moi les problèmes et comment les corriger.",
+      "expected_output": "Constats ciblés : mentions légales = template générique au nom de l'agence WebPrest SA (pas l'entité, art. VII.128 §1 / XII.6 §1 CDE) ; absence d'identification réglementaire (FSMA, qualités, médiation, CCP) ; page cookies vide + cookies Google non essentiels actifs sans bannière de consentement opt-in préalable (Recommandation APD 01/2020, loi 13 juin 2005 art. 129 §1). Recommandations concrètes pour chaque point.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "focus-page-credit-hypothecaire",
+      "prompt": "J'aimerais auditer la conformité de cette page de crédit hypothécaire avant mise en ligne : /Users/hadrienrobert/Library/Application Support/Claude/local-agent-mode-sessions/759f3a99-10a6-476f-91b5-00e47f77be26/bc0c58a4-8d47-4975-996f-e4d8e83e9b20/local_2db0aaa1-1d80-4073-beb6-259aa2fbe79a/outputs/check-conformite-site-courtier-workspace/fixtures/credit-hypothecaire.html . Qu'est-ce qui pose problème au regard de la réglementation belge ?",
+      "expected_output": "Constats : TAEG affiché sans exemple représentatif complet sur la page (art. VII.124 §1, hypothèses 170 000 €/20 ans) ; section refinancement/regroupement incitative interdite (VII.123 §2 3°) ; FAQ incitative au regroupement ; mention de crédit sans apport 'encore possible' sans contraintes prudentielles BNB (Circulaire NBB_2019_27) ; mention de rapidité (zone grise, VII.123 §2 2°) ; slogan légal en footer uniquement, formulation à vérifier. Chaque constat classé et assorti d'une recommandation.",
+      "files": []
+    }
+  ]
+}

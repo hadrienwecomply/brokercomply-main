@@ -1,0 +1,513 @@
+{
+  "meta": {
+    "locale": "fr-BE",
+    "version": "DRAFT"
+  },
+  "branding": {
+    "firmName": "WeComply"
+  },
+  "audit": {
+    "entity": {
+      "name": "Crédimax Conseil SRL",
+      "bce": "0123.456.789",
+      "fsmaStatus": "courtier en crédit hypothécaire et en assurances"
+    },
+    "site": {
+      "url": "https://www.credimax.example",
+      "environment": "production"
+    },
+    "date": "2026-07-08",
+    "pages": {
+      "analysed": [
+        "https://www.credimax.example/"
+      ],
+      "notAnalysed": []
+    }
+  },
+  "findings": [
+    {
+      "id": "P01",
+      "section": "Identification et page d'accueil",
+      "title": "Slogan légal crédit",
+      "level": "amelioration",
+      "score": {
+        "filled": 2,
+        "applicable": 4
+      },
+      "constat": "S'agissant de la mention légale relative au coût du crédit, il est constaté que sa formulation ne correspond pas à la formulation légale exacte. Sous réserve de vérification, l'élément suivant n'a pu être contrôlé : Taille.",
+      "recommandation": "La mention légale relative au coût du crédit n'est pas présentée dans des conditions conformes. Il convient de reprendre la formulation légale exacte « Attention, emprunter de l'argent coûte aussi de l'argent », de manière à en garantir la lisibilité et la visibilité effective. Les points suivants devront en outre faire l'objet d'une vérification : Taille.",
+      "legalRefs": [
+        "art. VII.64 §2 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P01.1",
+          "label": "Formulation exacte du slogan",
+          "verdict": "non_conforme",
+          "evidence": "« Attention, emprunter de l'argent a un coût »",
+          "source": "https://www.credimax.example/",
+          "article": "art. VII.64 §2 CDE"
+        },
+        {
+          "id": "P01.2",
+          "label": "Visibilité du slogan",
+          "verdict": "conforme",
+          "evidence": "slogan yTop=420, visibleSansScroll=true",
+          "source": "https://www.credimax.example/"
+        },
+        {
+          "id": "P01.3",
+          "label": "Taille du slogan vs accroches",
+          "verdict": "a_verifier",
+          "evidence": "Page non disponible",
+          "source": "https://www.credimax.example/credit"
+        },
+        {
+          "id": "P01.4",
+          "label": "Slogan sur chaque page crédit",
+          "verdict": "conforme",
+          "evidence": "présent sur /credit et /pret-personnel",
+          "source": "https://www.credimax.example/credit"
+        }
+      ]
+    },
+    {
+      "id": "P02",
+      "section": "Identification et page d'accueil",
+      "title": "Registre FSMA et lien de vérification",
+      "level": "conforme",
+      "score": {
+        "filled": 3,
+        "applicable": 3
+      },
+      "constat": "Aucun manquement n'est relevé : les exigences applicables sont satisfaites.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. VII.128 §1 2° CDE",
+        "art. XII.6 §1 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P02.1",
+          "label": "Qualités d'intermédiaire indiquées",
+          "verdict": "conforme",
+          "evidence": "« Courtier en crédit hypothécaire inscrit FSMA »",
+          "source": "https://www.credimax.example/mentions-legales"
+        },
+        {
+          "id": "P02.2",
+          "label": "Numéro FSMA indiqué",
+          "verdict": "conforme",
+          "evidence": "« FSMA 123456 A »",
+          "source": "https://www.credimax.example/mentions-legales"
+        },
+        {
+          "id": "P02.3",
+          "label": "Lien data portal FSMA",
+          "verdict": "conforme",
+          "evidence": "lien vers fsma.be présent",
+          "source": "https://www.credimax.example/mentions-legales"
+        }
+      ]
+    },
+    {
+      "id": "P03",
+      "section": "Identification et page d'accueil",
+      "title": "Cohérence statut FSMA / activité promue",
+      "level": "sans_objet",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section est sans objet au regard du contenu du site.",
+      "recommandation": "",
+      "legalRefs": [
+        "art. I.9 35° CDE",
+        "art. VII.161 §1 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P04",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Publicité incitative au regroupement de crédits",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VII.123 §2 3° CDE",
+        "art. VII.65 §1 3° CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P06",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Exemple représentatif TAEG",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 1
+      },
+      "constat": "Sous réserve de vérification, l'élément suivant n'a pu être contrôlé : Exemple complet.",
+      "recommandation": "Une vérification est requise concernant : Exemple complet.",
+      "legalRefs": [
+        "art. VII.64 §1 CDE",
+        "art. VII.124 §1 et §2 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P06.1",
+          "label": "Exemple représentatif complet",
+          "verdict": "a_verifier",
+          "evidence": "Page non disponible",
+          "source": "https://www.credimax.example/simulateur"
+        },
+        {
+          "id": "P06.2",
+          "label": "Exemple par type de crédit",
+          "verdict": "sans_objet"
+        }
+      ]
+    },
+    {
+      "id": "P07",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Prospectus crédit hypothécaire",
+      "level": "critique",
+      "score": {
+        "filled": 0,
+        "applicable": 1
+      },
+      "constat": "S'agissant du prospectus en matière de crédit hypothécaire, il est constaté qu'aucun prospectus conforme n'est mis à la disposition du consommateur.",
+      "recommandation": "Le prospectus impératif en matière de crédit hypothécaire n'est pas mis à disposition. Il convient d'établir et publier un prospectus gratuit et accessible en permanence, reprenant les types de crédits, les sûretés, les durées, les types de taux, un exemple représentatif avec TAEG, les frais et indemnités, les indices de référence et les conséquences du non-paiement.",
+      "legalRefs": [
+        "art. VII.125 CDE"
+      ],
+      "checks": [
+        {
+          "id": "P07.1",
+          "label": "Prospectus accessible",
+          "verdict": "non_conforme",
+          "evidence": "Aucune occurrence trouvée après recherche du terme « prospectus »",
+          "source": "https://www.credimax.example/",
+          "article": "art. VII.125 CDE"
+        }
+      ]
+    },
+    {
+      "id": "P08",
+      "section": "Crédit hypothécaire et sous-pages",
+      "title": "Rapidité / facilité d'obtention",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VII.65 §1 2° CDE",
+        "art. VII.123 §2 2° CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P13",
+      "section": "Investissement immobilier",
+      "title": "Distinction consommateur / professionnel",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VII.3 §2 2° CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P14",
+      "section": "Investissement immobilier",
+      "title": "Risque de requalification fiscale",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "CIR 92 art. 90 1°",
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P15",
+      "section": "Investissement immobilier",
+      "title": "Crédit in fine / bullet : communication des risques",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P16",
+      "section": "Investissement immobilier",
+      "title": "Crédit sans apport : contraintes prudentielles BNB",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "Circulaire NBB_2019_27",
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P09",
+      "section": "Assurance solde restant dû",
+      "title": "Vente groupée / libre choix de l'assureur",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VII.147 §1 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P10",
+      "section": "Assurance solde restant dû",
+      "title": "Qualité d'intermédiaire en assurances et FSMA assurances",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "loi 4 avril 2014, art. 261/262/281"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P11",
+      "section": "Assurance solde restant dû",
+      "title": "Caractère non obligatoire de l'assurance SRD",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P12",
+      "section": "Assurance solde restant dû",
+      "title": "Droit à l'oubli",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "loi 4 avril 2019",
+        "AR 26 mai 2019 (mod. 2023)"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P17",
+      "section": "Demande de crédit et Contact",
+      "title": "Demande de crédit : nature de la démarche",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VII.126 §2 CDE",
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P20",
+      "section": "Demande de crédit et Contact",
+      "title": "RGPD formulaires : lien vers la politique de confidentialité",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "RGPD art. 7",
+        "RGPD art. 13"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P05",
+      "section": "Mentions légales et Cookies",
+      "title": "Voies de réclamation et organismes de médiation",
+      "level": "critique",
+      "score": {
+        "filled": 0,
+        "applicable": 2
+      },
+      "constat": "S'agissant des voies de réclamation et de médiation, il est constaté qu'aucune procédure de réclamation interne n'est communiquée et que l'organe de médiation en matière de crédit (OMBUDSFIN) n'est pas mentionné.",
+      "recommandation": "L'information relative aux voies de réclamation et de médiation fait défaut. Il convient de décrire la procédure de réclamation interne et d'indiquer l'organe de médiation compétent en matière de crédit (OMBUDSFIN).",
+      "legalRefs": [
+        "art. VII.128 §1 4° CDE"
+      ],
+      "checks": [
+        {
+          "id": "P05.1",
+          "label": "Procédure de réclamation interne",
+          "verdict": "non_conforme",
+          "evidence": "Aucune occurrence trouvée après recherche",
+          "source": "https://www.credimax.example/mentions-legales",
+          "article": "art. VII.128 §1 4° CDE"
+        },
+        {
+          "id": "P05.2",
+          "label": "Mention OMBUDSFIN",
+          "verdict": "non_conforme",
+          "evidence": "Aucune occurrence trouvée après recherche",
+          "source": "https://www.credimax.example/mentions-legales",
+          "article": "art. VII.128 §1 4° CDE"
+        },
+        {
+          "id": "P05.3",
+          "label": "Ombudsman des Assurances",
+          "verdict": "sans_objet"
+        }
+      ]
+    },
+    {
+      "id": "P18",
+      "section": "Mentions légales et Cookies",
+      "title": "Mentions légales conformes",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VII.128 §1 CDE",
+        "art. XII.6 §1 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P19",
+      "section": "Mentions légales et Cookies",
+      "title": "Cookies : consentement préalable et politique",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "loi 13 juin 2005 art. 129 §1",
+        "Recommandation APD n° 01/2020",
+        "RGPD art. 7"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P21",
+      "section": "Mentions légales et Cookies",
+      "title": "Centrale des Crédits aux Particuliers (CCP)",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VII.69 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P22",
+      "section": "Simulateur",
+      "title": "Simulateur : avertissement de non-contractualité",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VI.97 CDE"
+      ],
+      "checks": []
+    },
+    {
+      "id": "P23",
+      "section": "Articles et pages géolocalisées",
+      "title": "Articles de blog et pages géolocalisées",
+      "level": "a_verifier",
+      "score": {
+        "filled": 0,
+        "applicable": 0
+      },
+      "constat": "Cette sous-section n'a pas été analysée lors de la présente passe.",
+      "recommandation": "Procéder à l'analyse de cette sous-section avant toute conclusion.",
+      "legalRefs": [
+        "art. VI.97 CDE",
+        "art. VII.64/VII.124 CDE"
+      ],
+      "checks": []
+    }
+  ],
+  "summary": {
+    "critiques": 2,
+    "ameliorations": 1,
+    "conformes": 1,
+    "aVerifier": 18
+  }
+}

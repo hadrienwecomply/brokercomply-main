@@ -18,7 +18,25 @@ const nextConfig = {
     "dotenv",
     "@azure/identity",
     "@microsoft/microsoft-graph-client",
+    // Website-audit deps: playwright pulls native binaries (fsevents.node) that
+    // webpack can't parse, and it's loaded lazily server-side only.
+    "playwright",
+    "playwright-core",
+    "html-to-text",
   ],
+  webpack: (config, { isServer }) => {
+    // Never bundle playwright: it ships a native fsevents .node binary webpack
+    // can't parse. It's loaded lazily (server-side only) by the audit job.
+    if (isServer) {
+      config.externals = [
+        ...(Array.isArray(config.externals) ? config.externals : [config.externals].filter(Boolean)),
+        "playwright",
+        "playwright-core",
+        "fsevents",
+      ];
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

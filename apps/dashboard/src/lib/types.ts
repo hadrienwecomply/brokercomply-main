@@ -74,6 +74,9 @@ export interface Broker {
   status?: string; // lifecycle: 'onboarding' | 'active' | 'at_risk' | 'inactive'
   mrr?: number | null;
   notionPageId?: string;
+  // --- Branding (logo + primary colour) ---
+  hasLogo?: boolean; // true when a PNG logo is stored; bytes served via /api/brokers/[id]/logo
+  primaryColor?: string; // brand colour "#rrggbb", extracted from the logo, editable
   // Opt-in (non-public) domains for email conversation matching, e.g. ["acme.be"].
   matchDomains?: string[];
   // --- SharePoint document folder (optional; surfaced from the DB) ---

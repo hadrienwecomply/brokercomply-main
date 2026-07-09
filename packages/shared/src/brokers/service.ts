@@ -1,4 +1,4 @@
-import { asc, eq, inArray, isNull } from 'drizzle-orm';
+import { asc, eq, getTableColumns, inArray, isNull, sql } from 'drizzle-orm';
 import {
   brokers,
   brokerPlanSteps,
@@ -73,14 +73,28 @@ async function loadPlan({ db }: BrokersServiceDeps, broker: Broker): Promise<Bro
   return { broker, steps, substeps };
 }
 
-/** All brokers (flat rows, no plan). */
+/**
+ * Broker columns for portfolio/list reads, with the heavy `logo_base64` blob
+ * replaced by a presence marker ('1' | null). List views only ever need to know
+ * whether a logo exists; the full bytes are loaded on the detail read
+ * (`getBrokerBySlug` / `getBrokerById`) and served by the logo route.
+ */
+function brokerListColumns() {
+  const { logoBase64: _omit, ...rest } = getTableColumns(brokers);
+  return {
+    ...rest,
+    logoBase64: sql<string | null>`case when ${brokers.logoBase64} is not null then '1' else null end`,
+  };
+}
+
+/** All brokers (flat rows, no plan). Logo bytes elided — see brokerListColumns. */
 export async function listBrokers({ db }: BrokersServiceDeps): Promise<Broker[]> {
-  return db.select().from(brokers);
+  return db.select(brokerListColumns()).from(brokers);
 }
 
 /** Every broker with its plan, in one batched read (portfolio / actions cockpit). */
 export async function listBrokerPlans({ db }: BrokersServiceDeps): Promise<BrokerPlan[]> {
-  const all = await db.select().from(brokers);
+  const all = await db.select(brokerListColumns()).from(brokers);
   if (!all.length) return [];
   const [allSteps, allSubsteps] = await Promise.all([
     db.select().from(brokerPlanSteps),

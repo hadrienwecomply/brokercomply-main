@@ -1,0 +1,51 @@
+{
+  "meta": { "locale": "fr-BE", "version": "DRAFT" },
+  "branding": { "firmName": "WeComply" },
+  "audit": {
+    "entity": { "name": "Crédimax Conseil SRL", "bce": "0123.456.789", "fsmaStatus": "courtier en crédit hypothécaire et en assurances" },
+    "site": { "url": "https://www.credimax.example", "environment": "production" },
+    "date": "2026-07-08",
+    "pages": { "analysed": ["https://www.credimax.example/"], "notAnalysed": [] }
+  },
+  "constats": {
+    "P01": {
+      "applicable": true,
+      "checks": [
+        { "id": "P01.1", "label": "Formulation exacte du slogan", "verdict": "non_conforme", "evidence": "« Attention, emprunter de l'argent a un coût »", "source": "https://www.credimax.example/", "article": "art. VII.64 §2 CDE" },
+        { "id": "P01.2", "label": "Visibilité du slogan", "verdict": "conforme", "evidence": "slogan yTop=420, visibleSansScroll=true", "source": "https://www.credimax.example/" },
+        { "id": "P01.3", "label": "Taille du slogan vs accroches", "verdict": "a_verifier", "evidence": "Page non disponible", "source": "https://www.credimax.example/credit" },
+        { "id": "P01.4", "label": "Slogan sur chaque page crédit", "verdict": "conforme", "evidence": "présent sur /credit et /pret-personnel", "source": "https://www.credimax.example/credit" }
+      ]
+    },
+    "P02": {
+      "applicable": true,
+      "checks": [
+        { "id": "P02.1", "label": "Qualités d'intermédiaire indiquées", "verdict": "conforme", "evidence": "« Courtier en crédit hypothécaire inscrit FSMA »", "source": "https://www.credimax.example/mentions-legales" },
+        { "id": "P02.2", "label": "Numéro FSMA indiqué", "verdict": "conforme", "evidence": "« FSMA 123456 A »", "source": "https://www.credimax.example/mentions-legales" },
+        { "id": "P02.3", "label": "Lien data portal FSMA", "verdict": "conforme", "evidence": "lien vers fsma.be présent", "source": "https://www.credimax.example/mentions-legales" }
+      ]
+    },
+    "P03": { "applicable": false },
+    "P05": {
+      "applicable": true,
+      "checks": [
+        { "id": "P05.1", "label": "Procédure de réclamation interne", "verdict": "non_conforme", "evidence": "Aucune occurrence trouvée après recherche", "source": "https://www.credimax.example/mentions-legales", "article": "art. VII.128 §1 4° CDE" },
+        { "id": "P05.2", "label": "Mention OMBUDSFIN", "verdict": "non_conforme", "evidence": "Aucune occurrence trouvée après recherche", "source": "https://www.credimax.example/mentions-legales", "article": "art. VII.128 §1 4° CDE" },
+        { "id": "P05.3", "label": "Ombudsman des Assurances", "verdict": "sans_objet" }
+      ]
+    },
+    "P06": {
+      "applicable": true,
+      "checks": [
+        { "id": "P06.1", "label": "Exemple représentatif complet", "verdict": "a_verifier", "evidence": "Page non disponible", "source": "https://www.credimax.example/simulateur" },
+        { "id": "P06.2", "label": "Exemple par type de crédit", "verdict": "sans_objet" }
+      ]
+    },
+    "P07": {
+      "applicable": true,
+      "checks": [
+        { "id": "P07.1", "label": "Prospectus accessible", "verdict": "non_conforme", "evidence": "Aucune occurrence trouvée après recherche du terme « prospectus »", "source": "https://www.credimax.example/", "article": "art. VII.125 CDE" }
+      ]
+    }
+  }
+}
