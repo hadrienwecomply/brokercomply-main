@@ -1,0 +1,187 @@
+/* =============================================================================
+   BROKERCOMPLY — REPORT BASE (squelette commun des rapports PDF/HTML)
+   -----------------------------------------------------------------------------
+   Source de vérité de la STRUCTURE partagée par tous les rapports BrokerComply
+   (diagnostic Fillout `build-review.js`, audit site web `build-reco-html.js`,
+   rendus in-app éditables `review-html.ts` / `render-html.ts`).
+
+   Ce qui est PARTAGÉ : le modèle de page (marges/padding), l'échelle typo, les
+   tokens neutres + sévérité, et la mise en forme des composants (garde, titres
+   de section, KPI, cartes de constat, tables d'annexe).
+
+   Ce qui est PROPRE à chaque rapport : la MARQUE (couleur `--primary`/`--accent`
+   + logo). Elle est INJECTÉE, jamais codée en dur ici :
+     • Audit site web  → white-label du COURTIER : logo + couleur extraite,
+       stockés dans BrokerComply (`broker.logoBase64` / `broker.primaryColor`).
+       Fallback maison BrokerComply (navy #1B2A4A / vert #3DDC84 / logo vert).
+     • Diagnostic Fillout → charte maison BrokerComply (lavande).
+
+   Les nœuds n8n « Build HTML » EMBARQUENT ce bloc en ligne (pas d'import runtime)
+   et surchargent `--primary`/`--accent` via `${branding.primaryColor}` etc.
+   Voir `.rules/report-skeleton.md` pour la spec complète.
+   ============================================================================= */
+
+:root{
+  /* ---- Encre / lignes (fixe) ---- */
+  --ink:#1d2030; --ink-soft:#4a4f63; --muted:#7a8096;
+  --line:#e3e6ee; --line-soft:#eef0f6;
+
+  /* ---- MARQUE — injectée par rapport (défauts = fallback maison BrokerComply) ---- */
+  --primary:#1B2A4A;   /* couleur de marque : le builder fait --primary:${branding.primaryColor} */
+  --accent:#3DDC84;
+  --tint:#f6f7f9;      /* surface teintée NEUTRE (compatible avec n'importe quelle marque) */
+
+  /* ---- Palette maison lavande (utilisée par le diagnostic Fillout) ---- */
+  --lav-50:#f6f3fc; --lav-100:#efeafa; --lav-200:#e2d9f4;
+  --lav-400:#a99bdb; --lav-600:#6e5bb8; --lav-700:#4f3f93; --lav-900:#2f2563;
+
+  /* ---- Sévérité (fixe, fg / bg) ---- */
+  --crit:#c0392b; --crit-bg:#fbeae8;
+  --warn:#b7791f; --warn-bg:#fdf3dd;
+  --ok:#2f855a;   --ok-bg:#e7f4ec;
+  --todo:#55607a; --todo-bg:#eef0f6;
+
+  /* ---- Gabarit ---- */
+  --page-pad:18mm;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Inter","Helvetica Neue",Arial,system-ui,sans-serif;
+  color:var(--ink); font-size:10.5pt; line-height:1.55; background:#fff;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+h1,h2,h3,h4{margin:0;font-weight:680;letter-spacing:-.01em;color:var(--primary)}
+p{margin:0 0 .6em}
+ul{margin:.2em 0 .7em;padding-left:1.15em}
+li{margin:.18em 0}
+.small{font-size:8.5pt;color:var(--muted)}
+.note{color:var(--ink-soft);font-size:9.5pt}
+
+/* =============================================================================
+   MODÈLE DE PAGE — deux stratégies, JAMAIS de contenu plein-bord
+   -----------------------------------------------------------------------------
+   (A) FIXED-PAGE (contenu à longueur maîtrisée, ex. diagnostic Fillout) :
+       chaque `.page` = 1 feuille A4, padding INTERNE = --page-pad.
+       `@page{ margin:0 }` + marges Gotenberg = 0 (le padding vient du .page).
+
+   (B) FLOWING (contenu à longueur variable, ex. audit site web) :
+       le contenu coule, Chromium pagine, et les marges PHYSIQUES viennent de
+       Gotenberg (paramètres marginTop/Bottom/Left/Right NON nuls). Un
+       `@page{ size:A4 }` est OBLIGATOIRE pour que `preferCssPageSize:true`
+       choisisse A4 (sinon Letter). ⚠️ Les marges CDP de Gotenberg écrasent
+       tout `@page{ margin }` CSS : en flowing, les marges DOIVENT être passées
+       à Gotenberg, jamais espérées du CSS. (C'était la cause du « no padding ».)
+   ============================================================================= */
+
+/* (A) fixed-page */
+.page{
+  position:relative; width:210mm; min-height:297mm; padding:var(--page-pad);
+  margin:8mm auto; background:#fff; box-shadow:0 6px 28px rgba(0,0,0,.28); overflow:hidden;
+}
+.page--flow{ min-height:auto; }
+@page{ size:A4; margin:0; }
+@media print{
+  body{background:#fff}
+  .no-print{display:none !important}
+  .page{ width:210mm; height:297mm; margin:0; padding:16mm 18mm 20mm;
+    box-shadow:none; overflow:hidden; break-after:page; page-break-after:always; break-inside:avoid; }
+  .page:last-child{break-after:auto; page-break-after:auto}
+  .page.cover{padding:0}
+}
+/* saut de page explicite pour le modèle flowing */
+.break{ break-after:page; page-break-after:always; }
+
+/* =============================================================================
+   PAGE DE GARDE (logo de marque + wordmark)
+   ============================================================================= */
+.cover{ display:flex; flex-direction:column; min-height:235mm; }
+.cover .brand{ display:flex; align-items:center; gap:11px; min-height:16mm; }
+.cover .logo{ height:11mm; width:auto; max-width:36mm; display:block; }
+.cover .wordmark{ font-size:19pt; font-weight:400; color:var(--primary); letter-spacing:-.02em; }
+.cover .wordmark b{ font-weight:780; color:var(--primary); }
+.cover .wordmark .wm-soft{ font-weight:500; color:var(--ink-soft); }
+.cover-main{ margin-top:38mm; }
+.kicker{ display:inline-block; font-size:8.5pt; font-weight:800; letter-spacing:.18em;
+  text-transform:uppercase; color:#fff; background:var(--primary); padding:4px 11px; border-radius:4px; }
+.accent-rule{ width:46mm; height:4px; background:var(--accent); border-radius:3px; margin:9mm 0 6mm; }
+.cover h1{ font-size:25pt; line-height:1.12; margin:0 0 5mm; max-width:150mm; }
+.cover .sub{ color:var(--ink-soft); font-size:12pt; max-width:150mm; }
+.cover-meta{ margin-top:auto; padding-top:14mm; }
+table.meta{ border-collapse:separate; border-spacing:0; width:100%; max-width:172mm;
+  border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+table.meta td{ border-bottom:1px solid var(--line); padding:9px 13px; font-size:10pt; vertical-align:top; }
+table.meta tr:last-child td{ border-bottom:0; }
+table.meta td.k{ background:var(--tint); font-weight:700; width:48mm; color:var(--primary);
+  border-right:1px solid var(--line); }
+.confchip{ display:inline-block; margin-top:8mm; font-size:8.5pt; font-weight:700;
+  letter-spacing:.05em; text-transform:uppercase; color:var(--accent);
+  border:1.5px solid var(--accent); border-radius:999px; padding:3px 12px; }
+
+/* =============================================================================
+   EN-TÊTES DE SECTION
+   ============================================================================= */
+.sec-h{ display:flex; align-items:baseline; gap:10px; margin:0 0 5mm;
+  padding-bottom:3mm; border-bottom:2px solid var(--primary); break-after:avoid; }
+.sec-h.gap{ margin-top:9mm; }
+.sec-h .no{ color:var(--accent); font-size:16pt; font-weight:760; font-variant-numeric:tabular-nums; }
+.sec-h h2{ font-size:16pt; }
+.synth h2{ font-size:19pt; margin-bottom:6mm; }
+.block-title{ font-size:11pt; font-weight:700; color:var(--primary); margin:7mm 0 2mm; }
+
+/* =============================================================================
+   KPI / SYNTHÈSE
+   ============================================================================= */
+.kpis{ display:flex; gap:8px; margin:0 0 8mm; flex-wrap:wrap; }
+.kpi{ flex:1 1 0; min-width:34mm; border:1px solid var(--line); border-radius:9px; padding:10px 12px; }
+.kpi .n{ font-size:21pt; font-weight:760; line-height:1; }
+.kpi .t{ font-size:8pt; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-top:4px; }
+.kpi.k-crit{ background:var(--crit-bg); } .kpi.k-crit .n{color:var(--crit)}
+.kpi.k-warn{ background:var(--warn-bg); } .kpi.k-warn .n{color:var(--warn)}
+.kpi.k-ok{ background:var(--ok-bg); } .kpi.k-ok .n{color:var(--ok)}
+.kpi.k-todo{ background:var(--todo-bg); } .kpi.k-todo .n{color:var(--todo)}
+
+/* =============================================================================
+   CARTE DE CONSTAT / FINDING (bord gauche coloré par sévérité)
+   ============================================================================= */
+.finding{ break-inside:avoid; page-break-inside:avoid; margin:0 0 6mm;
+  border:1px solid var(--line); border-left:4px solid var(--line); border-radius:8px; padding:10px 13px 12px; }
+.finding.lv-crit{ border-left-color:var(--crit); }
+.finding.lv-warn{ border-left-color:var(--warn); }
+.finding.lv-ok{ border-left-color:var(--ok); }
+.finding.lv-todo{ border-left-color:var(--todo); }
+.f-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:3mm; }
+.f-title{ font-size:11.5pt; font-weight:700; color:var(--primary); }
+.f-title .fid{ color:var(--accent); font-weight:760; margin-right:6px; font-variant-numeric:tabular-nums; }
+.f-score{ font-size:8.5pt; color:var(--muted); white-space:nowrap; }
+.badge{ display:inline-block; font-size:8pt; font-weight:700; letter-spacing:.03em;
+  padding:2px 9px; border-radius:999px; text-transform:uppercase; }
+.lv-crit .badge{ color:var(--crit); background:var(--crit-bg); }
+.lv-warn .badge{ color:var(--warn); background:var(--warn-bg); }
+.lv-ok .badge{ color:var(--ok); background:var(--ok-bg); }
+.lv-todo .badge{ color:var(--todo); background:var(--todo-bg); }
+.f-label{ font-size:8pt; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin:3mm 0 1mm; }
+.reco{ background:var(--tint); border-radius:6px; padding:8px 11px; }
+.suggest{ border-left:3px solid var(--accent); padding:5px 11px; margin-top:2mm; font-style:italic; color:var(--ink-soft); }
+.refs{ margin-top:3mm; }
+.ref-chip{ display:inline-block; font-size:8pt; color:var(--primary); background:var(--line-soft);
+  border:1px solid var(--line); border-radius:4px; padding:1px 7px; margin:0 4px 4px 0; }
+
+/* =============================================================================
+   TABLE D'ANNEXE — DÉTAIL DES CONTRÔLES
+   ============================================================================= */
+.chk-group{ break-inside:avoid; page-break-inside:avoid; margin:0 0 6mm; }
+.chk-group h4{ font-size:10pt; margin-bottom:2mm; }
+.chk-group h4 .fid{ color:var(--accent); margin-right:6px; }
+table.chk{ border-collapse:collapse; width:100%; font-size:8.5pt; table-layout:fixed; }
+table.chk th{ background:var(--tint); text-align:left; padding:6px 9px; border:1px solid var(--line);
+  font-size:7.5pt; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+table.chk td{ padding:6px 9px; border:1px solid var(--line); vertical-align:top;
+  overflow-wrap:anywhere; word-break:break-word; }
+table.chk col.c-label{ width:27%; } table.chk col.c-verdict{ width:15%; }
+table.chk col.c-evidence{ width:36%; } table.chk col.c-source{ width:22%; }
+.vd{ display:inline-block; font-size:7.5pt; font-weight:700; padding:1px 8px; border-radius:999px; white-space:nowrap; }
+.vd-ok{ color:var(--ok); background:var(--ok-bg); }
+.vd-crit{ color:var(--crit); background:var(--crit-bg); }
+.vd-todo{ color:var(--todo); background:var(--todo-bg); }
