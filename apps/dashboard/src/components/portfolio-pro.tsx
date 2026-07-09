@@ -94,6 +94,26 @@ function ProgressMeter({ value }: { value: number }) {
   );
 }
 
+/** Small broker logo thumbnail for list views; renders nothing when no logo. */
+function LogoThumb({ broker, className }: { broker: Broker; className?: string }) {
+  if (!broker.hasLogo || !broker.dbId) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-white",
+        className,
+      )}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/api/brokers/${broker.dbId}/logo`}
+        alt=""
+        className="size-full object-contain p-0.5"
+      />
+    </span>
+  );
+}
+
 function Initials({ name, className }: { name: string; className?: string }) {
   const init = name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("");
   return (
@@ -435,6 +455,7 @@ function TableView({
               <tr key={r.broker.id} className="group transition-colors hover:bg-slate-50">
                 <td className="sticky left-0 z-10 border-t border-slate-100 bg-white px-5 py-3.5 group-hover:bg-slate-50">
                   <div className="flex items-center gap-3">
+                    <LogoThumb broker={r.broker} className="size-9" />
                     <Initials name={r.officerName} className="size-7" />
                     <Link href={`/courtiers/${r.broker.id}`} className="block min-w-0">
                       <span className="block truncate font-semibold text-slate-900 group-hover:text-[#5b62c4]">
@@ -501,13 +522,16 @@ function CardsView({ rows }: { rows: Row[] }) {
           className="group flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#cdd1f2] hover:shadow-md"
         >
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="truncate text-base font-semibold text-slate-900 group-hover:text-[#5b62c4]">
-                {r.broker.societe}
-              </h3>
-              <p className="mt-0.5 truncate text-sm text-slate-500">
-                {r.broker.countries.map(flag).join(" ")} · {r.broker.contact}
-              </p>
+            <div className="flex min-w-0 items-center gap-3">
+              <LogoThumb broker={r.broker} className="size-10" />
+              <div className="min-w-0">
+                <h3 className="truncate text-base font-semibold text-slate-900 group-hover:text-[#5b62c4]">
+                  {r.broker.societe}
+                </h3>
+                <p className="mt-0.5 truncate text-sm text-slate-500">
+                  {r.broker.countries.map(flag).join(" ")} · {r.broker.contact}
+                </p>
+              </div>
             </div>
             <StatusDot status={r.status} />
           </div>
