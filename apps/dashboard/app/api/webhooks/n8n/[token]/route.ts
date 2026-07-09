@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { config } from "@brokercomply/shared";
 import { recordN8nCallback } from "@/lib/formulaires.server";
+import { recordAuditPdfCallback } from "@/lib/website-audit.server";
 
 // Needs the Node runtime: postgres.js + node:crypto are not available on Edge.
 export const runtime = "nodejs";
@@ -26,6 +27,8 @@ function safeEqual(a: string | null | undefined, b: string | null | undefined): 
 
 interface N8nCallbackBody {
   submissionId?: unknown;
+  /** Website-audit correlation key (rapport workflow) — exclusive with submissionId. */
+  auditId?: unknown;
   kind?: unknown;
   status?: unknown;
   html?: unknown;
@@ -66,6 +69,25 @@ export async function POST(
   } catch {
     return NextResponse.json({ ok: false, error: "invalid json" }, { status: 400 });
   }
+  // Website-audit PDF callback: correlated by auditId instead of submissionId.
+  if (body && typeof body.auditId === "string") {
+    try {
+      const res = await recordAuditPdfCallback({
+        auditId: body.auditId,
+        status: typeof body.status === "string" ? body.status : null,
+        pdfBase64: typeof body.pdfBase64 === "string" ? body.pdfBase64 : null,
+        error: typeof body.error === "string" ? body.error : null,
+      });
+      if (!res.found) {
+        return NextResponse.json({ ok: false, error: "unknown auditId" }, { status: 404 });
+      }
+      return NextResponse.json({ ok: true }, { status: 200 });
+    } catch (e) {
+      console.error("[n8n callback] audit pdf failed", e);
+      return NextResponse.json({ ok: false, error: "callback failed" }, { status: 500 });
+    }
+  }
+
   if (!body || typeof body.submissionId !== "string") {
     return NextResponse.json({ ok: false, error: "missing submissionId" }, { status: 400 });
   }

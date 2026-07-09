@@ -1,0 +1,192 @@
+{
+  "meta": {
+    "locale": "fr-BE",
+    "template": "brokercomply-default",
+    "version": "DRAFT",
+    "generatedAt": "2026-06-16T10:00:00Z"
+  },
+  "branding": {
+    "firmName": "Brokercomply",
+    "logoUrl": "https://brokercomply.be/assets/logo.svg",
+    "primaryColor": "#1B2A4A",
+    "accentColor": "#3DDC84",
+    "confidentialityNote": "Confidentiel"
+  },
+  "audit": {
+    "entity": {
+      "name": "Créditop Conseil SRL",
+      "bce": "1017.766.461",
+      "fsmaStatus": "Courtier en crédit hypothécaire + courtier en assurances (à confirmer sur le data portal FSMA)"
+    },
+    "site": { "url": "https://www.creditop-conseil.be", "environment": "production" },
+    "auditor": "Brokercomply",
+    "date": "2026-06-16",
+    "scope": "Le présent check porte exclusivement sur le contenu publicitaire et informatif du site, tel qu'il se présente au moment de l'analyse. Il ne constitue pas un audit juridique exhaustif des pratiques commerciales, contractuelles ou opérationnelles, ni un examen de la documentation précontractuelle.",
+    "disclaimer": "Les niveaux « non-conformité critique » et « amélioration recommandée » sont des appréciations indicatives du risque légal estimé au moment de l'analyse. Ils ne préjugent pas de l'appréciation que pourrait en faire une autorité de contrôle ou un juge.",
+    "pages": {
+      "analysed": ["accueil", "credit-hypothecaire", "pret-personnel", "investissement-immobilier", "regroupement-credits", "achat-sans-fonds-propres", "refinancement-credit", "assurance-solde-restant-du", "demande-credit", "contact", "mentions-legales"],
+      "notAnalysed": [{ "page": "blog et pages géolocalisées", "reason": "Hors périmètre de cette passe" }],
+      "toVerify": [
+        { "topic": "Statut FSMA exact", "reason": "Data portal FSMA rendu dynamiquement, non interrogeable automatiquement" },
+        { "topic": "Champs des formulaires contact / demande de crédit", "reason": "Contenu chargé dynamiquement" }
+      ]
+    }
+  },
+  "legalFramework": [
+    { "ref": "art. VII.64 §2 CDE", "label": "Slogan légal crédit conso" },
+    { "ref": "art. VII.124 §1 CDE", "label": "Exemple représentatif crédit hypothécaire" },
+    { "ref": "art. VII.123 §2 3° CDE", "label": "Interdiction de la publicité incitative au regroupement" },
+    { "ref": "art. VII.128 §1 CDE", "label": "Mentions et identification de l'intermédiaire" },
+    { "ref": "art. VII.161 §1 CDE", "label": "Obligation d'inscription FSMA" },
+    { "ref": "loi 4 avril 2014", "label": "Intermédiaire en assurances" },
+    { "ref": "loi 13 juin 2005 art. 129 §1", "label": "Cookies — consentement préalable" }
+  ],
+  "findings": [
+    {
+      "id": "P01",
+      "section": "Page d'accueil",
+      "title": "Slogan légal crédit",
+      "level": "amelioration",
+      "score": { "filled": 2, "applicable": 4 },
+      "constat": "Le slogan légal exact « Attention, emprunter de l'argent coûte aussi de l'argent » est bien présent, au mot près, sur les pages promouvant un crédit. En revanche il figure uniquement en pied de page (loin de la première accroche) et dans une taille inférieure à celle des accroches commerciales.",
+      "recommandation": "Faire remonter le slogan dans la zone de contenu de chaque page promouvant un crédit, à proximité de la première offre, dans une taille au moins égale aux accroches (un footer visible en permanence pendant le défilement est une alternative acceptable).",
+      "suggestedText": null,
+      "legalRefs": ["art. VII.64 §2 CDE"],
+      "checks": [
+        { "id": "P01.1", "label": "Formulation exacte", "verdict": "conforme", "evidence": "« Attention, emprunter de l'argent coûte aussi de l'argent »", "source": "accueil", "article": "art. VII.64 §2 CDE" },
+        { "id": "P01.2", "label": "Visible sans défilement / près de la 1re offre", "verdict": "non_conforme", "evidence": "Élément .titre_hw situé dans le footer, yTop 4458 sur une page de 5256px, visibleSansScroll=false", "source": "accueil", "article": "art. VII.64 §2 CDE" },
+        { "id": "P01.3", "label": "Taille ≥ accroches", "verdict": "non_conforme", "evidence": "slogan 35px vs accroche la plus grande 45,36px (mesuré à 1512px de large)", "source": "accueil", "article": "art. VII.64 §2 CDE" },
+        { "id": "P01.4", "label": "Présent sur chaque page crédit", "verdict": "conforme", "evidence": "Présent sur accueil, prêt personnel, regroupement, crédit hypothécaire", "source": "multi", "article": "art. VII.64 §2 CDE" }
+      ]
+    },
+    {
+      "id": "P02",
+      "section": "Page d'accueil",
+      "title": "Registre FSMA et lien de vérification",
+      "level": "critique",
+      "score": { "filled": 0, "applicable": 3 },
+      "constat": "Le footer et les mentions légales ne comportent aucune mention réglementaire d'intermédiaire : ni qualité d'inscription, ni numéro FSMA, ni lien de vérification. Seul le numéro d'entreprise (BCE) figure.",
+      "recommandation": "Compléter le footer avec la/les qualité(s) d'intermédiaire (crédit hypothécaire, assurances), le numéro d'inscription FSMA et un lien vers www.fsma.be/fr/data-portal.",
+      "suggestedText": null,
+      "legalRefs": ["art. VII.128 §1 2° CDE", "art. XII.6 §1 CDE"],
+      "checks": [
+        { "id": "P02.1", "label": "Qualité d'intermédiaire indiquée", "verdict": "non_conforme", "evidence": "Footer : « Créditop Conseil » + liste de services, sans qualité d'inscription", "source": "accueil", "article": "art. VII.128 §1 2° CDE" },
+        { "id": "P02.2", "label": "Numéro FSMA indiqué", "verdict": "non_conforme", "evidence": "« N° entreprise : 1017.766.461 » (BCE seul)", "source": "accueil", "article": "art. VII.128 §1 2° CDE" },
+        { "id": "P02.3", "label": "Lien de vérification FSMA", "verdict": "non_conforme", "evidence": "Aucune occurrence de « fsma.be »", "source": "accueil", "article": "art. VII.128 §1 2° CDE" }
+      ]
+    },
+    {
+      "id": "P03",
+      "section": "Page d'accueil",
+      "title": "Cohérence statut FSMA / activité promue",
+      "level": "a_verifier",
+      "score": { "filled": 0, "applicable": 1 },
+      "constat": "Le site promeut activement du crédit à la consommation (prêt personnel : 10 000–85 000 €, 12–144 mois, TAEG, comparaison d'offres). Si Créditop Conseil n'est pas inscrit à la FSMA pour cette catégorie, cette présentation active constitue une intermédiation en crédit conso sans inscription. Le statut FSMA n'a pas pu être vérifié automatiquement.",
+      "recommandation": "Confirmer d'abord l'inscription FSMA. Puis : (A) demander l'inscription en crédit à la consommation (CABRIO) pour conserver la page, ou (B) revoir la page « Prêt personnel » pour supprimer toute présentation active et se limiter à une orientation vers un partenaire habilité.",
+      "suggestedText": null,
+      "legalRefs": ["art. I.9 35° CDE", "art. VII.161 §1 CDE"],
+      "checks": [
+        { "id": "P03.1", "label": "Catégorie crédit conso couverte par le statut FSMA", "verdict": "a_verifier", "evidence": "Activité conso présentée (« montant : entre 10 000 € et 85 000 €… TAEG »), statut FSMA non vérifiable automatiquement", "source": "pret-personnel", "article": "art. VII.161 §1 CDE" }
+      ]
+    },
+    {
+      "id": "P04",
+      "section": "Crédit hypothécaire",
+      "title": "Publicité incitative au regroupement de crédits",
+      "level": "critique",
+      "score": { "filled": 0, "applicable": 4 },
+      "constat": "Le regroupement de crédits fait l'objet d'une promotion à plusieurs endroits : vignette en accueil, page dédiée au ton incitatif, call-to-action, et présence dans le menu et le footer. C'est une publicité axée sur l'incitation au regroupement, prohibée. Les mises en garde présentes plus bas ne neutralisent pas la mise en avant.",
+      "recommandation": "Supprimer la vignette d'accueil, les call-to-action et l'entrée « Regroupement » des services mis en avant. Si le service est maintenu, le limiter à une description strictement neutre et factuelle.",
+      "suggestedText": null,
+      "legalRefs": ["art. VII.123 §2 3° CDE", "art. VII.65 §1 3° CDE"],
+      "checks": [
+        { "id": "P04.1", "label": "Absence de vignette/section dédiée", "verdict": "non_conforme", "evidence": "« Regroupement de crédit … pour plus de facilité [En savoir plus] »", "source": "accueil", "article": "art. VII.123 §2 3° CDE" },
+        { "id": "P04.2", "label": "Absence de call-to-action incitatif", "verdict": "non_conforme", "evidence": "« Facilitez-vous la vie avec un regroupement de crédits ! » + boutons", "source": "regroupement-credits", "article": "art. VII.123 §2 3° CDE" },
+        { "id": "P04.3", "label": "Absence de FAQ/avantages incitatifs", "verdict": "non_conforme", "evidence": "« vos mensualités vont beaucoup diminuer », « gestion simplifiée »", "source": "regroupement-credits", "article": "art. VII.123 §2 3° CDE" },
+        { "id": "P04.4", "label": "Absent des services mis en avant", "verdict": "non_conforme", "evidence": "Présent dans le menu et la liste « Services » du footer", "source": "accueil", "article": "art. VII.123 §2 3° CDE" }
+      ]
+    },
+    {
+      "id": "P10",
+      "section": "Assurance solde restant dû",
+      "title": "Qualité d'intermédiaire en assurances + FSMA assurances",
+      "level": "critique",
+      "score": { "filled": 0, "applicable": 2 },
+      "constat": "Créditop Conseil propose et négocie des assurances solde restant dû, agissant ainsi comme intermédiaire en assurances. Ni la page assurance ni le footer ne reprennent la qualité de courtier en assurances ni le numéro FSMA assurances ; seul le BCE figure.",
+      "recommandation": "Ajouter sur la page assurance et dans le footer : « Créditop Conseil agit comme courtier en assurances indépendant, inscrit auprès de la FSMA sous le n° [à compléter] », avec lien vers le data portal FSMA.",
+      "suggestedText": "Créditop Conseil agit comme courtier en assurances indépendant, inscrit auprès de la FSMA sous le n° [à compléter]. Vérifiez notre inscription sur www.fsma.be/fr/data-portal.",
+      "legalRefs": ["loi 4 avril 2014, art. 261/262/281"],
+      "checks": [
+        { "id": "P10.1", "label": "Qualité de courtier en assurances mentionnée", "verdict": "non_conforme", "evidence": "Page assurance et footer : aucune mention de la qualité de courtier en assurances", "source": "assurance-solde-restant-du", "article": "loi 4 avril 2014" },
+        { "id": "P10.2", "label": "Numéro FSMA assurances + lien", "verdict": "non_conforme", "evidence": "Aucun numéro FSMA assurances ni lien de vérification", "source": "assurance-solde-restant-du", "article": "loi 4 avril 2014" }
+      ]
+    },
+    {
+      "id": "P19",
+      "section": "Mentions légales et Cookies",
+      "title": "Cookies : consentement préalable et politique",
+      "level": "critique",
+      "score": { "filled": 1, "applicable": 3 },
+      "constat": "Une bannière de consentement est présente (évolution positive). Mais des cookies non essentiels (Google Analytics, Adwords) sont déclarés sans que le dépôt préalable au consentement ait pu être confirmé, et le lien « Cookies » du footer pointe vers une ancre vide.",
+      "recommandation": "Vérifier techniquement que les cookies non essentiels ne se déclenchent qu'après consentement opt-in. Rendre fonctionnel le lien « Cookies » et publier une politique complète (finalité, durée, base légale par cookie).",
+      "suggestedText": null,
+      "legalRefs": ["loi 13 juin 2005 art. 129 §1", "Recommandation APD n° 01/2020", "RGPD art. 7"],
+      "checks": [
+        { "id": "P19.1", "label": "Bannière de consentement présente", "verdict": "conforme", "evidence": "« Accepter les cookies | Paramétrer ou refuser les cookies »", "source": "accueil", "article": "Reco APD 01/2020" },
+        { "id": "P19.2", "label": "Pas de dépôt avant consentement", "verdict": "a_verifier", "evidence": "Cookies _ga/_gid/_gat et Adwords déclarés ; dépôt préalable non vérifié techniquement", "source": "mentions-legales", "article": "loi 13 juin 2005 art. 129 §1" },
+        { "id": "P19.3", "label": "Politique cookies complète et accessible", "verdict": "non_conforme", "evidence": "Lien « Cookies » du footer = ancre vide (#)", "source": "accueil", "article": "Reco APD 01/2020" }
+      ]
+    },
+    {
+      "id": "P18",
+      "section": "Mentions légales et Cookies",
+      "title": "Mentions légales conformes",
+      "level": "critique",
+      "score": { "filled": 0, "applicable": 3 },
+      "constat": "La page « Mentions légales » (hébergée sur un domaine tiers) est un template générique au nom de l'agence web : « Ce site internet est la propriété de Top On Web SA […] BCE 0809.453.518 ». Aucune information légale de Créditop Conseil n'y figure (identité, FSMA, médiation, CCP).",
+      "recommandation": "Restructurer en deux sections : « Mentions légales » (informations réglementaires de Créditop Conseil SRL) et « Conditions d'utilisation du site » (CGU, au bon nom).",
+      "suggestedText": null,
+      "legalRefs": ["art. VII.128 §1 CDE", "art. XII.6 §1 CDE"],
+      "checks": [
+        { "id": "P18.1", "label": "Identifie l'entité auditée (pas l'agence)", "verdict": "non_conforme", "evidence": "« Ce site internet est la propriété de Top On Web SA »", "source": "mentions-legales", "article": "art. XII.6 §1 CDE" },
+        { "id": "P18.2", "label": "Inscription FSMA + qualités", "verdict": "non_conforme", "evidence": "Aucune mention d'inscription FSMA ni de qualité d'intermédiaire", "source": "mentions-legales", "article": "art. VII.128 §1 CDE" },
+        { "id": "P18.3", "label": "SPF Économie, médiation, CCP", "verdict": "non_conforme", "evidence": "Aucune mention du SPF Économie, d'OMBUDSFIN, de l'Ombudsman des Assurances ni de la CCP", "source": "mentions-legales", "article": "art. VII.128 §1 CDE" }
+      ]
+    },
+    {
+      "id": "P20",
+      "section": "Demande de crédit et Contact",
+      "title": "RGPD formulaires : lien vers la politique de confidentialité",
+      "level": "conforme",
+      "score": { "filled": 1, "applicable": 1 },
+      "constat": "Les formulaires de contact et de demande de crédit comportent une case de consentement avec un lien cliquable vers la politique de confidentialité, accessible avant soumission.",
+      "recommandation": "",
+      "suggestedText": null,
+      "legalRefs": ["RGPD art. 7", "RGPD art. 13"],
+      "checks": [
+        { "id": "P20.1", "label": "Lien cliquable vers la politique de confidentialité dans la case", "verdict": "conforme", "evidence": "« … je confirme avoir pris connaissance de la Politique de confidentialité » (lien présent)", "source": "demande-credit", "article": "RGPD art. 7" }
+      ]
+    },
+    {
+      "id": "P22",
+      "section": "Simulateur",
+      "title": "Simulateur : avertissement de non-contractualité",
+      "level": "conforme",
+      "score": { "filled": 2, "applicable": 2 },
+      "constat": "Le simulateur porte des avertissements indiquant que la simulation est indicative et sans engagement, et que l'octroi reste sous réserve d'acceptation du dossier.",
+      "recommandation": "",
+      "suggestedText": null,
+      "legalRefs": ["art. VI.97 CDE"],
+      "checks": [
+        { "id": "P22.1", "label": "Mention « indicatif / ne constitue pas une offre »", "verdict": "conforme", "evidence": "« Le simulateur ci-dessus est réalisé à titre indicatif » ; « Les simulations sont communiquées à titre informatif sans engagement »", "source": "credit-hypothecaire", "article": "art. VI.97 CDE" },
+        { "id": "P22.2", "label": "Sous réserve d'acceptation du dossier", "verdict": "conforme", "evidence": "« Sous réserve d'acceptation de votre demande par l'organisme prêteur »", "source": "credit-hypothecaire", "article": "art. VI.97 CDE" }
+      ]
+    }
+  ],
+  "summary": {
+    "critiques": 5,
+    "ameliorations": 1,
+    "conformes": 2,
+    "aVerifier": 1
+  }
+}

@@ -14,3 +14,4 @@ export * from './mail/index.js';
 export * from './documents/index.js';
 export * from './sharepoint/index.js';
 export * from './notion/index.js';
+export * from './website-audit/index.js';

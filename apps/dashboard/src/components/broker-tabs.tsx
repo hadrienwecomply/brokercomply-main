@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ListChecks, FolderOpen, Mail, FileText } from 'lucide-react';
+import { ListChecks, FolderOpen, Mail, FileText, Globe } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 /** Tab navigation for a broker's sub-pages (Plan d'action / Formulaires / Conversations / Documents). */
@@ -14,6 +14,7 @@ export function BrokerTabs({ slug }: { slug: string }) {
     { href: `${base}/formulaires`, label: 'Formulaires', icon: FileText },
     { href: `${base}/conversations`, label: 'Conversations', icon: Mail },
     { href: `${base}/documents`, label: 'Documents', icon: FolderOpen },
+    { href: `${base}/audit`, label: 'Audit site web', icon: Globe },
   ];
 
   return (

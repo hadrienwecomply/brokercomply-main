@@ -30,8 +30,13 @@
     "@notionhq/client": "^5.22.0",
     "dotenv": "^16.4.0",
     "drizzle-orm": "~0.39.0",
+    "html-to-text": "^10.0.0",
     "openai": "^6.42.0",
+    "playwright": "^1.61.1",
     "postgres": "^3.4.0",
     "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/html-to-text": "^9.0.4"
   }
 }

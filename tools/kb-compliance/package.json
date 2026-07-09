@@ -13,6 +13,7 @@
     "ingest": "tsx src/ingestion/run.ts",
     "ingest:delta": "tsx src/ingestion/run-delta.ts",
     "distill": "tsx src/distillation/run.ts",
+    "audit:website": "tsx scripts/audit-website.ts",
     "check:sharepoint": "tsx scripts/check-sharepoint.ts",
     "sync:sharepoint": "tsx scripts/sync-sharepoint.ts",
     "backfill:sharepoint": "tsx scripts/backfill-sharepoint-folders.ts",

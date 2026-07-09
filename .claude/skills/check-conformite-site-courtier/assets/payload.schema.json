@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brokercomply.be/schemas/check-conformite-payload.json",
+  "title": "Check de conformité — payload de génération PDF",
+  "description": "Donnée structurée d'un rapport d'audit de conformité de site de courtier belge. Source unique de vérité : le tableau `findings`. L'API dérive le résumé chiffré, la numérotation des sections, le sommaire et les couleurs de gravité.",
+  "type": "object",
+  "required": ["audit", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "locale": { "type": "string", "default": "fr-BE", "examples": ["fr-BE", "nl-BE"] },
+        "template": { "type": "string", "description": "Identifiant de gabarit PDF côté API.", "default": "brokercomply-default" },
+        "version": { "type": "string", "description": "Statut du document.", "examples": ["DRAFT", "FINAL"] },
+        "generatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "branding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "firmName": { "type": "string" },
+        "logoUrl": { "type": "string", "format": "uri" },
+        "primaryColor": { "type": "string", "pattern": "^#([0-9A-Fa-f]{6})$" },
+        "accentColor": { "type": "string", "pattern": "^#([0-9A-Fa-f]{6})$" },
+        "confidentialityNote": { "type": "string" }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "required": ["entity", "site", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "entity": {
+          "type": "object",
+          "required": ["name"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "bce": { "type": "string", "description": "Numéro BCE.", "examples": ["1017.766.461"] },
+            "fsmaStatus": { "type": "string", "description": "Statut FSMA réel ou « à confirmer »." },
+            "contact": { "type": "string" }
+          }
+        },
+        "site": {
+          "type": "object",
+          "required": ["url"],
+          "additionalProperties": false,
+          "properties": {
+            "url": { "type": "string", "format": "uri" },
+            "environment": { "type": "string", "enum": ["production", "preproduction", "staging"], "default": "production" }
+          }
+        },
+        "auditor": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "scope": { "type": "string", "description": "Texte de périmètre et portée." },
+        "disclaimer": { "type": "string", "description": "Mention sur le caractère indicatif des niveaux." },
+        "pages": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "analysed": { "type": "array", "items": { "type": "string" } },
+            "notAnalysed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["page"],
+                "additionalProperties": false,
+                "properties": {
+                  "page": { "type": "string" },
+                  "reason": { "type": "string" }
+                }
+              }
+            },
+            "toVerify": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["topic"],
+                "additionalProperties": false,
+                "properties": {
+                  "topic": { "type": "string" },
+                  "reason": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "legalFramework": {
+      "type": "array",
+      "description": "Optionnel : sinon l'API l'agrège depuis les `legalRefs` des findings.",
+      "items": {
+        "type": "object",
+        "required": ["ref"],
+        "additionalProperties": false,
+        "properties": {
+          "ref": { "type": "string", "examples": ["art. VII.64 §2 CDE"] },
+          "label": { "type": "string" }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "Source unique de vérité. Un élément par point d'analyse retenu.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "level", "constat"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "description": "Identifiant stable du point.", "examples": ["P01"] },
+          "section": { "type": "string", "description": "Rubrique de regroupement ; sert à la numérotation 1.x.", "examples": ["Page d'accueil"] },
+          "title": { "type": "string" },
+          "level": {
+            "type": "string",
+            "enum": ["critique", "amelioration", "conforme", "a_verifier", "sans_objet"],
+            "description": "Calculé par décompte des sous-points : 0-1 rempli → critique ; 2+ mais pas tous → amelioration ; tous → conforme."
+          },
+          "score": {
+            "type": "object",
+            "required": ["filled", "applicable"],
+            "additionalProperties": false,
+            "properties": {
+              "filled": { "type": "integer", "minimum": 0 },
+              "applicable": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "constat": { "type": "string", "description": "Constat synthétique (texte ou markdown léger)." },
+          "recommandation": { "type": "string" },
+          "suggestedText": { "type": ["string", "null"], "description": "Formulation de remplacement prête à coller (optionnel)." },
+          "legalRefs": { "type": "array", "items": { "type": "string" } },
+          "checks": {
+            "type": "array",
+            "description": "Sous-points (issus des subagents). Alimente le bloc « Détail des checks ».",
+            "items": {
+              "type": "object",
+              "required": ["id", "verdict"],
+              "additionalProperties": false,
+              "properties": {
+                "id": { "type": "string", "examples": ["P01.1"] },
+                "label": { "type": "string", "description": "Intitulé court du sous-point." },
+                "verdict": {
+                  "type": "string",
+                  "enum": ["conforme", "non_conforme", "sans_objet", "a_verifier"]
+                },
+                "evidence": { "type": "string", "description": "Citation littérale de la page (preuve)." },
+                "source": { "type": "string", "description": "Page/fichier d'où provient la preuve." },
+                "article": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Optionnel : l'API peut le recalculer à partir de `findings`.",
+      "additionalProperties": false,
+      "properties": {
+        "critiques": { "type": "integer", "minimum": 0 },
+        "ameliorations": { "type": "integer", "minimum": 0 },
+        "conformes": { "type": "integer", "minimum": 0 },
+        "aVerifier": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

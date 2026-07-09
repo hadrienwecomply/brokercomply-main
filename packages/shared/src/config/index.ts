@@ -119,6 +119,18 @@ const envSchema = z.object({
   // workflow with the reviewed edits; it renders the PDF and posts it back via
   // the callback above (kind='pdf'). Shares N8N_WEBHOOK_SECRET as the header.
   N8N_PDF_WEBHOOK_URL: z.string().url().optional(),
+
+  // n8n branded-report workflow (outbound) for website compliance audits. The
+  // "Générer le PDF" button of the audit report posts the edited payload
+  // (payload.schema.json contract) here; the workflow renders the branded PDF
+  // and posts it back via the callback above (kind='pdf' + auditId). Shares
+  // N8N_WEBHOOK_SECRET as the header.
+  N8N_RAPPORT_WEBHOOK_URL: z.string().url().optional(),
+
+  // Base URL of BrokerComply's inbound n8n callback, sent to n8n in the audit
+  // PDF trigger so the workflow calls back here without depending on n8n-side
+  // env. Full URL built as `${N8N_CALLBACK_BASE_URL}/${N8N_CALLBACK_TOKEN}`.
+  N8N_CALLBACK_BASE_URL: z.string().url().default('http://localhost:3002/api/webhooks/n8n'),
   // Notion import (action-plan statuses). The internal-integration token and the
   // two data-source ids of the "Pilotage courtier - Full" databases. Token is
   // optional here and validated lazily by the importer; ids default to the known
