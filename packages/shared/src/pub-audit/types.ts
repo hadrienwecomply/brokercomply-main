@@ -147,6 +147,12 @@ export const PubAuditPayloadSchema = z.object({
     produits: z.array(PubProduitSchema),
     elements_fournis: z.array(ElementFourniSchema),
     entiteName: z.string().optional(),
+    /**
+     * The analysed creative as a `data:<mime>;base64,...` URI, for display in
+     * the report. Injected at render/PDF time from the stored image — NOT
+     * persisted in the findings payload (avoids duplicating the image blob).
+     */
+    image: z.string().optional(),
   }),
   dateAnalyse: z.string(),
   /** Factual description/transcription of the ad. */

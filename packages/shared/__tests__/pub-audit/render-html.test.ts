@@ -24,6 +24,19 @@ function html() {
   return renderPubHtml(payload);
 }
 
+function htmlWithImage() {
+  const payload = assemblePubPayload({
+    qualification,
+    rawConstats: [{ id: 'G1', verdict: 'conforme' }],
+    fileName: 'pub.png',
+    dateAnalyse: '2026-07-09',
+  });
+  return renderPubHtml({
+    ...payload,
+    support: { ...payload.support, image: 'data:image/png;base64,AAAA' },
+  });
+}
+
 describe('renderPubHtml', () => {
   it('emits the editable format tag and contenteditable fields', () => {
     const out = html();
@@ -43,5 +56,13 @@ describe('renderPubHtml', () => {
     const out = html();
     expect(out).toContain('#123456');
     expect(out).toContain('ne pas diffuser'); // rouge libellé (G8 prohibition)
+  });
+
+  it('renders the analysed creative when a support image is provided', () => {
+    const out = htmlWithImage();
+    expect(out).toContain('class="p-ad"');
+    expect(out).toContain('data:image/png;base64,AAAA');
+    // ...and omits the figure when there is no image.
+    expect(html()).not.toContain('class="p-ad"');
   });
 });

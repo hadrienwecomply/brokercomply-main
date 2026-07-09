@@ -124,7 +124,13 @@ async function runPubAuditJob(auditId: string): Promise<void> {
       branding: brandingFor(broker),
     });
 
-    const html = renderPubHtml(result.payload);
+    // Show the analysed creative in the report (injected at render time, not
+    // persisted in `findings` — the image already lives in its own column).
+    const imageDataUrl = `data:${row.imageMimeType};base64,${row.imageBase64}`;
+    const html = renderPubHtml({
+      ...result.payload,
+      support: { ...result.payload.support, image: imageDataUrl },
+    });
     // Surface partial failures (a vision pass errored → its checks fell back to
     // "à vérifier") without failing the whole audit, so the officer sees it.
     const passWarning =
@@ -286,6 +292,11 @@ export async function requestPubAuditPdf(auditId: string, edits: unknown): Promi
     payload = applyPubEdits(PubAuditPayloadSchema.parse(base), edits);
     const branding = brandingFor(broker);
     if (branding) payload = { ...payload, branding: { ...payload.branding, ...branding } };
+    // Embed the analysed creative so the n8n PDF can render it (not stored in findings).
+    payload = {
+      ...payload,
+      support: { ...payload.support, image: `data:${row.imageMimeType};base64,${row.imageBase64}` },
+    };
   } catch (e) {
     return rollback(
       `Modifications invalides : ${e instanceof Error ? e.message.slice(0, 200) : "format inattendu"}`,

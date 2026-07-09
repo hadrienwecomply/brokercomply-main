@@ -84,6 +84,10 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   const logoImg = branding?.logoUrl
     ? `<img class="p-logo" src="${esc(branding.logoUrl)}" alt="${esc(branding.firmName ?? entite)}">`
     : '';
+  // The analysed creative, shown for context alongside the constats.
+  const adFigure = support.image
+    ? `<figure class="p-ad"><img src="${esc(support.image)}" alt="${esc(support.fichier)}"><figcaption>Support analysé — ${esc(support.fichier)}</figcaption></figure>`
+    : '';
 
   // Group constats by section, in the canonical section order.
   const sections = PUB_SECTIONS.map((titre) => ({
@@ -125,6 +129,9 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   .p-meta dt{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
   .p-meta dd{margin:0}
   .p-niveau{display:flex;align-items:center;gap:12px;border-radius:10px;padding:14px 18px;margin:18px 0;font-weight:700;font-size:16px;color:${esc(nv.color)};background:${esc(nv.bg)}}
+  .p-ad{margin:18px 0;padding:0;text-align:center}
+  .p-ad img{max-width:100%;max-height:420px;object-fit:contain;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .p-ad figcaption{margin-top:6px;font-size:12px;color:var(--muted)}
   .p-chips{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
   .chip{border-radius:999px;padding:5px 14px;font-size:13px;font-weight:600;border:1px solid transparent}
   .p-constat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0}
@@ -158,6 +165,8 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   <p class="p-sub">${esc(entite || support.fichier)}</p>
 
   <div class="p-niveau" id="p-niveau" data-code="${esc(niveauGlobal.code)}">${esc(nv.label)} — <span class="p-niveau-txt">${esc(niveauGlobal.libelle)}</span></div>
+
+  ${adFigure}
 
   <dl class="p-meta">
     ${entite ? `<div><dt>Intermédiaire</dt><dd>${esc(entite)}</dd></div>` : ''}
