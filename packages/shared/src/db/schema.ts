@@ -644,3 +644,57 @@ export const websiteAudits = pgTable(
 
 export type WebsiteAuditRow = typeof websiteAudits.$inferSelect;
 export type NewWebsiteAuditRow = typeof websiteAudits.$inferInsert;
+
+/**
+ * Print-advertising compliance audits — one row per uploaded creative (image).
+ * A multi-image upload shares a `batch_id` so the UI can group them, but each
+ * image is analysed independently (one payload = one ad). Mirrors the
+ * `website_audits` review/PDF lifecycle so the editable-report + PDF machinery
+ * is shared.
+ */
+export const pubAudits = pgTable(
+  'pub_audits',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    brokerId: uuid('broker_id')
+      .notNull()
+      .references(() => brokers.id, { onDelete: 'cascade' }),
+    /** Groups the images uploaded together in one batch. */
+    batchId: uuid('batch_id').notNull().defaultRandom(),
+    /** Original file name of the uploaded creative. */
+    fileName: text('file_name').notNull(),
+    /** Uploaded image, base64 (same storage approach as brokers.logo_base64). */
+    imageBase64: text('image_base64').notNull(),
+    imageMimeType: text('image_mime_type').notNull(),
+    /**
+     * Audit lifecycle: 'queued' | 'running' | 'analyzed' | 'review_pending'
+     * | 'needs_manual' | 'error'.
+     */
+    status: text('status').default('queued').notNull(),
+    /** Assembled pub audit payload (PubAuditPayload JSON). */
+    findings: jsonb('findings').$type<unknown>(),
+    /** Shared transcription + qualification (pass 0), kept for replay/debug. */
+    qualification: jsonb('qualification').$type<unknown>(),
+    errorMessage: text('error_message'),
+    /** Editable review HTML rendered from `findings` (brokercomply-pub/v1). */
+    reviewHtml: text('review_html'),
+    /** Officer's latest corrections (the `edits` object from the editor). */
+    reviewEdits: jsonb('review_edits').$type<unknown>(),
+    /** Review lifecycle: 'pending' | 'edited' | 'pdf_requested' | 'pdf_ready'. */
+    reviewStatus: text('review_status'),
+    /** URL the "PDF" button points to (app route serving the stored PDF). */
+    pdfRef: text('pdf_ref'),
+    /** Base64 PDF returned by the n8n pub-rapport workflow. */
+    pdfBase64: text('pdf_base64'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_pub_audits_broker').on(t.brokerId),
+    index('idx_pub_audits_batch').on(t.batchId),
+    index('idx_pub_audits_status').on(t.status),
+  ],
+);
+
+export type PubAuditRow = typeof pubAudits.$inferSelect;
+export type NewPubAuditRow = typeof pubAudits.$inferInsert;

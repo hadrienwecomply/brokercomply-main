@@ -29,6 +29,20 @@ interface ChatProvider {
   chat(messages: ChatMessage[], options?: ChatOptions): Promise<string>;
 }
 
+/** Image media types the Anthropic vision API accepts. */
+const SUPPORTED_IMAGE_MEDIA_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'] as const;
+type SupportedImageMediaType = (typeof SUPPORTED_IMAGE_MEDIA_TYPES)[number];
+
+/** Narrow a media type to the supported union, or throw a clear error. */
+function assertImageMediaType(mediaType: string): SupportedImageMediaType {
+  if ((SUPPORTED_IMAGE_MEDIA_TYPES as readonly string[]).includes(mediaType)) {
+    return mediaType as SupportedImageMediaType;
+  }
+  throw new Error(
+    `Unsupported image media type "${mediaType}" (expected one of ${SUPPORTED_IMAGE_MEDIA_TYPES.join(', ')}).`,
+  );
+}
+
 class AnthropicChatProvider implements ChatProvider {
   private readonly client: Anthropic;
   private readonly model: string;
@@ -39,13 +53,32 @@ class AnthropicChatProvider implements ChatProvider {
   }
 
   async chat(messages: ChatMessage[], options: ChatOptions = {}): Promise<string> {
+    const images = options.images ?? [];
+    // Attach images (if any) to the last user message as image blocks.
+    const lastUserIdx = images.length > 0 ? findLastUserIndex(messages) : -1;
     const res = await withRetry(() =>
       this.client.messages.create({
         model: options.model ?? this.model,
         max_tokens: options.maxTokens ?? 4096,
         temperature: options.temperature ?? 0,
         ...(options.system ? { system: options.system } : {}),
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        messages: messages.map((m, i) => {
+          if (i !== lastUserIdx) return { role: m.role, content: m.content };
+          return {
+            role: m.role,
+            content: [
+              ...images.map((img) => ({
+                type: 'image' as const,
+                source: {
+                  type: 'base64' as const,
+                  media_type: assertImageMediaType(img.mediaType),
+                  data: img.base64,
+                },
+              })),
+              { type: 'text' as const, text: m.content },
+            ],
+          };
+        }),
       }),
     );
     return res.content
@@ -53,6 +86,14 @@ class AnthropicChatProvider implements ChatProvider {
       .join('')
       .trim();
   }
+}
+
+/** Index of the last user-role message, or -1. */
+function findLastUserIndex(messages: ChatMessage[]): number {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i]?.role === 'user') return i;
+  }
+  return -1;
 }
 
 class OpenAIChatProvider implements ChatProvider {
@@ -65,6 +106,8 @@ class OpenAIChatProvider implements ChatProvider {
   }
 
   async chat(messages: ChatMessage[], options: ChatOptions = {}): Promise<string> {
+    const images = options.images ?? [];
+    const lastUserIdx = images.length > 0 ? findLastUserIndex(messages) : -1;
     const res = await withRetry(() =>
       this.client.chat.completions.create({
         model: options.model ?? this.model,
@@ -72,8 +115,20 @@ class OpenAIChatProvider implements ChatProvider {
         temperature: options.temperature ?? 0,
         messages: [
           ...(options.system ? [{ role: 'system' as const, content: options.system }] : []),
-          ...messages.map((m) => ({ role: m.role, content: m.content })),
-        ],
+          ...messages.map((m, i) => {
+            if (i !== lastUserIdx) return { role: m.role, content: m.content };
+            return {
+              role: m.role,
+              content: [
+                { type: 'text' as const, text: m.content },
+                ...images.map((img) => ({
+                  type: 'image_url' as const,
+                  image_url: { url: `data:${img.mediaType};base64,${img.base64}` },
+                })),
+              ],
+            };
+          }),
+        ] as Parameters<OpenAI['chat']['completions']['create']>[0]['messages'],
       }),
     );
     return res.choices[0]?.message.content?.trim() ?? '';

@@ -1,0 +1,21 @@
+{
+  "skill_name": "check-conformite-pub-courtier",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Peux-tu analyser cette publicité et me dire si elle est conforme ? Fichier : solidas-plci-calculateur-60.png",
+      "expected_output": "Rapport Markdown + JSON : qualification assurance PLCI (email), constats sourcés avec citations et bases légales, déséquilibre avantages/risques détecté (AR 25/04/2014), reformulations pour chaque non-conformité, checks crédit marqués non applicables",
+      "files": [
+        "solidas-plci-calculateur-60.png"
+      ],
+      "assertions": [
+        "Deux livrables produits : un rapport Markdown ET un payload JSON structuré",
+        "Le JSON est valide et contient niveau_global + constats[], chaque verdict étant l'un de : conforme, non_conforme, a_verifier, non_applicable",
+        "Le produit est qualifié comme assurance (PLCI / vie) et les exigences propres au crédit (slogan « Attention, emprunter... », TAEG, exemple représentatif) ne sont PAS exigées",
+        "Le déséquilibre avantages/risques (grosses promesses vs risques en petits caractères) est constaté avec la base légale AR du 25 avril 2014 (taille de police au moins identique)",
+        "Chaque constat non conforme comporte une citation exacte de la pub OU un constat d'absence explicite, ET une reformulation/correction proposée",
+        "Aucune exigence hors du guide Do & Don't n'est présentée comme constat de non-conformité (les remarques hors périmètre sont absentes ou clairement séparées)"
+      ]
+    }
+  ]
+}

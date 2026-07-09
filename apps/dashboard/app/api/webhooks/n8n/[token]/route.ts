@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { config } from "@brokercomply/shared";
 import { recordN8nCallback } from "@/lib/formulaires.server";
 import { recordAuditPdfCallback } from "@/lib/website-audit.server";
+import { recordPubPdfCallback } from "@/lib/pub-audit.server";
 
 // Needs the Node runtime: postgres.js + node:crypto are not available on Edge.
 export const runtime = "nodejs";
@@ -29,6 +30,8 @@ interface N8nCallbackBody {
   submissionId?: unknown;
   /** Website-audit correlation key (rapport workflow) — exclusive with submissionId. */
   auditId?: unknown;
+  /** Pub-audit correlation key (pub-rapport workflow) — exclusive with the above. */
+  pubAuditId?: unknown;
   kind?: unknown;
   status?: unknown;
   html?: unknown;
@@ -69,6 +72,25 @@ export async function POST(
   } catch {
     return NextResponse.json({ ok: false, error: "invalid json" }, { status: 400 });
   }
+  // Pub-audit PDF callback: correlated by pubAuditId.
+  if (body && typeof body.pubAuditId === "string") {
+    try {
+      const res = await recordPubPdfCallback({
+        pubAuditId: body.pubAuditId,
+        status: typeof body.status === "string" ? body.status : null,
+        pdfBase64: typeof body.pdfBase64 === "string" ? body.pdfBase64 : null,
+        error: typeof body.error === "string" ? body.error : null,
+      });
+      if (!res.found) {
+        return NextResponse.json({ ok: false, error: "unknown pubAuditId" }, { status: 404 });
+      }
+      return NextResponse.json({ ok: true }, { status: 200 });
+    } catch (e) {
+      console.error("[n8n callback] pub pdf failed", e);
+      return NextResponse.json({ ok: false, error: "callback failed" }, { status: 500 });
+    }
+  }
+
   // Website-audit PDF callback: correlated by auditId instead of submissionId.
   if (body && typeof body.auditId === "string") {
     try {

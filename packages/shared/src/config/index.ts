@@ -127,6 +127,13 @@ const envSchema = z.object({
   // N8N_WEBHOOK_SECRET as the header.
   N8N_RAPPORT_WEBHOOK_URL: z.string().url().optional(),
 
+  // n8n branded-report workflow (outbound) for print-advertising audits. The
+  // "Générer le PDF" button of the pub report posts the edited PubAuditPayload
+  // here; the workflow renders the branded PDF and posts it back via the
+  // callback above (kind='pdf' + pubAuditId). Shares N8N_WEBHOOK_SECRET as the
+  // header. Falls back to N8N_RAPPORT_WEBHOOK_URL when unset.
+  N8N_PUB_RAPPORT_WEBHOOK_URL: z.string().url().optional(),
+
   // Base URL of BrokerComply's inbound n8n callback, sent to n8n in the audit
   // PDF trigger so the workflow calls back here without depending on n8n-side
   // env. Full URL built as `${N8N_CALLBACK_BASE_URL}/${N8N_CALLBACK_TOKEN}`.
