@@ -17,3 +17,4 @@ export * from './notion/index.js';
 export * from './website-audit/index.js';
 export * from './pub-audit/index.js';
 export * from './branding/index.js';
+export * from './agent-chat/index.js';

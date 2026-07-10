@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, ListChecks, Zap, BookOpen, Map, Settings } from "lucide-react";
+import { LayoutGrid, ListChecks, Zap, BookOpen, Map, Settings, Sparkles } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const NAV = [
   { href: "/", label: "Portfolio", icon: LayoutGrid },
   { href: "/actions", label: "Prochaines actions", icon: ListChecks },
+  { href: "/assistant", label: "Assistant", icon: Sparkles },
   { href: "/faq", label: "Base de connaissances", icon: BookOpen },
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/automatisations", label: "Automatisations", icon: Zap },

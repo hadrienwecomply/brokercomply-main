@@ -1,0 +1,146 @@
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import {
+  agentChatMessages,
+  agentChats,
+  type AgentChatMessageRow,
+  type AgentChatRow,
+  type Db,
+} from '../db/index.js';
+
+export interface AgentChatServiceDeps {
+  db: Db;
+}
+
+/** A conversation plus its ordered messages (transcript view). */
+export interface AgentChatDetail {
+  chat: AgentChatRow;
+  messages: AgentChatMessageRow[];
+}
+
+/** Derive a short title from the first user prompt (trimmed to a single line). */
+function deriveTitle(firstMessage: string): string {
+  const oneLine = firstMessage.replace(/\s+/g, ' ').trim();
+  return oneLine.length > 80 ? `${oneLine.slice(0, 79)}…` : oneLine || 'Nouvelle conversation';
+}
+
+/** List the shared, non-archived conversations, most-recently-active first. */
+export async function listAgentChats({ db }: AgentChatServiceDeps): Promise<AgentChatRow[]> {
+  return db
+    .select()
+    .from(agentChats)
+    .where(isNull(agentChats.archivedAt))
+    .orderBy(desc(agentChats.updatedAt));
+}
+
+/** Fetch one conversation with its full transcript, or null if unknown/archived. */
+export async function getAgentChat(
+  { db }: AgentChatServiceDeps,
+  chatId: string,
+): Promise<AgentChatDetail | null> {
+  const [chat] = await db
+    .select()
+    .from(agentChats)
+    .where(and(eq(agentChats.id, chatId), isNull(agentChats.archivedAt)));
+  if (!chat) return null;
+  const messages = await db
+    .select()
+    .from(agentChatMessages)
+    .where(eq(agentChatMessages.chatId, chatId))
+    .orderBy(asc(agentChatMessages.createdAt));
+  return { chat, messages };
+}
+
+/** Create an empty conversation attributed to the given officer. */
+export async function createAgentChat(
+  { db }: AgentChatServiceDeps,
+  opts: { createdBy: string; title?: string | null },
+): Promise<AgentChatRow> {
+  const [row] = await db
+    .insert(agentChats)
+    .values({ createdBy: opts.createdBy, title: opts.title ?? null })
+    .returning();
+  if (!row) throw new Error('Failed to create agent chat');
+  return row;
+}
+
+/** Append a message to a conversation and bump the parent's `updatedAt`. */
+export async function appendAgentChatMessage(
+  { db }: AgentChatServiceDeps,
+  input: {
+    chatId: string;
+    role: 'user' | 'assistant';
+    content: unknown[];
+    officer?: string | null;
+    costUsd?: number | null;
+  },
+): Promise<AgentChatMessageRow> {
+  return db.transaction(async (tx) => {
+    const [msg] = await tx
+      .insert(agentChatMessages)
+      .values({
+        chatId: input.chatId,
+        role: input.role,
+        content: input.content,
+        officer: input.officer ?? null,
+        costUsd: input.costUsd != null ? String(input.costUsd) : null,
+      })
+      .returning();
+    if (!msg) throw new Error('Failed to append agent chat message');
+
+    // If this is the first user message and the chat has no title yet, seed one.
+    const firstText =
+      input.role === 'user'
+        ? input.content.find(
+            (b): b is { type: 'text'; text: string } =>
+              typeof b === 'object' &&
+              b !== null &&
+              (b as { type?: unknown }).type === 'text' &&
+              typeof (b as { text?: unknown }).text === 'string',
+          )?.text
+        : undefined;
+
+    const [chat] = await tx.select().from(agentChats).where(eq(agentChats.id, input.chatId));
+    const set: Partial<typeof agentChats.$inferInsert> = { updatedAt: new Date() };
+    if (firstText && chat && !chat.title) set.title = deriveTitle(firstText);
+    if (input.costUsd != null && chat) {
+      set.totalCostUsd = String(Number(chat.totalCostUsd) + input.costUsd);
+    }
+    await tx.update(agentChats).set(set).where(eq(agentChats.id, input.chatId));
+    return msg;
+  });
+}
+
+/** Persist the Agent SDK session id so later turns can resume the conversation. */
+export async function setAgentChatSession(
+  { db }: AgentChatServiceDeps,
+  chatId: string,
+  sdkSessionId: string,
+): Promise<void> {
+  await db
+    .update(agentChats)
+    .set({ sdkSessionId, updatedAt: new Date() })
+    .where(eq(agentChats.id, chatId));
+}
+
+/** Rename a conversation (officer edit). */
+export async function renameAgentChat(
+  { db }: AgentChatServiceDeps,
+  chatId: string,
+  title: string,
+): Promise<void> {
+  await db
+    .update(agentChats)
+    .set({ title: title.trim() || null, updatedAt: new Date() })
+    .where(eq(agentChats.id, chatId));
+}
+
+/** Soft-delete a conversation (hidden from the shared list). */
+export async function archiveAgentChat(
+  { db }: AgentChatServiceDeps,
+  chatId: string,
+): Promise<void> {
+  await db
+    .update(agentChats)
+    .set({ archivedAt: new Date() })
+    .where(eq(agentChats.id, chatId));
+}

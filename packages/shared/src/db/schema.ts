@@ -698,3 +698,68 @@ export const pubAudits = pgTable(
 
 export type PubAuditRow = typeof pubAudits.$inferSelect;
 export type NewPubAuditRow = typeof pubAudits.$inferInsert;
+
+/**
+ * Assistant agent — shared conversations.
+ *
+ * The embedded Claude Agent SDK chat, visible to all officers (no per-user
+ * privacy in v1 — private network, cookie identity). One row per conversation.
+ * `sdkSessionId` is the Agent SDK session id captured from the first completed
+ * turn; resuming a conversation replays it via `query({ options: { resume } })`.
+ * The messages themselves are mirrored to `agent_chat_messages` so the shared
+ * list and transcript render from Postgres regardless of the SDK's own
+ * (filesystem-backed, ephemeral on Heroku) session store.
+ */
+export const agentChats = pgTable(
+  'agent_chats',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Display title — derived from the first user prompt, officer-renamable. */
+    title: text('title'),
+    /** Agent SDK session id for resumption; null until the first turn completes. */
+    sdkSessionId: text('sdk_session_id'),
+    /** Officer (email) who created the conversation — cookie identity. */
+    createdBy: text('created_by').notNull(),
+    /** Running total API cost across all turns (USD), for a lightweight budget view. */
+    totalCostUsd: numeric('total_cost_usd').default('0').notNull(),
+    /** Soft-delete marker; archived chats are hidden from the shared list. */
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_agent_chats_updated_at').on(t.updatedAt),
+    index('idx_agent_chats_archived_at').on(t.archivedAt),
+  ],
+);
+
+/**
+ * One message in an assistant conversation. `content` is the array of display
+ * blocks for the turn: `{type:'text'}` plus condensed `{type:'tool_use'}` /
+ * `{type:'tool_result'}` markers so the transcript can show what the agent did
+ * without re-running it. Assistant turns also record their API cost.
+ */
+export const agentChatMessages = pgTable(
+  'agent_chat_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    chatId: uuid('chat_id')
+      .notNull()
+      .references(() => agentChats.id, { onDelete: 'cascade' }),
+    /** 'user' | 'assistant'. */
+    role: text('role').notNull(),
+    /** Ordered display blocks for the turn (text + condensed tool markers). */
+    content: jsonb('content').$type<unknown[]>().default([]).notNull(),
+    /** Officer (email) who sent a user turn; null for assistant turns. */
+    officer: text('officer'),
+    /** API cost of this assistant turn (USD); null for user turns. */
+    costUsd: numeric('cost_usd'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('idx_agent_chat_messages_chat').on(t.chatId, t.createdAt)],
+);
+
+export type AgentChatRow = typeof agentChats.$inferSelect;
+export type NewAgentChatRow = typeof agentChats.$inferInsert;
+export type AgentChatMessageRow = typeof agentChatMessages.$inferSelect;
+export type NewAgentChatMessageRow = typeof agentChatMessages.$inferInsert;
