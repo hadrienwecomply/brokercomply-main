@@ -124,7 +124,7 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   body{margin:0;font:15px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--paper)}
   .wrap{max-width:880px;margin:0 auto;padding:32px 24px 120px}
   /* Split layout: pinned ad on the left, scrolling report on the right. */
-  .p-shell--split{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:28px;max-width:1320px;margin:0 auto;align-items:start}
+  .p-shell--split{display:grid;grid-template-columns:minmax(372px,480px) minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;align-items:start}
   .p-shell--split .wrap{max-width:none;margin:0;padding-left:8px}
   .p-ad-rail{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 0 24px 24px}
   .p-ad-rail .p-ad{margin:0;max-height:100%;display:flex;flex-direction:column;align-items:center}
@@ -170,7 +170,7 @@ export function renderPubHtml(payload: PubAuditPayload): string {
     .p-shell--split{display:block;max-width:880px}
     .p-shell--split .wrap{padding-left:24px}
     .p-ad-rail{position:static;height:auto;padding:24px 24px 0;align-items:stretch}
-    .p-ad-rail .p-ad img{max-height:340px}
+    .p-ad-rail .p-ad img{max-height:452px}
   }
 </style>
 </head>
