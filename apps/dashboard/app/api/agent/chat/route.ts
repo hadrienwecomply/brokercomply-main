@@ -13,9 +13,39 @@ type Block =
   | { type: "text"; text: string }
   | { type: "tool"; name: string; ok: boolean | null };
 
+/** An image attached to a user turn (base64 kept out of the persisted transcript). */
+interface UploadedImage {
+  fileName: string;
+  base64: string;
+  mimeType: string;
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Generous upper bound on a single prompt (bounds per-turn spend). */
 const MAX_MESSAGE_CHARS = 8000;
+const MAX_IMAGES = 10;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_MIME = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+/** Validate + clamp the attached images from the request body. */
+function parseImages(raw: unknown): UploadedImage[] {
+  if (!Array.isArray(raw)) return [];
+  const out: UploadedImage[] = [];
+  for (const item of raw.slice(0, MAX_IMAGES)) {
+    if (!item || typeof item !== "object") continue;
+    const { fileName, base64, mimeType } = item as Record<string, unknown>;
+    if (typeof base64 !== "string" || typeof mimeType !== "string") continue;
+    if (!ALLOWED_MIME.has(mimeType)) continue;
+    // base64 length ≈ 4/3 of byte size; reject over-sized before decoding.
+    if (base64.length > (MAX_IMAGE_BYTES * 4) / 3) continue;
+    out.push({
+      fileName: typeof fileName === "string" && fileName ? fileName : "image",
+      base64,
+      mimeType,
+    });
+  }
+  return out;
+}
 
 /**
  * Chats with a turn currently streaming. Shared chats are hit by 2-3 officers;
@@ -34,7 +64,7 @@ const inFlight = new Set<string>();
 export async function POST(req: NextRequest): Promise<Response> {
   const officer = await currentOfficer();
 
-  let body: { chatId?: unknown; message?: unknown };
+  let body: { chatId?: unknown; message?: unknown; images?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -42,7 +72,8 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
 
   const message = typeof body.message === "string" ? body.message.trim() : "";
-  if (!message) return new Response("Missing message", { status: 400 });
+  const images = parseImages(body.images);
+  if (!message && images.length === 0) return new Response("Missing message", { status: 400 });
   if (message.length > MAX_MESSAGE_CHARS) {
     return new Response(`Message too long (max ${MAX_MESSAGE_CHARS} chars)`, { status: 413 });
   }
@@ -66,13 +97,22 @@ export async function POST(req: NextRequest): Promise<Response> {
     created = true;
   }
 
-  // Persist the user turn before streaming so it survives a disconnect.
-  await appendMessage({
-    chatId,
-    role: "user",
-    content: [{ type: "text", text: message }],
-    officer,
-  });
+  // Persist the user turn before streaming so it survives a disconnect. The
+  // image bytes are NOT stored on the message (they'd bloat the transcript); a
+  // lightweight attachments marker records that images were sent.
+  const userContent: unknown[] = [{ type: "text", text: message }];
+  if (images.length > 0) {
+    userContent.push({ type: "attachments", names: images.map((i) => i.fileName) });
+  }
+  await appendMessage({ chatId, role: "user", content: userContent, officer });
+
+  // Tell the model images are attached so it can offer pub_audit_start.
+  const promptText =
+    images.length > 0
+      ? `${message || "(pas de texte)"}\n\n[${images.length} image(s) publicitaire(s) jointe(s) : ${images
+          .map((i) => i.fileName)
+          .join(", ")}. Pour lancer un audit de conformité de ces publicités, utilise l'outil pub_audit_start avec le slug du courtier concerné.]`
+      : message;
 
   const abortController = new AbortController();
   req.signal.addEventListener("abort", () => abortController.abort());
@@ -104,9 +144,10 @@ export async function POST(req: NextRequest): Promise<Response> {
 
       try {
         for await (const event of runAgentTurn({
-          userText: message,
+          userText: promptText,
           sdkSessionId: resolvedSession,
           abortController,
+          ctx: { officer, chatId: resolvedChatId, images },
         })) {
           send(event);
           switch (event.kind) {

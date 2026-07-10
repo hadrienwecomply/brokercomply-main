@@ -8,31 +8,11 @@ import {
   type SearchResult,
 } from "@brokercomply/shared";
 import { getDb } from "../db.server";
-import { getBroker, listBrokers } from "../brokers.server";
+import { listBrokers } from "../brokers.server";
 import { getSentEmails } from "../mail.server";
 import { listWebsiteAudits } from "../website-audit.server";
 import { listPubAudits } from "../pub-audit.server";
-
-/** Shape a successful tool result as JSON text the agent can read. */
-function ok(data: unknown): { content: Array<{ type: "text"; text: string }> } {
-  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
-}
-
-/** Shape a tool error so the agent can recover instead of throwing. */
-function fail(message: string): {
-  content: Array<{ type: "text"; text: string }>;
-  isError: true;
-} {
-  return { content: [{ type: "text", text: message }], isError: true };
-}
-
-/** Resolve a broker by slug; throws a readable error when unknown or unpersisted. */
-async function resolveBroker(slug: string) {
-  const broker = await getBroker(slug);
-  if (!broker) throw new Error(`Aucun courtier avec le slug "${slug}".`);
-  if (!broker.dbId) throw new Error(`Le courtier "${slug}" n'est pas encore persisté.`);
-  return broker as typeof broker & { dbId: string };
-}
+import { AGENT_MCP_SERVER, fail, ok, qualify, resolveBroker } from "./tool-kit";
 
 function compactSearchHit(r: SearchResult) {
   const u = r.unit;
@@ -174,9 +154,13 @@ const brokerGet = tool(
         signatureDate: b.signatureDate,
         plan: b.plan.map((step) => ({
           code: step.code,
+          // stepId is the persisted uuid needed by plan_set_deadline / add tools.
+          stepId: step.dbId ?? null,
           title: step.title,
           deadline: step.deadline ?? null,
           substeps: step.subSteps.map((s) => ({
+            // substepId is the persisted uuid needed by the plan write tools.
+            substepId: s.dbId ?? s.id,
             title: s.title,
             status: s.status,
             dueDate: s.dueDate ?? null,
@@ -241,7 +225,7 @@ const pubAuditList = tool(
   { alwaysLoad: true },
 );
 
-/** All read-only tools registered for Phase 1. */
+/** All read-only tools. These ignore the tool context (no side effects). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const READ_ONLY_TOOLS: SdkMcpToolDefinition<any>[] = [
   kbSearch,
@@ -253,10 +237,7 @@ export const READ_ONLY_TOOLS: SdkMcpToolDefinition<any>[] = [
   pubAuditList,
 ];
 
-/** MCP server name — tools are addressed as `mcp__<SERVER_NAME>__<tool>`. */
-export const AGENT_MCP_SERVER = "brokercomply";
-
-/** Fully-qualified tool names for the `allowedTools` whitelist. */
+/** Fully-qualified read-only tool names for the `allowedTools` whitelist. */
 export const READ_ONLY_TOOL_NAMES = [
   "kb_search",
   "kb_get_unit",
@@ -265,4 +246,7 @@ export const READ_ONLY_TOOL_NAMES = [
   "broker_sent_emails",
   "website_audit_list",
   "pub_audit_list",
-].map((n) => `mcp__${AGENT_MCP_SERVER}__${n}`);
+].map(qualify);
+
+// Re-export so the aggregator and runner can import the server name from one place.
+export { AGENT_MCP_SERVER };

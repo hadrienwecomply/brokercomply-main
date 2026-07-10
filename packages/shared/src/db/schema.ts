@@ -763,3 +763,33 @@ export type AgentChatRow = typeof agentChats.$inferSelect;
 export type NewAgentChatRow = typeof agentChats.$inferInsert;
 export type AgentChatMessageRow = typeof agentChatMessages.$inferSelect;
 export type NewAgentChatMessageRow = typeof agentChatMessages.$inferInsert;
+
+/**
+ * Audit trail of every tool the assistant tried to run. Written by the
+ * PreToolUse hook BEFORE the tool executes, so it captures attempts (including
+ * denied ones) — the compliance-grade record of who did what through the agent.
+ * `decision` is 'allow' | 'deny' | 'confirm_required' | 'confirmed' | 'rejected'.
+ */
+export const agentToolAudit = pgTable(
+  'agent_tool_audit',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    chatId: uuid('chat_id').references(() => agentChats.id, { onDelete: 'set null' }),
+    /** Officer (email) on whose behalf the turn runs — cookie identity. */
+    officer: text('officer'),
+    /** Fully-qualified tool name, e.g. mcp__brokercomply__plan_set_substep_status. */
+    toolName: text('tool_name').notNull(),
+    /** Tool input arguments as the agent supplied them. */
+    input: jsonb('input').$type<unknown>(),
+    /** Lifecycle decision for the call (see table comment). */
+    decision: text('decision').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_agent_tool_audit_chat').on(t.chatId, t.createdAt),
+    index('idx_agent_tool_audit_tool').on(t.toolName),
+  ],
+);
+
+export type AgentToolAuditRow = typeof agentToolAudit.$inferSelect;
+export type NewAgentToolAuditRow = typeof agentToolAudit.$inferInsert;

@@ -2,6 +2,7 @@ import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import {
   agentChatMessages,
   agentChats,
+  agentToolAudit,
   type AgentChatMessageRow,
   type AgentChatRow,
   type Db,
@@ -147,4 +148,29 @@ export async function archiveAgentChat(
     .update(agentChats)
     .set({ archivedAt: new Date() })
     .where(eq(agentChats.id, chatId));
+}
+
+/** Record one tool invocation attempt in the audit trail. Never throws — audit
+ * logging must not break the agent turn. */
+export async function logAgentToolCall(
+  { db }: AgentChatServiceDeps,
+  input: {
+    chatId: string | null;
+    officer: string | null;
+    toolName: string;
+    input: unknown;
+    decision: 'allow' | 'deny' | 'confirm_required' | 'confirmed' | 'rejected';
+  },
+): Promise<void> {
+  try {
+    await db.insert(agentToolAudit).values({
+      chatId: input.chatId,
+      officer: input.officer,
+      toolName: input.toolName,
+      input: input.input,
+      decision: input.decision,
+    });
+  } catch {
+    // Swallow — a failed audit write must never abort the agent.
+  }
 }

@@ -4,7 +4,20 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowUp, Check, Loader2, PenSquare, Sparkles, Trash2, Wrench, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowUp,
+  Check,
+  ImagePlus,
+  Loader2,
+  Paperclip,
+  PenSquare,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  Wrench,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { AgentChatSummary, AgentChatMessageDTO } from "@/lib/agent-chat.server";
 
@@ -34,7 +47,47 @@ const TOOL_LABELS: Record<string, string> = {
   broker_sent_emails: "Emails envoyés",
   website_audit_list: "Audits de site",
   pub_audit_list: "Audits de publicités",
+  // Write tools
+  plan_set_substep_status: "Mise à jour d'une tâche",
+  plan_set_step_deadline: "Modification d'une échéance",
+  plan_add_substep: "Ajout d'une tâche",
+  plan_edit_substep: "Édition d'une tâche",
+  plan_archive_substep: "Archivage d'une tâche",
+  broker_update: "Mise à jour d'une fiche courtier",
+  kb_update_unit: "Correction d'une fiche de connaissance",
+  // Irreversible actions
+  send_step_email: "Envoi d'un email",
+  website_audit_start: "Lancement d'un audit de site",
+  website_audit_request_pdf: "Génération du PDF d'audit de site",
+  pub_audit_request_pdf: "Génération du PDF d'audit pub",
+  pub_audit_start: "Lancement d'un audit de publicités",
+  n8n_trigger_form: "Création d'un formulaire",
 };
+
+const ACTION_DESCRIPTIONS: Record<string, string> = {
+  send_step_email: "L'assistant veut envoyer un email au courtier. C'est irréversible.",
+  website_audit_start: "L'assistant veut lancer un audit de site (analyse facturée).",
+  website_audit_request_pdf: "L'assistant veut générer le PDF de l'audit de site (workflow n8n).",
+  pub_audit_request_pdf: "L'assistant veut générer le PDF de l'audit publicité (workflow n8n).",
+  pub_audit_start: "L'assistant veut lancer un audit des publicités jointes (analyse facturée).",
+  n8n_trigger_form: "L'assistant veut créer un formulaire (workflow n8n).",
+};
+
+interface PendingConfirm {
+  id: string;
+  name: string;
+  input: unknown;
+}
+
+interface Attachment {
+  fileName: string;
+  base64: string;
+  mimeType: string;
+  url: string;
+}
+
+const ACCEPTED_IMAGE = ["image/png", "image/jpeg", "image/webp"];
+const MAX_ATTACHMENTS = 10;
 
 const SUGGESTIONS = [
   "Combien de courtiers actifs dans le portefeuille ?",
@@ -76,9 +129,30 @@ export function AgentChat({ initialChats, officer, activeChatId, initialMessages
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [live, setLive] = useState<LiveItem[]>([]);
+  const [confirms, setConfirms] = useState<PendingConfirm[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addFiles = useCallback((files: FileList | null) => {
+    if (!files) return;
+    const list = Array.from(files).filter((f) => ACCEPTED_IMAGE.includes(f.type));
+    for (const file of list) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const url = String(reader.result);
+        const base64 = url.split(",")[1] ?? "";
+        setAttachments((prev) =>
+          prev.length >= MAX_ATTACHMENTS
+            ? prev
+            : [...prev, { fileName: file.name, base64, mimeType: file.type, url }],
+        );
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -168,16 +242,23 @@ export function AgentChat({ initialChats, officer, activeChatId, initialMessages
   const send = useCallback(
     async (raw?: string) => {
       const text = (raw ?? input).trim();
-      if (!text || streaming) return;
+      const imgs = attachments;
+      if ((!text && imgs.length === 0) || streaming) return;
       setInput("");
+      setAttachments([]);
       setError(null);
       setStreaming(true);
       setLive([]);
+      setConfirms([]);
 
+      const optimisticContent: unknown[] = [{ type: "text", text }];
+      if (imgs.length > 0) {
+        optimisticContent.push({ type: "attachments", names: imgs.map((a) => a.fileName) });
+      }
       const optimistic: AgentChatMessageDTO = {
         id: `tmp-${Date.now()}`,
         role: "user",
-        content: [{ type: "text", text }],
+        content: optimisticContent,
         officer,
         costUsd: null,
         createdAt: new Date().toISOString(),
@@ -189,7 +270,15 @@ export function AgentChat({ initialChats, officer, activeChatId, initialMessages
         const res = await fetch("/api/agent/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chatId: currentId, message: text }),
+          body: JSON.stringify({
+            chatId: currentId,
+            message: text,
+            images: imgs.map((a) => ({
+              fileName: a.fileName,
+              base64: a.base64,
+              mimeType: a.mimeType,
+            })),
+          }),
         });
         if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 
@@ -231,6 +320,15 @@ export function AgentChat({ initialChats, officer, activeChatId, initialMessages
                   ok: Boolean(evt.ok),
                 });
                 break;
+              case "confirm_required":
+                setConfirms((c) => [
+                  ...c,
+                  { id: evt.id as string, name: evt.name as string, input: evt.input },
+                ]);
+                break;
+              case "confirm_resolved":
+                setConfirms((c) => c.filter((x) => x.id !== (evt.id as string)));
+                break;
               case "error":
                 setError(evt.message as string);
                 break;
@@ -244,14 +342,35 @@ export function AgentChat({ initialChats, officer, activeChatId, initialMessages
       } finally {
         setStreaming(false);
         setLive([]);
+        setConfirms([]);
         if (currentId) {
           await refreshTranscript(currentId);
           await refreshChats();
         }
       }
     },
-    [input, streaming, chatId, officer, applyLiveEvent, refreshTranscript, refreshChats, router],
+    [
+      input,
+      attachments,
+      streaming,
+      chatId,
+      officer,
+      applyLiveEvent,
+      refreshTranscript,
+      refreshChats,
+      router,
+    ],
   );
+
+  const resolveConfirm = useCallback(async (id: string, approved: boolean) => {
+    // Optimistically drop the card; the stream also emits confirm_resolved.
+    setConfirms((c) => c.filter((x) => x.id !== id));
+    await fetch("/api/agent/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, approved }),
+    });
+  }, []);
 
   const deleteChat = useCallback(
     async (id: string, e: React.MouseEvent) => {
@@ -340,6 +459,9 @@ export function AgentChat({ initialChats, officer, activeChatId, initialMessages
                   <MessageRow key={m.id} message={m} />
                 ))}
                 {(live.length > 0 || streaming) && <LiveRow items={live} />}
+                {confirms.map((c) => (
+                  <ConfirmCard key={c.id} confirm={c} onResolve={resolveConfirm} />
+                ))}
               </div>
             )}
           </div>
@@ -360,7 +482,49 @@ export function AgentChat({ initialChats, officer, activeChatId, initialMessages
               }}
               className="pointer-events-auto rounded-2xl border border-line bg-white p-2 shadow-[0_4px_24px_rgba(31,29,30,0.08)] transition-shadow focus-within:border-brand-300 focus-within:shadow-[0_4px_28px_rgba(76,153,122,0.12)]"
             >
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2 px-1.5 pb-2 pt-1">
+                  {attachments.map((a, i) => (
+                    <span key={i} className="group relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={a.url}
+                        alt={a.fileName}
+                        className="size-14 rounded-lg border border-line object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setAttachments((p) => p.filter((_, j) => j !== i))}
+                        className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-ink text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        title="Retirer"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="flex items-end gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  multiple
+                  hidden
+                  onChange={(e) => {
+                    addFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={streaming || attachments.length >= MAX_ATTACHMENTS}
+                  className="grid size-9 shrink-0 place-items-center rounded-xl text-ink-soft transition-colors hover:bg-line/50 hover:text-ink disabled:opacity-40"
+                  title="Joindre des publicités (images)"
+                >
+                  <Paperclip className="size-4" />
+                </button>
                 <textarea
                   ref={textareaRef}
                   value={input}
@@ -374,11 +538,11 @@ export function AgentChat({ initialChats, officer, activeChatId, initialMessages
                   rows={1}
                   placeholder="Écrivez à l'assistant conformité…"
                   disabled={streaming}
-                  className="max-h-52 flex-1 resize-none bg-transparent px-2.5 py-1.5 text-[0.97rem] leading-relaxed text-ink outline-none placeholder:text-ink-soft/50 disabled:opacity-60"
+                  className="max-h-52 flex-1 resize-none bg-transparent px-1 py-1.5 text-[0.97rem] leading-relaxed text-ink outline-none placeholder:text-ink-soft/50 disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  disabled={streaming || !input.trim()}
+                  disabled={streaming || (!input.trim() && attachments.length === 0)}
                   className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-600 text-white transition-all hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-line disabled:text-ink-soft/40"
                   title="Envoyer"
                 >
@@ -449,10 +613,25 @@ function MessageRow({ message }: { message: AgentChatMessageDTO }) {
       .filter((b): b is Extract<Block, { type: "text" }> => b.type === "text")
       .map((b) => b.text)
       .join("\n");
+    const attach = (message.content as Array<{ type?: string; names?: string[] }>).find(
+      (b) => b?.type === "attachments",
+    );
     return (
       <div className="msg-in flex justify-end">
-        <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-brand-50 px-4 py-2.5 text-[0.97rem] leading-relaxed text-ink">
-          {text}
+        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-brand-50 px-4 py-2.5 text-[0.97rem] leading-relaxed text-ink">
+          {text && <p className="whitespace-pre-wrap">{text}</p>}
+          {attach?.names && attach.names.length > 0 && (
+            <p
+              className={cn(
+                "flex items-center gap-1.5 text-xs text-brand-700",
+                text && "mt-1.5",
+              )}
+            >
+              <ImagePlus className="size-3.5" />
+              {attach.names.length} image{attach.names.length > 1 ? "s" : ""} jointe
+              {attach.names.length > 1 ? "s" : ""}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -520,6 +699,61 @@ function Dot({ delay }: { delay?: string }) {
       className="inline-block size-1.5 animate-bounce rounded-full bg-ink-soft/40"
       style={delay ? { animationDelay: delay } : undefined}
     />
+  );
+}
+
+function ConfirmCard({
+  confirm,
+  onResolve,
+}: {
+  confirm: PendingConfirm;
+  onResolve: (id: string, approved: boolean) => void;
+}) {
+  const short = confirm.name.replace(/^mcp__brokercomply__/, "");
+  const label = TOOL_LABELS[short] ?? short;
+  const desc = ACTION_DESCRIPTIONS[short] ?? "Cette action est irréversible.";
+  const params =
+    confirm.input && typeof confirm.input === "object"
+      ? Object.entries(confirm.input as Record<string, unknown>).filter(
+          ([, v]) => v !== undefined && v !== null && v !== "",
+        )
+      : [];
+  return (
+    <div className="msg-in flex gap-3.5">
+      <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-st-waiting/15 text-st-waiting">
+        <AlertTriangle className="size-4" />
+      </span>
+      <div className="min-w-0 flex-1 rounded-2xl border border-st-waiting/30 bg-st-waiting/[0.06] p-4">
+        <p className="text-sm font-semibold text-ink">Confirmation requise — {label}</p>
+        <p className="mt-1 text-sm text-ink-soft">{desc}</p>
+        {params.length > 0 && (
+          <dl className="mt-3 space-y-1 rounded-lg bg-white/70 p-2.5 text-xs ring-1 ring-line">
+            {params.map(([k, v]) => (
+              <div key={k} className="flex gap-2">
+                <dt className="shrink-0 font-medium text-ink-soft">{k}</dt>
+                <dd className="min-w-0 truncate text-ink">
+                  {typeof v === "string" ? v : JSON.stringify(v)}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={() => onResolve(confirm.id, true)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+          >
+            <ShieldCheck className="size-4" /> Approuver
+          </button>
+          <button
+            onClick={() => onResolve(confirm.id, false)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink-soft transition-colors hover:border-st-blocked/40 hover:text-st-blocked"
+          >
+            <X className="size-4" /> Refuser
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
