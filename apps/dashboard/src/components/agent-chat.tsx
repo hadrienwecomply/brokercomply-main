@@ -385,7 +385,7 @@ export function AgentChat({ initialChats, officer, activeChatId, initialMessages
   const isEmpty = messages.length === 0 && live.length === 0 && !streaming;
 
   return (
-    <div className="flex h-[calc(100vh-9rem)] min-h-[500px] overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+    <div className="flex h-screen w-full overflow-hidden bg-white">
       {/* Sidebar */}
       <aside className="flex w-64 shrink-0 flex-col border-r border-line bg-canvas/60">
         <div className="flex items-center gap-2 px-4 pt-4">

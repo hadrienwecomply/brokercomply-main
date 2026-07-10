@@ -17,6 +17,8 @@ const NAV = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // The assistant chat fills the whole main area (no max-width / padding frame).
+  const fullBleed = pathname.startsWith("/assistant");
 
   return (
     <div className="flex min-h-screen">
@@ -64,7 +66,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="flex-1 lg:ml-60">
-        <div className="mx-auto max-w-[1200px] px-6 py-8">{children}</div>
+        {fullBleed ? (
+          children
+        ) : (
+          <div className="mx-auto max-w-[1200px] px-6 py-8">{children}</div>
+        )}
       </main>
     </div>
   );
