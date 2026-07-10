@@ -84,9 +84,12 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   const logoImg = branding?.logoUrl
     ? `<img class="p-logo" src="${esc(branding.logoUrl)}" alt="${esc(branding.firmName ?? entite)}">`
     : '';
-  // The analysed creative, shown for context alongside the constats.
-  const adFigure = support.image
-    ? `<figure class="p-ad"><img src="${esc(support.image)}" alt="${esc(support.fichier)}"><figcaption>Support analysé — ${esc(support.fichier)}</figcaption></figure>`
+  // The analysed creative, pinned in a left rail (sticky, vertically centred)
+  // so it stays visible while the officer scrolls the constats. Falls back to a
+  // single-column layout when there is no image.
+  const hasAd = Boolean(support.image);
+  const adRail = hasAd
+    ? `<aside class="p-ad-rail"><figure class="p-ad"><img src="${esc(support.image)}" alt="${esc(support.fichier)}"><figcaption>Support analysé — ${esc(support.fichier)}</figcaption></figure></aside>`
     : '';
 
   // Group constats by section, in the canonical section order.
@@ -120,6 +123,12 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   *{box-sizing:border-box}
   body{margin:0;font:15px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--paper)}
   .wrap{max-width:880px;margin:0 auto;padding:32px 24px 120px}
+  /* Split layout: pinned ad on the left, scrolling report on the right. */
+  .p-shell--split{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:28px;max-width:1320px;margin:0 auto;align-items:start}
+  .p-shell--split .wrap{max-width:none;margin:0;padding-left:8px}
+  .p-ad-rail{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 0 24px 24px}
+  .p-ad-rail .p-ad{margin:0;max-height:100%;display:flex;flex-direction:column;align-items:center}
+  .p-ad-rail .p-ad img{max-height:calc(100vh - 72px)}
   h1{font-size:26px;margin:0 0 4px}
   .p-logo{max-height:56px;max-width:220px;object-fit:contain;margin:0 0 12px;display:block}
   h2{font-size:19px;margin:36px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--brand)}
@@ -156,17 +165,24 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   .p-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer}
   .p-btn--primary{background:var(--brand);border-color:var(--brand);color:#fff}
   .p-btn:disabled{opacity:.5;cursor:default}
+  /* Narrow screens: drop the split, the ad becomes a static figure on top. */
+  @media (max-width:900px){
+    .p-shell--split{display:block;max-width:880px}
+    .p-shell--split .wrap{padding-left:24px}
+    .p-ad-rail{position:static;height:auto;padding:24px 24px 0;align-items:stretch}
+    .p-ad-rail .p-ad img{max-height:340px}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="p-shell${hasAd ? ' p-shell--split' : ''}">
+  ${adRail}
+  <div class="wrap">
   ${logoImg}
   <h1>Audit de conformité publicitaire</h1>
   <p class="p-sub">${esc(entite || support.fichier)}</p>
 
   <div class="p-niveau" id="p-niveau" data-code="${esc(niveauGlobal.code)}">${esc(nv.label)} — <span class="p-niveau-txt">${esc(niveauGlobal.libelle)}</span></div>
-
-  ${adFigure}
 
   <dl class="p-meta">
     ${entite ? `<div><dt>Intermédiaire</dt><dd>${esc(entite)}</dd></div>` : ''}
@@ -200,6 +216,7 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   <div class="p-field">
     <label>Avertissement</label>
     <div class="p-edit" id="h-disclaimer" contenteditable="true" data-ph="Avertissement…">${esc(payload.disclaimer ?? '')}</div>
+  </div>
   </div>
 </div>
 
