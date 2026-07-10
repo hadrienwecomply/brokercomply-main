@@ -7,17 +7,29 @@ import { runAgentTurn, type AgentEvent } from "@/lib/agent/runner";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Persisted display block for an assistant turn. */
+/** Persisted display block for an assistant turn. A tool call and its result are
+ * merged into one `tool` block (ok:null until the result lands). */
 type Block =
   | { type: "text"; text: string }
-  | { type: "tool_use"; name: string; input: unknown }
-  | { type: "tool_result"; name: string | null; ok: boolean };
+  | { type: "tool"; name: string; ok: boolean | null };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Generous upper bound on a single prompt (bounds per-turn spend). */
+const MAX_MESSAGE_CHARS = 8000;
+
+/**
+ * Chats with a turn currently streaming. Shared chats are hit by 2-3 officers;
+ * one in-flight turn per chat avoids concurrent agent runs racing on the same
+ * session id / cost total. In-process is enough for the single-node deployment.
+ */
+const inFlight = new Set<string>();
 
 /**
  * Stream one assistant turn over SSE. Body: `{ chatId?, message }`. Creates the
  * conversation when `chatId` is absent (emitting a `chat` event with the new id),
  * persists the user turn, streams the agent's events, then persists the assembled
- * assistant turn (text + condensed tool markers) and its cost.
+ * assistant turn (text + condensed tool markers) and its cost — even if the
+ * client disconnected mid-stream, so a spent response is never silently lost.
  */
 export async function POST(req: NextRequest): Promise<Response> {
   const officer = await currentOfficer();
@@ -31,14 +43,22 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const message = typeof body.message === "string" ? body.message.trim() : "";
   if (!message) return new Response("Missing message", { status: 400 });
+  if (message.length > MAX_MESSAGE_CHARS) {
+    return new Response(`Message too long (max ${MAX_MESSAGE_CHARS} chars)`, { status: 413 });
+  }
 
   // Resolve or create the conversation.
   let chatId = typeof body.chatId === "string" ? body.chatId : null;
+  if (chatId && !UUID_RE.test(chatId)) return new Response("Invalid chat id", { status: 400 });
+
   let sdkSessionId: string | null = null;
   let created = false;
   if (chatId) {
     const existing = await getChat(chatId);
     if (!existing) return new Response("Unknown chat", { status: 404 });
+    if (inFlight.has(chatId)) {
+      return new Response("A turn is already in progress for this conversation", { status: 409 });
+    }
     sdkSessionId = existing.sdkSessionId;
   } else {
     const chat = await createChat(officer);
@@ -60,18 +80,27 @@ export async function POST(req: NextRequest): Promise<Response> {
   const encoder = new TextEncoder();
   const resolvedChatId = chatId;
   const resolvedSession = sdkSessionId;
+  inFlight.add(resolvedChatId);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      // Enqueue best-effort: once the client is gone the controller throws, but
+      // we must keep collecting blocks and persist the turn regardless.
+      let clientGone = false;
       const send = (event: AgentEvent | { kind: "chat"; chatId: string }) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        if (clientGone) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        } catch {
+          clientGone = true;
+        }
       };
 
       if (created) send({ kind: "chat", chatId: resolvedChatId });
 
       const blocks: Block[] = [];
       let cost = 0;
-      let sessionSaved = Boolean(resolvedSession);
+      let savedSession = resolvedSession;
 
       try {
         for await (const event of runAgentTurn({
@@ -82,8 +111,10 @@ export async function POST(req: NextRequest): Promise<Response> {
           send(event);
           switch (event.kind) {
             case "session":
-              if (!sessionSaved) {
-                sessionSaved = true;
+              // Always track the latest session id (a resumed run may report a
+              // different one); never let a stale id block the next turn.
+              if (event.sessionId && event.sessionId !== savedSession) {
+                savedSession = event.sessionId;
                 await saveSession(resolvedChatId, event.sessionId);
               }
               break;
@@ -91,11 +122,17 @@ export async function POST(req: NextRequest): Promise<Response> {
               blocks.push({ type: "text", text: event.text });
               break;
             case "tool_use":
-              blocks.push({ type: "tool_use", name: event.name, input: event.input });
+              blocks.push({ type: "tool", name: event.name, ok: null });
               break;
-            case "tool_result":
-              blocks.push({ type: "tool_result", name: event.name, ok: event.ok });
+            case "tool_result": {
+              // Merge into the matching pending tool block (mirrors the live UI).
+              const pending = [...blocks]
+                .reverse()
+                .find((b): b is Extract<Block, { type: "tool" }> => b.type === "tool" && b.ok === null);
+              if (pending) pending.ok = event.ok;
+              else blocks.push({ type: "tool", name: event.name ?? "", ok: event.ok });
               break;
+            }
             case "done":
               cost = event.cost;
               break;
@@ -103,22 +140,35 @@ export async function POST(req: NextRequest): Promise<Response> {
               break;
           }
         }
-
-        // Persist the assistant turn (skip if the client aborted mid-stream and
-        // nothing was produced).
-        if (blocks.length > 0) {
-          await appendMessage({
-            chatId: resolvedChatId,
-            role: "assistant",
-            content: blocks,
-            costUsd: cost || null,
-          });
-        }
       } catch (err) {
         send({ kind: "error", message: (err as Error).message });
       } finally {
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        controller.close();
+        // Persist whatever the agent produced, even on client disconnect.
+        if (blocks.length > 0) {
+          try {
+            await appendMessage({
+              chatId: resolvedChatId,
+              role: "assistant",
+              content: blocks,
+              costUsd: cost || null,
+            });
+          } catch {
+            // Nothing more we can do; the user turn is already persisted.
+          }
+        }
+        inFlight.delete(resolvedChatId);
+        if (!clientGone) {
+          try {
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          } catch {
+            /* client already gone */
+          }
+        }
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
       }
     },
     cancel() {

@@ -15,20 +15,11 @@ export default async function AssistantPage({
   const active = c ? await getChat(c) : null;
 
   return (
-    <div>
-      <header className="mb-6">
-        <h1 className="font-display text-2xl font-semibold text-ink">Assistant</h1>
-        <p className="mt-1 text-sm text-ink-soft">
-          Conversations partagées entre officers, connectées à la base de connaissances et au
-          portefeuille courtiers.
-        </p>
-      </header>
-      <AgentChat
-        initialChats={chats}
-        officer={officer}
-        activeChatId={active?.chat.id ?? null}
-        initialMessages={active?.messages ?? []}
-      />
-    </div>
+    <AgentChat
+      initialChats={chats}
+      officer={officer}
+      activeChatId={active?.chat.id ?? null}
+      initialMessages={active?.messages ?? []}
+    />
   );
 }

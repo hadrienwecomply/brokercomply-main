@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import {
   agentChatMessages,
   agentChats,
@@ -99,11 +99,15 @@ export async function appendAgentChatMessage(
           )?.text
         : undefined;
 
-    const [chat] = await tx.select().from(agentChats).where(eq(agentChats.id, input.chatId));
+    // Update title/cost with SQL-side expressions so concurrent turns on a
+    // shared chat can't clobber each other (title only fills when still null;
+    // cost increments atomically instead of read-modify-write in JS).
     const set: Partial<typeof agentChats.$inferInsert> = { updatedAt: new Date() };
-    if (firstText && chat && !chat.title) set.title = deriveTitle(firstText);
-    if (input.costUsd != null && chat) {
-      set.totalCostUsd = String(Number(chat.totalCostUsd) + input.costUsd);
+    if (firstText) {
+      set.title = sql`coalesce(${agentChats.title}, ${deriveTitle(firstText)})` as never;
+    }
+    if (input.costUsd != null) {
+      set.totalCostUsd = sql`${agentChats.totalCostUsd} + ${input.costUsd}` as never;
     }
     await tx.update(agentChats).set(set).where(eq(agentChats.id, input.chatId));
     return msg;
