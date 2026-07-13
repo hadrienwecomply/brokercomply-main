@@ -6,6 +6,10 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Linting is a dev/CI concern, not a production build step. The Next ESLint
+  // plugin isn't resolved in the container build; skip lint here (type-checking
+  // stays on and still fails the build on real type errors).
+  eslint: { ignoreDuringBuilds: true },
   // Monorepo root (multiple lockfiles present); silences workspace-root inference.
   outputFileTracingRoot: path.join(dirname, "../.."),
   // Compile the workspace shared package from source.

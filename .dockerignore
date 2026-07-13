@@ -1,0 +1,17 @@
+# Keep the build context small and never ship secrets or local artefacts.
+**/node_modules
+**/.next
+**/dist
+**/*.tsbuildinfo
+.git
+.env
+.env.*
+!.env.example
+local-data
+data
+doc
+integrations
+check-conformite-pub-courtier
+*.pdf
+*.html
+.DS_Store

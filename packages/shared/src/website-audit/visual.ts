@@ -137,7 +137,12 @@ export async function measurePages(urls: string[], options: VisualOptions = {}):
 
   let browser;
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({
+      headless: true,
+      // Container-safe flags: Chromium's sandbox can't run as root inside a
+      // container, and the default /dev/shm is too small for headless renders.
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    });
   } catch (error) {
     // Playwright installed but no browser binary (run: playwright install chromium)
     failed.push({ url: '*', reason: error instanceof Error ? error.message : String(error) });

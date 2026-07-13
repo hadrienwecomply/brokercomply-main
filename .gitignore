@@ -11,8 +11,12 @@ dist/
 .env.*
 !.env.example
 
-# Local data / runtime
+# Local data / runtime — ignore any `data/` dir by default (they may hold client
+# PII, e.g. apps/dashboard/src/data/brokers.seed.json). Exception: the build-time
+# JSON fixtures under packages/shared/src, which must ship with the repo.
 data/
+!packages/shared/src/**/data/
+!packages/shared/src/**/data/**
 *.local
 *.log
 
@@ -37,3 +41,4 @@ apps/dashboard/scripts/notion-plan-snapshot.json
 
 # Local client data (leads, prospects — PII, never commit)
 local-data/
+.n8n-secrets.deploy.txt
