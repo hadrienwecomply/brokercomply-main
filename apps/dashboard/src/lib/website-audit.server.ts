@@ -213,7 +213,14 @@ export async function getWebsiteAuditReview(auditId: string): Promise<AuditRevie
   const row = await getWebsiteAuditById({ db }, auditId);
   if (!row || row.reviewHtml == null) return null;
   const broker = await getBrokerBySlugId(row.brokerId);
-  return { html: row.reviewHtml, edits: row.reviewEdits ?? null, brokerSlug: broker?.slug ?? "" };
+  // Re-render the editable report with the broker's CURRENT branding (logo +
+  // colour) so the visual matches the final PDF — even if the logo/colour were
+  // added or changed after the audit ran. Falls back to the stored HTML.
+  const payload = row.findings as AuditPayload | null;
+  const html = payload
+    ? renderAuditHtml({ ...payload, branding: brandingFor(broker) })
+    : row.reviewHtml;
+  return { html, edits: row.reviewEdits ?? null, brokerSlug: broker?.slug ?? "" };
 }
 
 /** Persist the officer's edits without generating a PDF ("Enregistrer"). */
