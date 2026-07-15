@@ -16,6 +16,7 @@ import {
   getPubFeedbackMap,
   getPubGuidanceMap,
   listPubAuditsForBroker,
+  pubPdfPayload,
   PubAuditPayloadSchema,
   recordPubFeedback,
   renderPubHtml,
@@ -519,6 +520,10 @@ export async function requestPubAuditPdf(auditId: string, edits: unknown): Promi
       ...payload,
       support: { ...payload.support, image: `data:${row.imageMimeType};base64,${row.imageBase64}` },
     };
+    // The final PDF lists only the non-conformities to fix. The stored findings
+    // and the editable review report keep every constat — only the n8n payload
+    // is filtered here.
+    payload = pubPdfPayload(payload);
   } catch (e) {
     return rollback(
       `Modifications invalides : ${e instanceof Error ? e.message.slice(0, 200) : "format inattendu"}`,

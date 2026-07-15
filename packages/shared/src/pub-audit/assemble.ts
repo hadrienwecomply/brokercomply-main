@@ -169,3 +169,20 @@ export function assemblePubPayload(input: AssemblePubInput): PubAuditPayload {
     note: qualification.note ?? null,
   };
 }
+
+/**
+ * Reduce a payload to what the *final PDF* should show: only `non_conforme`
+ * constats. The editable review report keeps every constat (the officer must
+ * see and correct them all) — this filter applies solely at PDF-generation
+ * time, so the deliverable lists only the parts that must be fixed.
+ *
+ * `niveauGlobal` (banner + decompte) is left untouched: it is computed from the
+ * full constat set and stays an honest summary even when the detailed list is
+ * filtered. The n8n renderer decides how much of the summary to display.
+ */
+export function pubPdfPayload(payload: PubAuditPayload): PubAuditPayload {
+  return {
+    ...payload,
+    constats: payload.constats.filter((c) => c.verdict === 'non_conforme'),
+  };
+}
