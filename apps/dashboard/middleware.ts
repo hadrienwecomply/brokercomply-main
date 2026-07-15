@@ -1,128 +1,75 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { SESSION_COOKIE, checkCredentials, loadCredentials, verifySession } from "@/lib/auth";
 
 /**
- * HTTP Basic Auth gate for the whole dashboard.
+ * Auth gate for the whole dashboard.
  *
  * The product was designed "private network, no auth in v1", but the Railway
- * deployment exposes it publicly on the internet (app.brokercomply.be). This
- * middleware puts a per-person credential in front of everything a browser can
- * reach, so only the internal users get in.
+ * deployment exposes it publicly on the internet (app.brokercomply.be), so
+ * everything a browser can reach sits behind a per-person credential.
  *
- * Runs on the Edge runtime, so it must stay free of Node-only APIs (no
- * `node:crypto`, no `Buffer`): we read env via `process.env`, decode the header
- * with `atob`, and compare in constant time with a hand-rolled helper.
+ * Browser flow: a signed session cookie set by the branded /login page (no
+ * more native Basic Auth popup). Unauthenticated page loads redirect to
+ * /login?next=…; non-HTML requests (fetch/API) get a plain 401.
  *
- * Enforcement is OPT-IN: it only kicks in when at least one credential is
- * configured. Local `next dev` without any credential stays open; production
- * sets `DASHBOARD_BASIC_AUTH_USERS` on the Railway service. See config.matcher
- * below for the paths deliberately left public (inbound webhooks, which carry
- * their own token + secret).
+ * Script flow: a valid `Authorization: Basic` header is still honoured on any
+ * route, so curl/monitoring keep working without a cookie jar.
  *
- * Credential sources (both honoured, merged):
- *   - DASHBOARD_BASIC_AUTH_USERS: one credential per person, as `user:password`
- *     pairs separated by a comma or newline, e.g. "alice:pw1,bob:pw2".
- *     Passwords must not contain ',' or ':' (generated ones use a safe alphabet).
- *   - DASHBOARD_BASIC_AUTH_USER / DASHBOARD_BASIC_AUTH_PASSWORD: a single
- *     legacy pair (kept for convenience / backward compatibility).
+ * Runs on the Edge runtime — everything it uses lives in src/lib/auth.ts and
+ * is Web Crypto only. Enforcement stays OPT-IN: with no credential configured
+ * (local `next dev`), the gate is disabled entirely.
  */
 
-const REALM = "BrokerComply";
-
-interface Credential {
-  user: string;
-  password: string;
-}
-
-/** Parse the configured credentials from env. Empty array → auth disabled. */
-function loadCredentials(): Credential[] {
-  const creds: Credential[] = [];
-
-  const list = process.env.DASHBOARD_BASIC_AUTH_USERS;
-  if (list) {
-    for (const raw of list.split(/[,\n]/)) {
-      const pair = raw.trim();
-      if (!pair) continue;
-      const sep = pair.indexOf(":");
-      if (sep <= 0) continue; // need a non-empty username before ':'
-      creds.push({ user: pair.slice(0, sep), password: pair.slice(sep + 1) });
-    }
-  }
-
-  const singleUser = process.env.DASHBOARD_BASIC_AUTH_USER;
-  const singlePassword = process.env.DASHBOARD_BASIC_AUTH_PASSWORD;
-  if (singleUser && singlePassword) {
-    creds.push({ user: singleUser, password: singlePassword });
-  }
-
-  return creds;
-}
-
-/**
- * Constant-time string comparison. Avoids leaking how many leading characters
- * matched via timing. The length XOR folds a length mismatch into the diff so
- * the loop bound (driven by `a`, the attacker-controlled input) can't be used
- * to distinguish a wrong-length guess from a wrong-value one.
- */
-function safeEqual(a: string, b: string): boolean {
-  const ab = new TextEncoder().encode(a);
-  const bb = new TextEncoder().encode(b);
-  let diff = ab.length ^ bb.length;
-  for (let i = 0; i < ab.length; i++) {
-    diff |= ab[i] ^ (bb[i] ?? 0);
-  }
-  return diff === 0;
-}
-
-function unauthorized(): NextResponse {
-  return new NextResponse("Authentication required", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": `Basic realm="${REALM}", charset="UTF-8"`,
-    },
-  });
-}
-
-export function middleware(request: NextRequest): NextResponse {
-  const credentials = loadCredentials();
-
-  // Opt-in: nothing configured → do not gate (keeps local dev frictionless).
-  if (credentials.length === 0) {
-    return NextResponse.next();
-  }
-
-  const header = request.headers.get("authorization");
-  if (!header?.startsWith("Basic ")) {
-    return unauthorized();
-  }
-
+function parseBasicHeader(header: string | null): { user: string; password: string } | null {
+  if (!header?.startsWith("Basic ")) return null;
   let decoded: string;
   try {
     decoded = atob(header.slice("Basic ".length));
   } catch {
-    return unauthorized();
+    return null;
   }
-
   // Username can't contain ':'; password may — split on the first colon only.
   const sep = decoded.indexOf(":");
-  if (sep === -1) {
-    return unauthorized();
-  }
-  const user = decoded.slice(0, sep);
-  const password = decoded.slice(sep + 1);
+  if (sep === -1) return null;
+  return { user: decoded.slice(0, sep), password: decoded.slice(sep + 1) };
+}
 
-  // Check against every configured credential without early-exit, so a wrong
-  // username and a wrong password take the same path (no user enumeration).
-  let matched = false;
-  for (const cred of credentials) {
-    const ok = safeEqual(user, cred.user) && safeEqual(password, cred.password);
-    matched = matched || ok;
-  }
-  if (!matched) {
-    return unauthorized();
+export async function middleware(request: NextRequest): Promise<NextResponse> {
+  // Opt-in: nothing configured → do not gate (keeps local dev frictionless).
+  if (loadCredentials().length === 0) {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  const { pathname, search } = request.nextUrl;
+
+  // The login page and its server action must stay reachable logged-out.
+  if (pathname === "/login" || pathname.startsWith("/api/auth/")) {
+    return NextResponse.next();
+  }
+
+  // 1. Session cookie (browser flow).
+  const cookie = request.cookies.get(SESSION_COOKIE)?.value;
+  if (cookie && (await verifySession(cookie, Date.now())) !== null) {
+    return NextResponse.next();
+  }
+
+  // 2. Basic header (scripts / curl — no popup is ever triggered by us).
+  const basic = parseBasicHeader(request.headers.get("authorization"));
+  if (basic && checkCredentials(basic.user, basic.password) !== null) {
+    return NextResponse.next();
+  }
+
+  // Unauthenticated: browsers navigating to a page go to /login, the rest 401.
+  const wantsHtml =
+    request.method === "GET" && (request.headers.get("accept") ?? "").includes("text/html");
+  if (wantsHtml) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
+    return NextResponse.redirect(url);
+  }
+  return new NextResponse("Authentication required", { status: 401 });
 }
 
 export const config = {
@@ -130,10 +77,10 @@ export const config = {
    * Gate everything EXCEPT:
    *  - api/webhooks  → inbound n8n & Fillout callbacks (own token-in-path + secret)
    *  - _next/static, _next/image → build assets / image optimizer
-   *  - favicon.ico, robots.txt, sitemap.xml → public metadata
+   *  - favicon.ico, icon.svg, robots.txt, sitemap.xml, brokercomply-logo.svg → public metadata
    * Every other path (the UI and all browser-called API routes) is protected.
    */
   matcher: [
-    "/((?!api/webhooks|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
+    "/((?!api/webhooks|_next/static|_next/image|favicon.ico|icon.svg|robots.txt|sitemap.xml|brokercomply-logo.svg).*)",
   ],
 };
