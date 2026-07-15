@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Eyebrow } from "@/components/ui";
 import { getGlobals } from "@/lib/brokers.server";
 import { ConfigWorkspace } from "@/components/config-workspace";
@@ -15,6 +16,14 @@ export default async function ConfigPage() {
           Réglez les échéances par section et le modèle de tâches appliqué aux nouveaux courtiers.
           Les courtiers existants ne sont pas modifiés.
         </p>
+        <nav className="flex gap-1 border-b border-line pt-2">
+          <span className="border-b-2 border-brand-600 px-3 py-2 text-sm font-semibold text-ink">
+            Plan d&apos;action
+          </span>
+          <Link href="/config/pub" className="px-3 py-2 text-sm font-medium text-ink-soft hover:text-ink">
+            Audit pub
+          </Link>
+        </nav>
       </header>
       <ConfigWorkspace
         offsets={offsets.map((o) => ({

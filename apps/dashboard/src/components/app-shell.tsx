@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, ListChecks, Zap, BookOpen, Map, Settings, Sparkles } from "lucide-react";
+import {
+  LayoutGrid,
+  ListChecks,
+  Zap,
+  BookOpen,
+  Map,
+  Settings,
+  Sparkles,
+  LogOut,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const NAV = [
@@ -15,8 +24,18 @@ const NAV = [
   { href: "/config", label: "Configuration", icon: Settings },
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user?: string | null;
+}) {
   const pathname = usePathname();
+  // The login page owns its whole layout — no sidebar, no frame.
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
   // The assistant chat fills the whole main area (no max-width / padding frame).
   const fullBleed = pathname.startsWith("/assistant");
 
@@ -57,12 +76,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="mt-auto rounded-lg bg-brand-50 p-3 text-xs text-brand-800">
-          <p className="font-semibold">Pilotage courtier</p>
-          <p className="mt-1 text-brand-700/80">
-            Suivi du plan d&apos;action de conformité. Données de démonstration.
-          </p>
-        </div>
+        {user ? (
+          <div className="mt-auto flex items-center gap-2.5 rounded-lg bg-brand-50 p-3">
+            <span
+              aria-hidden
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-semibold uppercase text-white"
+            >
+              {user.slice(0, 1)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold capitalize text-brand-800">{user}</p>
+              <p className="text-xs text-brand-700/80">Connecté·e</p>
+            </div>
+            <form action="/api/auth/logout" method="POST">
+              <button
+                type="submit"
+                title="Se déconnecter"
+                className="flex size-8 items-center justify-center rounded-md text-brand-700/70 transition-colors hover:bg-brand-100 hover:text-brand-800"
+              >
+                <LogOut className="size-4" aria-hidden />
+                <span className="sr-only">Se déconnecter</span>
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="mt-auto rounded-lg bg-brand-50 p-3 text-xs text-brand-800">
+            <p className="font-semibold">Pilotage courtier</p>
+            <p className="mt-1 text-brand-700/80">
+              Suivi du plan d&apos;action de conformité des courtiers.
+            </p>
+          </div>
+        )}
       </aside>
 
       <main className="flex-1 lg:ml-60">

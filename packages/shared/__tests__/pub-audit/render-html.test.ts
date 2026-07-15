@@ -60,9 +60,18 @@ describe('renderPubHtml', () => {
 
   it('renders the analysed creative when a support image is provided', () => {
     const out = htmlWithImage();
-    expect(out).toContain('class="p-ad"');
+    expect(out).toContain('class="p-creative"');
     expect(out).toContain('data:image/png;base64,AAAA');
     // ...and omits the figure when there is no image.
-    expect(html()).not.toContain('class="p-ad"');
+    expect(html()).not.toContain('class="p-creative"');
+  });
+
+  it('renders the new editable fields and the (hidden) correction row', () => {
+    const out = html();
+    expect(out).toContain('p-averifier-ou'); // a_verifier_ou editor
+    expect(out).toContain('p-commentaire'); // officer commentaire editor
+    expect(out).toContain('p-correction-note'); // internal reason textarea
+    expect(out).toContain('data-orig='); // verdict select carries its original value
+    expect(out).toContain('class="p-field p-correction" hidden'); // reason row hidden by default
   });
 });

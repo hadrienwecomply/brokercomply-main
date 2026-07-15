@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="53" height="53" viewBox="0 0 53 53">
+  <!-- BrokerComply mark, centred in a square canvas for the browser tab. -->
+  <g transform="translate(8.833 0)">
+    <rect width="17.667" height="17.667" fill="#7e86dc"/>
+    <path d="M119.1,184.336V166.67H101.43V202h35.333V184.336Z" transform="translate(-101.43 -149.003)" fill="#5fbf99"/>
+    <rect width="17.667" height="17.667" transform="translate(17.667 17.667)" fill="#767ecf"/>
+  </g>
+</svg>

@@ -47,7 +47,9 @@ function verdictSelect(c: PubConstat): string {
       (v) => `<option value="${v}"${v === c.verdict ? ' selected' : ''}>${VERDICTS[v].label}</option>`,
     )
     .join('');
-  return `<select class="p-verdict p-verdict--${c.verdict}" data-cid="${esc(c.id)}">${options}</select>`;
+  // `data-orig` lets the client reveal the "reason for correction" row only
+  // when the officer actually flips the verdict away from the LLM's call.
+  return `<select class="p-verdict p-verdict--${c.verdict}" data-cid="${esc(c.id)}" data-orig="${esc(c.verdict)}">${options}</select>`;
 }
 
 function constatBlock(c: PubConstat, index: { section: number; item: number }): string {
@@ -70,6 +72,18 @@ function constatBlock(c: PubConstat, index: { section: number; item: number }): 
       <label>Reformulation proposée</label>
       <div class="p-edit p-reformulation" contenteditable="true" data-ph="Reformulation proposée…">${esc(c.reformulation ?? '')}</div>
     </div>
+    <div class="p-field">
+      <label>Emplacement à vérifier</label>
+      <div class="p-edit p-averifier-ou" contenteditable="true" data-ph="Ex. texte d'accompagnement, profil de la page, landing…">${esc(c.a_verifier_ou ?? '')}</div>
+    </div>
+    <div class="p-field">
+      <label>Commentaire</label>
+      <div class="p-edit p-commentaire" contenteditable="true" data-ph="Commentaire éventuel (visible dans le rapport)…">${esc(c.commentaire ?? '')}</div>
+    </div>
+    <div class="p-field p-correction" hidden>
+      <label>Raison de la correction <span class="p-hint">— usage interne, n'apparaît pas dans le PDF</span></label>
+      <textarea class="p-correction-note" rows="2" placeholder="Pourquoi ce verdict a-t-il été corrigé ? (ex. « le label “Sponsorisé” d'Instagram vaut identification »)"></textarea>
+    </div>
   </article>`;
 }
 
@@ -89,7 +103,7 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   // single-column layout when there is no image.
   const hasAd = Boolean(support.image);
   const adRail = hasAd
-    ? `<aside class="p-ad-rail"><figure class="p-ad"><img src="${esc(support.image)}" alt="${esc(support.fichier)}"><figcaption>Support analysé — ${esc(support.fichier)}</figcaption></figure></aside>`
+    ? `<aside class="p-creative-rail"><figure class="p-creative"><img src="${esc(support.image)}" alt="${esc(support.fichier)}"><figcaption>Support analysé — ${esc(support.fichier)}</figcaption></figure></aside>`
     : '';
 
   // Group constats by section, in the canonical section order.
@@ -126,9 +140,9 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   /* Split layout: pinned ad on the left, scrolling report on the right. */
   .p-shell--split{display:grid;grid-template-columns:minmax(372px,480px) minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;align-items:start}
   .p-shell--split .wrap{max-width:none;margin:0;padding-left:8px}
-  .p-ad-rail{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 0 24px 24px}
-  .p-ad-rail .p-ad{margin:0;max-height:100%;display:flex;flex-direction:column;align-items:center}
-  .p-ad-rail .p-ad img{max-height:calc(100vh - 72px)}
+  .p-creative-rail{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 0 24px 24px}
+  .p-creative-rail .p-creative{margin:0;max-height:100%;display:flex;flex-direction:column;align-items:center}
+  .p-creative-rail .p-creative img{max-height:calc(100vh - 72px)}
   h1{font-size:26px;margin:0 0 4px}
   .p-logo{max-height:56px;max-width:220px;object-fit:contain;margin:0 0 12px;display:block}
   h2{font-size:19px;margin:36px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--brand)}
@@ -138,9 +152,9 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   .p-meta dt{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
   .p-meta dd{margin:0}
   .p-niveau{display:flex;align-items:center;gap:12px;border-radius:10px;padding:14px 18px;margin:18px 0;font-weight:700;font-size:16px;color:${esc(nv.color)};background:${esc(nv.bg)}}
-  .p-ad{margin:18px 0;padding:0;text-align:center}
-  .p-ad img{max-width:100%;max-height:420px;object-fit:contain;border:1px solid var(--line);border-radius:10px;background:#fff}
-  .p-ad figcaption{margin-top:6px;font-size:12px;color:var(--muted)}
+  .p-creative{margin:18px 0;padding:0;text-align:center}
+  .p-creative img{max-width:100%;max-height:420px;object-fit:contain;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .p-creative figcaption{margin-top:6px;font-size:12px;color:var(--muted)}
   .p-chips{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
   .chip{border-radius:999px;padding:5px 14px;font-size:13px;font-weight:600;border:1px solid transparent}
   .p-constat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0}
@@ -155,6 +169,10 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   .p-edit:focus{background:rgba(70,83,200,.08);outline:2px solid var(--brand)}
   .p-edit:empty:before{content:attr(data-ph);color:var(--muted);font-style:italic}
   .p-citation{font-style:italic}
+  .p-correction{background:#fbfaf5;border:1px solid #efe6c9;border-radius:8px;padding:8px 10px;margin-top:12px}
+  .p-correction .p-hint{font-weight:400;text-transform:none;letter-spacing:0;font-style:italic}
+  .p-correction-note{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;font-size:13.5px;resize:vertical}
+  .p-correction-note:focus{outline:2px solid var(--brand)}
   .p-verdict{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px;font-weight:600;background:#fff}
   ${(Object.keys(VERDICTS) as PubVerdict[])
     .map((v) => `.p-verdict--${v}{color:${VERDICTS[v].color};background:${VERDICTS[v].bg}}`)
@@ -169,8 +187,8 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   @media (max-width:900px){
     .p-shell--split{display:block;max-width:880px}
     .p-shell--split .wrap{padding-left:24px}
-    .p-ad-rail{position:static;height:auto;padding:24px 24px 0;align-items:stretch}
-    .p-ad-rail .p-ad img{max-height:452px}
+    .p-creative-rail{position:static;height:auto;padding:24px 24px 0;align-items:stretch}
+    .p-creative-rail .p-creative img{max-height:452px}
   }
 </style>
 </head>
@@ -245,11 +263,15 @@ export function renderPubHtml(payload: PubAuditPayload): string {
       var cid = art.getAttribute('data-cid');
       if (!cid) return;
       var sel = art.querySelector('.p-verdict');
+      var noteEl = art.querySelector('.p-correction-note');
       constats[cid] = {
         verdict: sel ? sel.value : undefined,
         citation: txt(art.querySelector('.p-citation')),
         explication: txt(art.querySelector('.p-explication')),
-        reformulation: txt(art.querySelector('.p-reformulation'))
+        reformulation: txt(art.querySelector('.p-reformulation')),
+        a_verifier_ou: txt(art.querySelector('.p-averifier-ou')),
+        commentaire: txt(art.querySelector('.p-commentaire')),
+        correction_note: noteEl ? (noteEl.value || '').replace(/\\u00a0/g, ' ').trim() : ''
       };
     });
     return {
@@ -277,13 +299,30 @@ export function renderPubHtml(payload: PubAuditPayload): string {
         if (e.citation !== undefined) art.querySelector('.p-citation').textContent = e.citation;
         if (e.explication !== undefined) art.querySelector('.p-explication').textContent = e.explication;
         if (e.reformulation !== undefined) art.querySelector('.p-reformulation').textContent = e.reformulation;
+        if (e.a_verifier_ou !== undefined) art.querySelector('.p-averifier-ou').textContent = e.a_verifier_ou;
+        if (e.commentaire !== undefined) art.querySelector('.p-commentaire').textContent = e.commentaire;
+        var noteEl = art.querySelector('.p-correction-note');
+        if (noteEl && e.correction_note !== undefined) noteEl.value = e.correction_note;
         var sel = art.querySelector('.p-verdict');
         if (sel && e.verdict) { sel.value = e.verdict; restyleVerdict(sel); }
+        syncCorrection(art);
       });
     }
   }
 
   function restyleVerdict(sel) { sel.className = 'p-verdict p-verdict--' + sel.value; }
+
+  // Reveal the internal "reason for correction" row only when the verdict
+  // differs from the LLM's original call, or when a reason was already entered.
+  function syncCorrection(art) {
+    var sel = art.querySelector('.p-verdict');
+    var row = art.querySelector('.p-correction');
+    var note = art.querySelector('.p-correction-note');
+    if (!sel || !row) return;
+    var changed = sel.value !== sel.getAttribute('data-orig');
+    var hasNote = note && (note.value || '').trim() !== '';
+    row.hidden = !(changed || hasNote);
+  }
 
   function clearLocal() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
   function saveLocal() {
@@ -296,10 +335,15 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   }
 
   document.addEventListener('input', function (e) {
-    if (e.target && (e.target.classList.contains('p-edit') || e.target.classList.contains('p-verdict'))) markDirty();
+    if (e.target && (e.target.classList.contains('p-edit') || e.target.classList.contains('p-verdict') || e.target.classList.contains('p-correction-note'))) markDirty();
   });
   document.addEventListener('change', function (e) {
-    if (e.target && e.target.classList.contains('p-verdict')) { restyleVerdict(e.target); markDirty(); }
+    if (e.target && e.target.classList.contains('p-verdict')) {
+      restyleVerdict(e.target);
+      var art = e.target.closest('.p-constat');
+      if (art) syncCorrection(art);
+      markDirty();
+    }
   });
 
   document.getElementById('p-save').addEventListener('click', function () {

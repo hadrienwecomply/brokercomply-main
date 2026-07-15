@@ -1,4 +1,10 @@
-import { PUB_CATALOG, PUB_CHECK_BY_ID, PUB_SECTIONS, type PubCheck } from './catalog.js';
+import {
+  PUB_CATALOG,
+  PUB_CATALOG_VERSION,
+  PUB_CHECK_BY_ID,
+  PUB_SECTIONS,
+  type PubCheck,
+} from './catalog.js';
 import type {
   Decompte,
   NiveauGlobal,
@@ -102,6 +108,7 @@ export function assemblePubPayload(input: AssemblePubInput): PubAuditPayload {
       explication: raw.explication ?? '',
       reformulation: raw.reformulation ?? null,
       a_verifier_ou: raw.a_verifier_ou ?? null,
+      commentaire: null,
     };
     const prev = byId.get(check.id);
     if (!prev || VERDICT_RANK[enriched.verdict] > VERDICT_RANK[prev.verdict]) {
@@ -123,6 +130,7 @@ export function assemblePubPayload(input: AssemblePubInput): PubAuditPayload {
       explication: "Ce point n'a pas pu être analysé lors de cette passe.",
       reformulation: null,
       a_verifier_ou: null,
+      commentaire: null,
     });
   }
 
@@ -138,7 +146,13 @@ export function assemblePubPayload(input: AssemblePubInput): PubAuditPayload {
   const niveauGlobal = computeNiveau(constats);
 
   return {
-    meta: { locale: 'fr-BE', template: 'brokercomply-pub/v1', version: 'DRAFT', generatedAt: dateAnalyse },
+    meta: {
+      locale: 'fr-BE',
+      template: 'brokercomply-pub/v1',
+      version: 'DRAFT',
+      generatedAt: dateAnalyse,
+      catalogVersion: PUB_CATALOG_VERSION,
+    },
     branding: input.branding ?? {},
     support: {
       fichier: fileName,

@@ -6,6 +6,9 @@ import {
   buildQualificationPrompt,
   PUB_CHECKER_SYSTEM_PROMPT,
   QUALIFICATION_SYSTEM_PROMPT,
+  type PubExtraContext,
+  type PubFeedbackMap,
+  type PubGuidanceMap,
 } from './prompts.js';
 import {
   PassResultSchema,
@@ -28,6 +31,14 @@ export interface PubAuditInput {
   /** ISO date (YYYY-MM-DD); defaults to today. */
   date?: string;
   branding?: PubAuditPayload['branding'];
+  /** Phase 2 — accompanying caption/body supplied with the creative. */
+  accompanyingText?: string;
+  /** Phase 2 — plain-text extract of the linked landing page. */
+  landingText?: string;
+  /** Phase 3 — cabinet guidance per check (approved reformulations + consignes). */
+  guidance?: PubGuidanceMap;
+  /** Phase 4 — past officer corrections per check (few-shot). */
+  feedback?: PubFeedbackMap;
   onProgress?: (event: PubAuditProgressEvent) => void;
 }
 
@@ -92,12 +103,16 @@ export async function runPubAudit(llm: LLMClient, input: PubAuditInput): Promise
   const onProgress = input.onProgress ?? (() => {});
   const image: ChatImage = { base64: input.imageBase64, mediaType: input.imageMediaType };
   const dateAnalyse = input.date ?? new Date().toISOString().slice(0, 10);
+  const extra: PubExtraContext = {
+    accompanyingText: input.accompanyingText,
+    landingText: input.landingText,
+  };
 
   // Pass 0 — transcription + qualification (shared source of truth).
   const qualification = await callWithRetry(
     llm,
     QUALIFICATION_SYSTEM_PROMPT,
-    buildQualificationPrompt(input.fileName),
+    buildQualificationPrompt(input.fileName, extra),
     image,
     (raw) => PubQualificationSchema.parse(JSON.parse(extractJsonObject(raw))),
   );
@@ -121,7 +136,11 @@ export async function runPubAudit(llm: LLMClient, input: PubAuditInput): Promise
         const result = await callWithRetry(
           llm,
           PUB_CHECKER_SYSTEM_PROMPT,
-          buildPassPrompt(pass, checks, qualification, input.fileName),
+          buildPassPrompt(pass, checks, qualification, input.fileName, {
+            ...extra,
+            guidance: input.guidance,
+            feedback: input.feedback,
+          }),
           image,
           (raw) => PassResultSchema.parse(JSON.parse(extractJsonObject(raw))),
         );
