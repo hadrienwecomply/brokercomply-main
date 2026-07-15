@@ -21,6 +21,12 @@ import type { ConstatType, PubProduit } from './types.js';
 
 export type PubPass = 'A' | 'B' | 'C';
 
+/**
+ * Version tag of the grid below. Bump it whenever a check is added, removed or
+ * re-scoped so a stored audit records which grid produced it (payload.meta).
+ */
+export const PUB_CATALOG_VERSION = '2026-07';
+
 export interface PubCheck {
   id: string;
   intitule: string;

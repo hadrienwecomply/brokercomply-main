@@ -62,6 +62,12 @@ export const PubConstatSchema = z.object({
   reformulation: z.string().nullable().optional(),
   /** Where a tolerated mention may legally sit (a_verifier cases). */
   a_verifier_ou: z.string().nullable().optional(),
+  /**
+   * Free-form officer note kept with the constat and shown in the report/PDF
+   * (e.g. "vérifié avec le courtier : mention présente sur la landing"). Unlike
+   * an edit's internal `correction_note`, this IS part of the deliverable.
+   */
+  commentaire: z.string().nullable().optional(),
   /** Grouping label for the report. */
   section: z.string().optional(),
 });
@@ -129,6 +135,8 @@ export const PubAuditPayloadSchema = z.object({
       template: z.string().optional(),
       version: z.string().optional(),
       generatedAt: z.string().optional(),
+      /** Version tag of the check catalog the audit was produced with. */
+      catalogVersion: z.string().optional(),
     })
     .optional(),
   branding: z

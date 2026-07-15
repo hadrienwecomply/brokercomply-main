@@ -21,7 +21,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "clean": "rm -rf dist *.tsbuildinfo"
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "sync-pub-references": "node scripts/sync-pub-references.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",

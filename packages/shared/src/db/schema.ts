@@ -666,6 +666,10 @@ export const pubAudits = pgTable(
     /** Uploaded image, base64 (same storage approach as brokers.logo_base64). */
     imageBase64: text('image_base64').notNull(),
     imageMimeType: text('image_mime_type').notNull(),
+    /** Phase 2 — caption / body text supplied alongside the visual (optional). */
+    accompanyingText: text('accompanying_text'),
+    /** Phase 2 — landing page the ad links to; its text is fetched at analysis time. */
+    landingUrl: text('landing_url'),
     /**
      * Audit lifecycle: 'queued' | 'running' | 'analyzed' | 'review_pending'
      * | 'needs_manual' | 'error'.
@@ -698,6 +702,70 @@ export const pubAudits = pgTable(
 
 export type PubAuditRow = typeof pubAudits.$inferSelect;
 export type NewPubAuditRow = typeof pubAudits.$inferInsert;
+
+/**
+ * Cabinet-owned guidance for a pub-audit check (Phase 3). One row per catalog
+ * check id the firm wants to steer: a library of approved reformulations the
+ * checker should prefer, plus an optional interpretation note. Editable from
+ * the Config UI — no redeploy needed. The legal grid itself stays code-owned
+ * (see pub-audit/catalog.ts); only the recommendations live here.
+ */
+export const pubCheckGuidance = pgTable('pub_check_guidance', {
+  /** Catalog check id, e.g. "C5b" (primary key — one guidance row per check). */
+  checkId: text('check_id').primaryKey(),
+  /** Approved reformulations the checker should reuse (string[]). */
+  reformulations: jsonb('reformulations').$type<string[]>().default([]).notNull(),
+  /** Free-form interpretation note injected into the checker prompt. */
+  consigne: text('consigne'),
+  /** When false, the guidance is ignored (kept for history). */
+  active: boolean('active').default(true).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type PubCheckGuidanceRow = typeof pubCheckGuidance.$inferSelect;
+export type NewPubCheckGuidanceRow = typeof pubCheckGuidance.$inferInsert;
+
+/**
+ * Officer corrections mined from the editable pub report (Phase 4). One row per
+ * changed field at "Générer le PDF" time: the LLM's value, the officer's value,
+ * and — for verdict flips — the optional internal reason. These rows feed the
+ * checker prompts of later audits (few-shot) and the calibration view; they are
+ * never shown to brokers.
+ */
+export const pubAuditFeedback = pgTable(
+  'pub_audit_feedback',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    auditId: uuid('audit_id')
+      .notNull()
+      .references(() => pubAudits.id, { onDelete: 'cascade' }),
+    brokerId: uuid('broker_id')
+      .notNull()
+      .references(() => brokers.id, { onDelete: 'cascade' }),
+    /** Catalog check id this correction is about, e.g. "G12". */
+    checkId: text('check_id').notNull(),
+    /** Which field changed: 'verdict' | 'reformulation' | 'citation' | 'explication' | 'commentaire' | 'a_verifier_ou'. */
+    field: text('field').notNull(),
+    /** The value the LLM produced (verdict code or text), null if it was empty. */
+    valueLlm: text('value_llm'),
+    /** The value the officer set. */
+    valueOfficer: text('value_officer'),
+    /** Officer's internal "why I corrected this" — only for verdict flips. */
+    correctionNote: text('correction_note'),
+    /** Grid version the audit ran on, for cohorting corrections over time. */
+    catalogVersion: text('catalog_version'),
+    /** True once promoted into pub_check_guidance (dedup for the promote flow). */
+    promoted: boolean('promoted').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_pub_audit_feedback_check').on(t.checkId),
+    index('idx_pub_audit_feedback_audit').on(t.auditId),
+  ],
+);
+
+export type PubAuditFeedbackRow = typeof pubAuditFeedback.$inferSelect;
+export type NewPubAuditFeedbackRow = typeof pubAuditFeedback.$inferInsert;
 
 /**
  * Assistant agent — shared conversations.

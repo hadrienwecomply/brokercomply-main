@@ -47,7 +47,9 @@ function verdictSelect(c: PubConstat): string {
       (v) => `<option value="${v}"${v === c.verdict ? ' selected' : ''}>${VERDICTS[v].label}</option>`,
     )
     .join('');
-  return `<select class="p-verdict p-verdict--${c.verdict}" data-cid="${esc(c.id)}">${options}</select>`;
+  // `data-orig` lets the client reveal the "reason for correction" row only
+  // when the officer actually flips the verdict away from the LLM's call.
+  return `<select class="p-verdict p-verdict--${c.verdict}" data-cid="${esc(c.id)}" data-orig="${esc(c.verdict)}">${options}</select>`;
 }
 
 function constatBlock(c: PubConstat, index: { section: number; item: number }): string {
@@ -69,6 +71,18 @@ function constatBlock(c: PubConstat, index: { section: number; item: number }): 
     <div class="p-field">
       <label>Reformulation proposée</label>
       <div class="p-edit p-reformulation" contenteditable="true" data-ph="Reformulation proposée…">${esc(c.reformulation ?? '')}</div>
+    </div>
+    <div class="p-field">
+      <label>Emplacement à vérifier</label>
+      <div class="p-edit p-averifier-ou" contenteditable="true" data-ph="Ex. texte d'accompagnement, profil de la page, landing…">${esc(c.a_verifier_ou ?? '')}</div>
+    </div>
+    <div class="p-field">
+      <label>Commentaire</label>
+      <div class="p-edit p-commentaire" contenteditable="true" data-ph="Commentaire éventuel (visible dans le rapport)…">${esc(c.commentaire ?? '')}</div>
+    </div>
+    <div class="p-field p-correction" hidden>
+      <label>Raison de la correction <span class="p-hint">— usage interne, n'apparaît pas dans le PDF</span></label>
+      <textarea class="p-correction-note" rows="2" placeholder="Pourquoi ce verdict a-t-il été corrigé ? (ex. « le label “Sponsorisé” d'Instagram vaut identification »)"></textarea>
     </div>
   </article>`;
 }
@@ -155,6 +169,10 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   .p-edit:focus{background:rgba(70,83,200,.08);outline:2px solid var(--brand)}
   .p-edit:empty:before{content:attr(data-ph);color:var(--muted);font-style:italic}
   .p-citation{font-style:italic}
+  .p-correction{background:#fbfaf5;border:1px solid #efe6c9;border-radius:8px;padding:8px 10px;margin-top:12px}
+  .p-correction .p-hint{font-weight:400;text-transform:none;letter-spacing:0;font-style:italic}
+  .p-correction-note{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;font-size:13.5px;resize:vertical}
+  .p-correction-note:focus{outline:2px solid var(--brand)}
   .p-verdict{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px;font-weight:600;background:#fff}
   ${(Object.keys(VERDICTS) as PubVerdict[])
     .map((v) => `.p-verdict--${v}{color:${VERDICTS[v].color};background:${VERDICTS[v].bg}}`)
@@ -245,11 +263,15 @@ export function renderPubHtml(payload: PubAuditPayload): string {
       var cid = art.getAttribute('data-cid');
       if (!cid) return;
       var sel = art.querySelector('.p-verdict');
+      var noteEl = art.querySelector('.p-correction-note');
       constats[cid] = {
         verdict: sel ? sel.value : undefined,
         citation: txt(art.querySelector('.p-citation')),
         explication: txt(art.querySelector('.p-explication')),
-        reformulation: txt(art.querySelector('.p-reformulation'))
+        reformulation: txt(art.querySelector('.p-reformulation')),
+        a_verifier_ou: txt(art.querySelector('.p-averifier-ou')),
+        commentaire: txt(art.querySelector('.p-commentaire')),
+        correction_note: noteEl ? (noteEl.value || '').replace(/\\u00a0/g, ' ').trim() : ''
       };
     });
     return {
@@ -277,13 +299,30 @@ export function renderPubHtml(payload: PubAuditPayload): string {
         if (e.citation !== undefined) art.querySelector('.p-citation').textContent = e.citation;
         if (e.explication !== undefined) art.querySelector('.p-explication').textContent = e.explication;
         if (e.reformulation !== undefined) art.querySelector('.p-reformulation').textContent = e.reformulation;
+        if (e.a_verifier_ou !== undefined) art.querySelector('.p-averifier-ou').textContent = e.a_verifier_ou;
+        if (e.commentaire !== undefined) art.querySelector('.p-commentaire').textContent = e.commentaire;
+        var noteEl = art.querySelector('.p-correction-note');
+        if (noteEl && e.correction_note !== undefined) noteEl.value = e.correction_note;
         var sel = art.querySelector('.p-verdict');
         if (sel && e.verdict) { sel.value = e.verdict; restyleVerdict(sel); }
+        syncCorrection(art);
       });
     }
   }
 
   function restyleVerdict(sel) { sel.className = 'p-verdict p-verdict--' + sel.value; }
+
+  // Reveal the internal "reason for correction" row only when the verdict
+  // differs from the LLM's original call, or when a reason was already entered.
+  function syncCorrection(art) {
+    var sel = art.querySelector('.p-verdict');
+    var row = art.querySelector('.p-correction');
+    var note = art.querySelector('.p-correction-note');
+    if (!sel || !row) return;
+    var changed = sel.value !== sel.getAttribute('data-orig');
+    var hasNote = note && (note.value || '').trim() !== '';
+    row.hidden = !(changed || hasNote);
+  }
 
   function clearLocal() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
   function saveLocal() {
@@ -296,10 +335,15 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   }
 
   document.addEventListener('input', function (e) {
-    if (e.target && (e.target.classList.contains('p-edit') || e.target.classList.contains('p-verdict'))) markDirty();
+    if (e.target && (e.target.classList.contains('p-edit') || e.target.classList.contains('p-verdict') || e.target.classList.contains('p-correction-note'))) markDirty();
   });
   document.addEventListener('change', function (e) {
-    if (e.target && e.target.classList.contains('p-verdict')) { restyleVerdict(e.target); markDirty(); }
+    if (e.target && e.target.classList.contains('p-verdict')) {
+      restyleVerdict(e.target);
+      var art = e.target.closest('.p-constat');
+      if (art) syncCorrection(art);
+      markDirty();
+    }
   });
 
   document.getElementById('p-save').addEventListener('click', function () {

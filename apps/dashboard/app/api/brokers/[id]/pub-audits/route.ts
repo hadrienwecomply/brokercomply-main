@@ -52,9 +52,15 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   }
 
   let files: File[] = [];
+  let accompanyingText: string | undefined;
+  let landingUrl: string | undefined;
   try {
     const form = await req.formData();
     files = form.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+    const text = form.get("accompanyingText");
+    if (typeof text === "string" && text.trim()) accompanyingText = text.trim().slice(0, 20_000);
+    const url = form.get("landingUrl");
+    if (typeof url === "string" && url.trim()) landingUrl = url.trim().slice(0, 2_000);
   } catch {
     return NextResponse.json({ error: "bad-request" }, { status: 400 });
   }
@@ -86,7 +92,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     );
   }
 
-  const res = await startPubAuditsFromUpload(slug, images);
+  const res = await startPubAuditsFromUpload(slug, images, { accompanyingText, landingUrl });
   if (!res.ok) return NextResponse.json({ ok: false, error: res.error }, { status: 500 });
   return NextResponse.json({ ok: true, batchId: res.batchId, count: images.length, rejected });
 }

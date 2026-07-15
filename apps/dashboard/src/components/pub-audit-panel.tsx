@@ -129,6 +129,8 @@ export function PubAuditPanel({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [accompanyingText, setAccompanyingText] = useState("");
+  const [landingUrl, setLandingUrl] = useState("");
 
   const hasLive = audits.some((a) => LIVE.has(a.status));
   useEffect(() => {
@@ -147,6 +149,8 @@ export function PubAuditPanel({
     if (!files || files.length === 0) return;
     const form = new FormData();
     for (const f of Array.from(files)) form.append("files", f);
+    if (accompanyingText.trim()) form.append("accompanyingText", accompanyingText.trim());
+    if (landingUrl.trim()) form.append("landingUrl", landingUrl.trim());
     setUploading(true);
     try {
       const res = await fetch(`/api/brokers/${brokerDbId}/pub-audits`, { method: "POST", body: form });
@@ -176,34 +180,64 @@ export function PubAuditPanel({
 
   return (
     <div className="space-y-4">
-      <Card className="flex items-center gap-4 px-6 py-5">
-        <Megaphone className="size-8 shrink-0 text-brand-600" />
-        <div className="flex-1">
-          <p className="text-sm font-medium text-ink">Audit de conformité des publicités</p>
-          <p className="text-sm text-ink-soft">
-            Importez une ou plusieurs images (PNG, JPEG, WebP). Chaque visuel est analysé séparément au regard du
-            guide Do &amp; Don&apos;t (FSMA / CDE). Les vidéos seront prises en charge dans une V2.
-          </p>
-          {error && <p className="mt-1 text-sm text-[#bb1626]">{error}</p>}
-          {notice && <p className="mt-1 text-sm text-[#1f7a44]">{notice}</p>}
+      <Card className="px-6 py-5">
+        <div className="flex items-center gap-4">
+          <Megaphone className="size-8 shrink-0 text-brand-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-ink">Audit de conformité des publicités</p>
+            <p className="text-sm text-ink-soft">
+              Importez une ou plusieurs images (PNG, JPEG, WebP). Chaque visuel est analysé séparément au regard du
+              guide Do &amp; Don&apos;t (FSMA / CDE). Les vidéos seront prises en charge dans une V2.
+            </p>
+            {error && <p className="mt-1 text-sm text-[#bb1626]">{error}</p>}
+            {notice && <p className="mt-1 text-sm text-[#1f7a44]">{notice}</p>}
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            multiple
+            hidden
+            onChange={(e) => void upload(e.target.files)}
+          />
+          <button
+            type="button"
+            disabled={!brokerDbId || uploading}
+            onClick={() => inputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
+          >
+            {uploading ? <Loader2 className="size-4 animate-spin" /> : <UploadCloud className="size-4" />}
+            Importer des pubs
+          </button>
         </div>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          multiple
-          hidden
-          onChange={(e) => void upload(e.target.files)}
-        />
-        <button
-          type="button"
-          disabled={!brokerDbId || uploading}
-          onClick={() => inputRef.current?.click()}
-          className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
-        >
-          {uploading ? <Loader2 className="size-4 animate-spin" /> : <UploadCloud className="size-4" />}
-          Importer des pubs
-        </button>
+        {/* Optional context — supplied with the batch, it lets the checker rule
+            on mentions that may legally sit outside the visual instead of
+            defaulting them to "à vérifier". */}
+        <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium text-ink-soft">Texte d&apos;accompagnement (optionnel)</span>
+            <textarea
+              value={accompanyingText}
+              onChange={(e) => setAccompanyingText(e.target.value)}
+              rows={2}
+              placeholder="Légende du post, corps de l'email…"
+              className="w-full rounded-lg border border-line px-3 py-2 text-sm text-ink outline-none focus:border-brand-500"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block font-medium text-ink-soft">URL de la landing page (optionnel)</span>
+            <input
+              type="url"
+              value={landingUrl}
+              onChange={(e) => setLandingUrl(e.target.value)}
+              placeholder="https://…"
+              className="w-full rounded-lg border border-line px-3 py-2 text-sm text-ink outline-none focus:border-brand-500"
+            />
+            <span className="mt-1 block text-xs text-ink-soft">
+              Le contenu de la page est récupéré et pris en compte lors de l&apos;analyse.
+            </span>
+          </label>
+        </div>
       </Card>
 
       {audits.length === 0 ? (
