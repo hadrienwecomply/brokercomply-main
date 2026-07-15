@@ -60,9 +60,9 @@ describe('renderPubHtml', () => {
 
   it('renders the analysed creative when a support image is provided', () => {
     const out = htmlWithImage();
-    expect(out).toContain('class="p-ad"');
+    expect(out).toContain('class="p-creative"');
     expect(out).toContain('data:image/png;base64,AAAA');
     // ...and omits the figure when there is no image.
-    expect(html()).not.toContain('class="p-ad"');
+    expect(html()).not.toContain('class="p-creative"');
   });
 });
