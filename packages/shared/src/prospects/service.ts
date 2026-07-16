@@ -285,6 +285,29 @@ export async function listProspects({
   return attachContacts(db, rows);
 }
 
+/** One agency with its contacts, or null. */
+export async function getProspect(
+  { db }: ProspectsServiceDeps,
+  id: string,
+): Promise<ProspectWithContacts | null> {
+  const rows = await db.select().from(prospects).where(eq(prospects.id, id)).limit(1);
+  if (rows.length === 0) return null;
+  const [withContacts] = await attachContacts(db, rows);
+  return withContacts ?? null;
+}
+
+/** Update the free-text notes of an agency (detail page). */
+export async function updateProspectNotes(
+  { db }: ProspectsServiceDeps,
+  id: string,
+  notes: string | null,
+): Promise<void> {
+  await db
+    .update(prospects)
+    .set({ notes: notes?.trim() || null, updatedAt: new Date() })
+    .where(eq(prospects.id, id));
+}
+
 /** The call-list: prospects that hit +15d with no reply, oldest offer first. */
 export async function listCallList({
   db,

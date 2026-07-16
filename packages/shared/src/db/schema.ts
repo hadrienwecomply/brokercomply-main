@@ -1007,6 +1007,59 @@ export type ProspectContact = typeof prospectContacts.$inferSelect;
 export type NewProspectContact = typeof prospectContacts.$inferInsert;
 
 /**
+ * Work items on a prospect — the unit the sales follow-up is done in.
+ *
+ * Open tasks are the to-do list (due date + optional assignee); completed and
+ * cancelled tasks ARE the prospect's activity history (outcome, who, when) —
+ * they are never deleted. The chase cadence MATERIALIZES its due steps here
+ * (`source = 'cadence'`, deduped per prospect by `cadence_key` among open
+ * rows) and the tick auto-cancels them when the facts change (reply, won,
+ * lost). Facts live on `prospects`; completing a task writes facts, never the
+ * other way around.
+ */
+export const prospectTasks = pgTable(
+  'prospect_tasks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    prospectId: uuid('prospect_id')
+      .notNull()
+      .references(() => prospects.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    /** 'call' | 'email' | 'meeting' | 'other'. */
+    type: text('type').default('call').notNull(),
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    /** Officer email the task is assigned to; null = unassigned. */
+    assignee: text('assignee'),
+    /** 'open' | 'done' | 'cancelled'. */
+    status: text('status').default('open').notNull(),
+    /** What happened (per-type slug, e.g. 'callback', 'signed', 'rebooked'). */
+    outcome: text('outcome'),
+    notes: text('notes'),
+    /** Who created it: 'cadence' (the tick) | 'manual' | 'ai'. */
+    source: text('source').default('manual').notNull(),
+    /** Cadence dedup key: 'offer_reminder' | 'offer_call' | 'no_show_rebook'. */
+    cadenceKey: text('cadence_key'),
+    createdBy: text('created_by'),
+    completedBy: text('completed_by'),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_prospect_tasks_prospect').on(t.prospectId),
+    index('idx_prospect_tasks_status_due').on(t.status, t.dueAt),
+    index('idx_prospect_tasks_assignee').on(t.assignee),
+    // At most one OPEN task per cadence step per prospect (idempotent tick).
+    uniqueIndex('uq_prospect_tasks_open_cadence')
+      .on(t.prospectId, t.cadenceKey)
+      .where(sql`${t.status} = 'open' and ${t.cadenceKey} is not null`),
+  ],
+);
+
+export type ProspectTask = typeof prospectTasks.$inferSelect;
+export type NewProspectTask = typeof prospectTasks.$inferInsert;
+
+/**
  * Dashboard user accounts. Replaces the env-based credential list
  * (`DASHBOARD_BASIC_AUTH_USERS`): the /login server action now checks the
  * submitted password against `password_hash` (scrypt, see `src/auth/`).

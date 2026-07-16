@@ -18,6 +18,8 @@ export interface ProspectDTO {
   societe: string;
   siteInternet: string | null;
   verticale: string | null;
+  /** Verbatim lifecycle tags from the import source (Notion/CSV). */
+  sourceStatus: string | null;
   pipelineStage: PipelineStage;
   lostReason: LostReason | null;
   noShow: boolean;
@@ -65,6 +67,60 @@ export const CALL_OUTCOMES: { key: CallOutcome; label: string }[] = [
   { key: "not_interested", label: "Pas intéressé" },
   { key: "signed", label: "Signé 🎉" },
 ];
+
+/* --------------------------------- Tasks ---------------------------------- */
+
+export type TaskType = "call" | "email" | "meeting" | "other";
+export type TaskStatus = "open" | "done" | "cancelled";
+export type CadenceKey = "offer_reminder" | "offer_call" | "no_show_rebook";
+
+export interface TaskDTO {
+  id: string;
+  prospectId: string;
+  title: string;
+  type: TaskType;
+  dueAt: string | null;
+  assignee: string | null;
+  status: TaskStatus;
+  outcome: string | null;
+  notes: string | null;
+  source: "cadence" | "manual" | "ai";
+  cadenceKey: CadenceKey | null;
+  createdBy: string | null;
+  completedBy: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export const TASK_TYPE_LABEL: Record<TaskType, string> = {
+  call: "Appel",
+  email: "E-mail",
+  meeting: "RDV",
+  other: "Autre",
+};
+
+/** Filter chips of the task list (derived from cadence_key / source). */
+export const TASK_GROUPS: { key: string; label: string }[] = [
+  { key: "all", label: "Toutes" },
+  { key: "offer_call", label: "☎ Rappels d'offre" },
+  { key: "offer_reminder", label: "✉️ Relances e-mail" },
+  { key: "no_show_rebook", label: "💔 RDV à recaler" },
+  { key: "manual", label: "📌 Manuelles" },
+];
+
+export function taskGroup(t: TaskDTO): string {
+  return t.cadenceKey ?? "manual";
+}
+
+export const TASK_OUTCOME_LABEL: Record<string, string> = {
+  reachable: "Joignable",
+  callback: "À rappeler",
+  not_interested: "Pas intéressé",
+  signed: "Signé 🎉",
+  rebooked: "RDV recalé",
+  sent: "Relance envoyée",
+  done: "Fait",
+};
 
 /** The contact the cadence chases (primary first, else the first known). */
 export function primaryContact(p: ProspectDTO): ProspectContactDTO | null {

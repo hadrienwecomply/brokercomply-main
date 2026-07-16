@@ -1,12 +1,22 @@
 import "server-only";
 import {
+  getProspect,
+  listOpenTasks,
   listProspects,
+  listProspectTasks,
+  listRecentlyClosedTasks,
   type Prospect,
   type ProspectContact,
+  type ProspectTask,
   type ProspectWithContacts,
 } from "@brokercomply/shared";
 import { getDb } from "./db.server";
-import type { PipelineStage, LostReason, ProspectDTO } from "./prospects-types";
+import type {
+  PipelineStage,
+  LostReason,
+  ProspectDTO,
+  TaskDTO,
+} from "./prospects-types";
 
 function iso(d: Date | null): string | null {
   return d ? d.toISOString() : null;
@@ -18,6 +28,7 @@ function toDTO(row: ProspectWithContacts): ProspectDTO {
     societe: row.societe,
     siteInternet: row.siteInternet,
     verticale: row.verticale,
+    sourceStatus: row.sourceStatus,
     pipelineStage: row.pipelineStage as PipelineStage,
     lostReason: (row.lostReason as LostReason | null) ?? null,
     noShow: row.noShow,
@@ -48,6 +59,50 @@ function toDTO(row: ProspectWithContacts): ProspectDTO {
 export async function listSuiviCommercial(): Promise<ProspectDTO[]> {
   const rows = await listProspects({ db: getDb() });
   return rows.map(toDTO);
+}
+
+function taskToDTO(t: ProspectTask): TaskDTO {
+  return {
+    id: t.id,
+    prospectId: t.prospectId,
+    title: t.title,
+    type: t.type as TaskDTO["type"],
+    dueAt: iso(t.dueAt),
+    assignee: t.assignee,
+    status: t.status as TaskDTO["status"],
+    outcome: t.outcome,
+    notes: t.notes,
+    source: t.source as TaskDTO["source"],
+    cadenceKey: (t.cadenceKey as TaskDTO["cadenceKey"]) ?? null,
+    createdBy: t.createdBy,
+    completedBy: t.completedBy,
+    completedAt: iso(t.completedAt),
+    createdAt: t.createdAt.toISOString(),
+  };
+}
+
+/** Open tasks (due first) + the last week's closed ones (the history strip). */
+export async function listTaskBoard(): Promise<{ open: TaskDTO[]; recent: TaskDTO[] }> {
+  const db = getDb();
+  const [open, recent] = await Promise.all([
+    listOpenTasks({ db }),
+    listRecentlyClosedTasks({ db }, 7),
+  ]);
+  return {
+    open: open.map((r) => taskToDTO(r.task)),
+    recent: recent.map((r) => taskToDTO(r.task)),
+  };
+}
+
+/** One agency (or null) + its full task history, serialized. */
+export async function getProspectFile(
+  id: string,
+): Promise<{ prospect: ProspectDTO; tasks: TaskDTO[] } | null> {
+  const db = getDb();
+  const prospect = await getProspect({ db }, id);
+  if (!prospect) return null;
+  const tasks = await listProspectTasks({ db }, id);
+  return { prospect: toDTO(prospect), tasks: tasks.map(taskToDTO) };
 }
 
 export type { Prospect };
