@@ -1,8 +1,11 @@
 # FP — Comptes utilisateurs en base (remplace les env vars Basic Auth)
 
-- **Statut**: done (local) — déploiement prod restant
-- **Branche**: `feat/db-user-auth`
+- **Statut**: LIVE en prod (2026-07-16) — PR #3 → main `a751427`, migration 0015
+  appliquée sur la DB Railway, gate actif (`/`→307 /login, /faq→401)
+- **Branche**: `feat/db-user-auth` (mergée)
 - **Date**: 2026-07-16
+- **Reste**: créer les 3 comptes prod (`create-user.ts`), supprimer la variable
+  morte `DASHBOARD_BASIC_AUTH_USERS` (services dashboard ET Postgres, via l'UI)
 
 ## Résumé
 
