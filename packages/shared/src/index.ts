@@ -19,3 +19,4 @@ export * from './website-audit/index.js';
 export * from './pub-audit/index.js';
 export * from './branding/index.js';
 export * from './agent-chat/index.js';
+export * from './auth/index.js';

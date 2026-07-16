@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relecture — Diagnostic de conformité — Stroh Insurance</title>
+<style>
+/* =================================================================
+   BROKERCOMPLY — Rapport de conformité
+   Base HTML statique (PORTE #1) — données dummy reprises du .docx.
+   Print-optimisé A4 / Gotenberg-Chromium (preferCSSPageSize).
+   ================================================================= */
+
+:root{
+  /* Palette lavande Brokercomply */
+  --ink:#1d2030;
+  --ink-soft:#4a4f63;
+  --muted:#7a8096;
+  --line:#e7e2f3;
+  --line-soft:#f0ecf9;
+
+  --lav-50:#f6f3fc;
+  --lav-100:#efeafa;
+  --lav-200:#e2d9f4;
+  --lav-400:#a99bdb;
+  --lav-600:#6e5bb8;
+  --lav-700:#4f3f93;
+  --lav-900:#2f2563;
+
+  /* Sévérité */
+  --crit:#c0392b;   --crit-bg:#fbeae8;
+  --warn:#b7791f;   --warn-bg:#fdf3dd;
+  --ok:#2f855a;     --ok-bg:#e7f4ec;
+
+  --page-pad:18mm;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Inter","Helvetica Neue",Arial,system-ui,sans-serif;
+  color:var(--ink);
+  font-size:10.5pt;
+  line-height:1.55;
+  background:#5a5570;            /* gris-lavande hors-page, à l'écran seulement */
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
+
+/* ---------- Pagination : une .page = une feuille A4 ---------- */
+.page{
+  position:relative;
+  width:210mm;
+  min-height:297mm;
+  padding:var(--page-pad);
+  margin:8mm auto;
+  background:#fff;
+  box-shadow:0 6px 28px rgba(0,0,0,.28);
+  overflow:hidden;
+}
+.page--flow{ min-height:auto; }       /* pages dont le contenu coule librement */
+
+@page{
+  size:A4;
+  margin:0;                           /* marges gérées en padding interne (évite la bande blanche) */
+}
+
+@media print{
+  body{background:#fff}
+  .no-print{display:none !important}
+  .page{
+    width:210mm; height:297mm;        /* feuille pleine -> footer absolu collé au bas réel */
+    margin:0; padding:16mm 18mm 20mm;
+    box-shadow:none; overflow:hidden;
+    break-after:page; page-break-after:always;
+    break-inside:avoid;
+  }
+  .page:last-child{break-after:auto; page-break-after:auto}
+  .page.cover{padding:0}             /* page de garde plein cadre */
+  .runfoot{left:18mm;right:18mm;bottom:12mm}
+}
+
+/* ---------- Typo ---------- */
+h1,h2,h3,h4{margin:0;font-weight:680;letter-spacing:-.01em;color:var(--ink)}
+p{margin:0 0 .65em}
+.eyebrow{
+  font-size:8pt;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--lav-600);
+}
+.section-no{color:var(--lav-400);font-variant-numeric:tabular-nums}
+.lead{color:var(--ink-soft);font-size:11pt;line-height:1.6}
+.small{font-size:8.5pt;color:var(--muted)}
+ul,ol{margin:.2em 0 .8em;padding-left:1.15em}
+li{margin:.2em 0}
+
+/* ---------- En-tête / pied courants (écran : simulés par page) ---------- */
+.runhead{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:8pt;color:var(--muted);letter-spacing:.04em;
+  padding-bottom:6px;margin-bottom:16px;border-bottom:1px solid var(--line);
+}
+.runhead .brand-mini{display:flex;align-items:center;gap:6px;font-weight:700;color:var(--lav-700)}
+.dot{width:7px;height:7px;border-radius:2px;background:var(--lav-600);display:inline-block;transform:rotate(45deg)}
+.runfoot{
+  position:absolute;left:var(--page-pad);right:var(--page-pad);bottom:12mm;
+  display:flex;justify-content:space-between;
+  font-size:7.5pt;color:var(--muted);border-top:1px solid var(--line);padding-top:6px;
+}
+
+/* =================================================================
+   PAGE DE GARDE
+   ================================================================= */
+.cover{
+  min-height:297mm;padding:0;color:#fff;overflow:hidden;
+  background:
+    radial-gradient(120% 80% at 85% 8%, rgba(169,155,219,.55) 0%, rgba(169,155,219,0) 55%),
+    radial-gradient(90% 70% at 10% 100%, rgba(79,63,147,.65) 0%, rgba(79,63,147,0) 60%),
+    linear-gradient(160deg,#3b2f74 0%,#4f3f93 42%,#2f2563 100%);
+}
+.cover-inner{display:flex;flex-direction:column;height:297mm;padding:var(--page-pad)}
+.cover .brand{display:flex;align-items:center;gap:11px;font-weight:750;font-size:14pt;letter-spacing:-.01em}
+.cover .brand .glyph{
+  width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#fff,#cdc2ee);color:var(--lav-700);font-weight:800;font-size:13pt;
+}
+.cover-mid{margin-top:auto;margin-bottom:auto}
+.cover .kicker{font-size:9pt;letter-spacing:.22em;text-transform:uppercase;color:#cdc2ee;font-weight:700}
+.cover h1{
+  color:#fff;font-size:40pt;line-height:1.04;font-weight:720;margin:.18em 0 0;letter-spacing:-.02em;
+  max-width:15ch;
+}
+.cover .subtitle{color:#e6e0f7;font-size:13pt;margin-top:14px;font-weight:500}
+.cover .rule{width:64px;height:4px;background:linear-gradient(90deg,#cdc2ee,transparent);border-radius:3px;margin:22px 0}
+.cover-meta{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);
+  border-radius:12px;overflow:hidden;margin-top:6px;backdrop-filter:blur(2px);
+}
+.cover-meta .cell{padding:16px 18px;background:rgba(34,26,72,.28)}
+.cover-meta .lbl{font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:#bcb0e4}
+.cover-meta .val{font-size:12.5pt;font-weight:650;color:#fff;margin-top:4px}
+.cover-foot{display:flex;justify-content:space-between;align-items:flex-end;color:#bcb0e4;font-size:8.5pt}
+
+/* badge confidentiel */
+.pill-conf{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
+  color:#efeafa;font-size:8.5pt;font-weight:600;letter-spacing:.06em;
+  padding:5px 12px;border-radius:999px;
+}
+
+/* =================================================================
+   TITRES DE SECTION
+   ================================================================= */
+/* Titre de section sur UNE ligne, style sur-titre lavande : « 01 CONTEXTE - L'ENTREPRISE » */
+.h-section{
+  display:flex;align-items:baseline;flex-wrap:wrap;gap:7px;
+  margin:0 0 16px;padding-bottom:9px;border-bottom:1px solid var(--line);
+  font-size:9pt;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--lav-600);
+}
+.h-section .num{font-weight:700;color:var(--lav-600);font-variant-numeric:tabular-nums;line-height:1}
+.h-section .txt{display:flex;align-items:baseline;flex-wrap:wrap;gap:7px}
+.h-section .txt .eyebrow{
+  font-size:9pt;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--lav-600);margin:0;
+}
+.h-section .txt .eyebrow::after{content:"-";margin-left:7px}
+.h-section .txt h2{
+  font-size:9pt;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--lav-600);line-height:1;
+}
+.divider{height:1px;background:var(--line);margin:14px 0 18px;border:0}
+
+/* =================================================================
+   TABLE DES MATIÈRES
+   ================================================================= */
+.toc{margin-top:6px}
+.toc a{
+  display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--ink);
+  padding:11px 4px;border-bottom:1px solid var(--line-soft);
+}
+.toc a:hover{color:var(--lav-700)}
+.toc .n{
+  flex:none;width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+  background:var(--lav-50);color:var(--lav-700);font-weight:700;font-size:9.5pt;
+}
+.toc .t{flex:1;font-weight:560}
+.toc .leader{flex:1;border-bottom:1px dotted var(--line);margin:0 4px;transform:translateY(-3px)}
+.toc .sub{padding-left:40px;color:var(--ink-soft);font-weight:450}
+
+/* =================================================================
+   CARTES / GRILLES GÉNÉRIQUES
+   ================================================================= */
+.card{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:#fff}
+.card.tint{background:var(--lav-50);border-color:var(--lav-200)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat .k{font-size:7.5pt;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font-size:20pt;font-weight:720;color:var(--lav-700);line-height:1.1;margin-top:3px}
+.stat .v small{font-size:10pt;color:var(--ink-soft);font-weight:500}
+
+.kv{display:flex;gap:10px;align-items:baseline;padding:4px 0}
+.kv .bullet{color:var(--lav-600);font-weight:800}
+
+/* Sources réglementaires */
+.sources{columns:2;column-gap:22px}
+.sources .src{
+  break-inside:avoid;display:flex;gap:9px;padding:7px 0;border-bottom:1px solid var(--line-soft);
+}
+.sources .src .flag{flex:none}
+.col-head{font-size:8pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lav-600);margin:0 0 6px}
+
+/* =================================================================
+   SYNTHÈSE / TOP 5
+   ================================================================= */
+.callout{
+  border-left:4px solid var(--lav-600);background:var(--lav-50);
+  border-radius:0 12px 12px 0;padding:16px 20px;
+}
+.top5{display:grid;gap:10px;margin-top:4px}
+.top5 .item{
+  display:flex;align-items:center;gap:14px;border:1px solid var(--line);
+  border-radius:11px;padding:13px 16px;background:#fff;break-inside:avoid;
+}
+.top5 .rank{
+  flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--lav-600),var(--lav-700));color:#fff;font-weight:750;font-size:11pt;
+}
+.top5 .item strong{font-weight:600}
+
+/* =================================================================
+   ANALYSE & CONSTATS
+   ================================================================= */
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:2px 0 16px}
+.legend .li{display:flex;align-items:center;gap:8px;font-size:8.5pt;color:var(--ink-soft)}
+
+.sev{
+  flex:none;display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:7px;font-size:10pt;font-weight:700;
+}
+.sev--crit{color:var(--crit);background:var(--crit-bg)}
+.sev--warn{color:var(--warn);background:var(--warn-bg)}
+.sev--ok{color:var(--ok);background:var(--ok-bg)}
+
+.subject-block{margin-bottom:8px}
+/* Sous-titre de groupe (Partie 1 — …) : texte lavande, sans cadre */
+.part-title{
+  font-size:11pt;font-weight:700;color:var(--lav-700);letter-spacing:-.005em;
+  margin:22px 0 12px;break-after:avoid;
+}
+.constat{
+  display:grid;grid-template-columns:150px 1fr;gap:0;
+  border:1px solid var(--line);border-radius:11px;overflow:hidden;
+  margin-bottom:10px;break-inside:avoid;
+}
+.constat .subj{
+  background:var(--lav-50);padding:13px 14px;border-right:1px solid var(--line);
+  display:flex;flex-direction:column;gap:8px;
+}
+.constat .subj .name{font-weight:620;font-size:10pt;line-height:1.3}
+.constat .body{padding:13px 16px}
+.constat .body p{margin:0 0 .5em}
+.constat .body ul{margin:.1em 0 .2em}
+.constat .body li{margin:.34em 0;color:var(--ink-soft)}
+.tag-sev{
+  display:inline-flex;align-items:center;gap:6px;font-size:7.5pt;font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;width:max-content;
+}
+.tag-sev--crit{color:var(--crit);background:var(--crit-bg)}
+.tag-sev--warn{color:var(--warn);background:var(--warn-bg)}
+.tag-sev--ok{color:var(--ok);background:var(--ok-bg)}
+
+/* =================================================================
+   PLAN D'ACTION — RECOMMANDATIONS
+   ================================================================= */
+.reco{
+  border:1px solid var(--line);border-radius:13px;overflow:hidden;margin-bottom:13px;break-inside:avoid;
+}
+.reco .head{
+  display:flex;align-items:center;gap:12px;padding:13px 16px;
+  background:linear-gradient(180deg,var(--lav-50),#fff);border-bottom:1px solid var(--line);
+}
+.reco .rnum{
+  flex:none;width:27px;height:27px;border-radius:8px;display:grid;place-items:center;
+  background:var(--lav-700);color:#fff;font-weight:720;font-size:10pt;
+}
+.reco .head h4{font-size:11.5pt;flex:1}
+.reco .body{padding:13px 16px;color:var(--ink-soft)}
+.reco .meta{display:flex;gap:10px;padding:0 16px 14px}
+.badge{
+  display:inline-flex;align-items:center;gap:7px;font-size:8pt;font-weight:600;
+  padding:6px 11px;border-radius:9px;border:1px solid var(--line);background:#fff;
+}
+.badge .bk{font-size:7pt;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.badge .bv{font-weight:700}
+.lvl-faible{color:var(--ok)} .lvl-modere{color:var(--warn)} .lvl-eleve{color:var(--crit)}
+.lvl-soutenu{color:var(--crit)}
+
+/* Calendrier */
+.cal{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px}
+.cal .q{border:1px solid var(--line);border-radius:11px;overflow:hidden;break-inside:avoid}
+.cal .q .qh{background:var(--lav-700);color:#fff;padding:8px 12px;font-weight:700;font-size:9.5pt;display:flex;justify-content:space-between}
+.cal .q .qh .yr{color:#cdc2ee;font-weight:500}
+.cal .q .qb{padding:10px 12px}
+.cal .q .row{padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:8.5pt}
+.cal .q .row:last-child{border-bottom:0}
+.cal .q .row .when{display:block;color:var(--lav-600);font-weight:600;font-size:7.5pt;margin-top:2px}
+/* Calendrier pleine page : trimestres empilés (une colonne), bandeau Q en sidebar */
+.cal--full{grid-template-columns:1fr;gap:14px;margin-top:12px}
+.cal--full .q{display:grid;grid-template-columns:140px 1fr;min-height:52mm}
+.cal--full .qh{
+  flex-direction:column;justify-content:center;align-items:flex-start;gap:3px;
+  font-size:18pt;padding:0 20px;
+}
+.cal--full .qh .yr{font-size:10pt}
+.cal--full .qb{padding:14px 22px;display:flex;flex-direction:column;justify-content:center}
+.cal--full .row{font-size:10.5pt;padding:11px 0}
+.cal--full .row .when{font-size:8.5pt;margin-top:4px}
+
+.modal{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+
+/* =================================================================
+   APERÇU — barre d'info (écran seulement)
+   ================================================================= */
+.previewbar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  background:var(--lav-900);color:#e6e0f7;font-size:8.5pt;
+  padding:7px 16px;display:flex;justify-content:space-between;align-items:center;
+  font-family:ui-monospace,monospace;letter-spacing:.02em;
+}
+.previewbar b{color:#fff}
+.previewbar .tag{background:rgba(255,255,255,.12);padding:2px 8px;border-radius:6px}
+
+
+/* Liste de recommandations compacte (volume élevé) */
+.reco-item{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);
+  border-radius:10px;padding:11px 14px;margin-bottom:8px;break-inside:avoid}
+.reco-item .rank{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--lav-600),var(--lav-700));color:#fff;font-weight:700;font-size:9.5pt;margin-top:1px}
+.reco-txt{color:var(--ink-soft);font-size:10pt;line-height:1.5}
+.reco-src{display:block;margin-top:3px;font-size:7.5pt;letter-spacing:.04em;text-transform:uppercase;color:var(--lav-600);font-weight:600}
+.constat .subj .small{margin-bottom:2px}
+/* Cartes « L'entreprise » : valeurs textuelles (réponses brutes du questionnaire) */
+.stat .v-txt{font-size:11.5pt;line-height:1.35;font-weight:650}
+/* Logo client sur la cover (Phase 4.6) */
+.cover .brand-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.cover-logo{max-height:20mm;max-width:54mm;object-fit:contain;background:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.cover-logo--dark{background:transparent;box-shadow:none;padding:0;max-height:26mm}
+
+/* ===== Relecture WYSIWYG (écran uniquement) ===== */
+body{background:var(--paper,#f4f5fb);padding:24px 0 96px}
+.review-banner{max-width:210mm;margin:0 auto 18px;background:#fff;border:1px solid var(--line);
+  border-left:4px solid var(--lav-600);border-radius:12px;padding:16px 20px;box-shadow:0 6px 22px rgba(0,0,0,.06)}
+.review-banner strong{font-size:13pt}
+.review-banner p{margin:6px 0 0;color:var(--ink-soft);font-size:10pt;line-height:1.55}
+.kbd{display:inline-block;border:1px solid var(--line);border-radius:5px;padding:0 5px;font-weight:700;background:#faf9ff}
+.r-cover{margin:0 auto 18px !important;box-shadow:0 10px 32px rgba(0,0,0,.12);border-radius:14px;overflow:hidden}
+.r-block{max-width:210mm;margin:0 auto 16px;background:#fff;border:1px solid var(--line);
+  border-radius:14px;padding:22px 26px;box-shadow:0 6px 22px rgba(0,0,0,.05)}
+/* zones éditables : liseré pointillé + survol/focus */
+[contenteditable="true"]{outline:1px dashed rgba(120,120,180,.45);outline-offset:3px;border-radius:6px;
+  min-height:1.2em;padding:2px 4px;transition:background .12s,outline-color .12s}
+[contenteditable="true"]:hover{background:rgba(120,120,180,.06)}
+[contenteditable="true"]:focus{background:rgba(120,120,180,.10);outline:2px solid var(--lav-600)}
+[contenteditable="true"]:empty:before{content:attr(data-ph);color:var(--muted);font-style:italic}
+.r-edit{font-size:10.5pt;line-height:1.6;color:var(--ink-soft)}
+.r-para{margin-bottom:10px}
+.callout #l-synthese .r-item{margin-bottom:8px}
+.r-csli{display:flex;gap:8px;align-items:flex-start;margin:4px 0}
+.r-csli .r-bullet{flex:1}
+.r-row{align-items:center}
+.r-row .r-item{flex:1}
+.r-reco .r-recotxt{display:inline-block;min-width:60%}
+/* boutons ajout / suppression (cachés à l'impression mais c'est un doc écran) */
+.r-add{margin-top:10px;background:#faf9ff;border:1px dashed var(--lav-400);color:var(--lav-700);
+  border-radius:8px;padding:6px 12px;font-size:9pt;font-weight:600;cursor:pointer}
+.r-add:hover{background:var(--lav-50)}
+.r-x{flex:none;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:11pt;
+  line-height:1;padding:2px 6px;border-radius:6px}
+.r-x:hover{background:#ffecec;color:#c0392b}
+/* barre d'action collante */
+.r-actionbar{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-top:1px solid var(--line);
+  box-shadow:0 -6px 22px rgba(0,0,0,.08);display:flex;align-items:center;gap:16px;
+  justify-content:flex-end;padding:12px 24px}
+.r-status{flex:1;font-size:10pt;color:var(--ink-soft)}
+.r-status--ok{color:#1b7a3d}
+.r-status--err{color:#c0392b;font-weight:600}
+.r-submit{background:linear-gradient(135deg,var(--lav-600),var(--lav-700));color:#fff;border:none;
+  border-radius:10px;padding:12px 26px;font-size:11pt;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.r-submit:hover{filter:brightness(1.05)}
+.r-submit:disabled{opacity:.55;cursor:default}
+
+
+/* ---- Thème client (généré — source: logo-primary, base: #4ecdc4) ---- */
+:root{
+  --lav-50:#f5f9f9; --lav-100:#eef6f6; --lav-200:#ddeeed;
+  --lav-400:#98d8d3; --lav-600:#2b827c; --lav-700:#247f79; --lav-900:#1d6762;
+}
+.cover{
+  background:
+    radial-gradient(120% 80% at 85% 8%, rgba(152,216,211,0.55) 0%, rgba(152,216,211,0) 55%),
+    radial-gradient(90% 70% at 10% 100%, rgba(36,127,121,0.65) 0%, rgba(36,127,121,0) 60%),
+    linear-gradient(160deg,#247f79 0%,#25837d 42%,#1e6b66 100%);
+}
+.cover .kicker{color:#ddeeed}
+.cover .subtitle{color:#eef6f6}
+.cover .rule{background:linear-gradient(90deg,#ddeeed,transparent)}
+.cover .brand .glyph{background:linear-gradient(135deg,#fff,#ddeeed)}
+.cover-meta .cell{background:rgba(29,103,98,0.28)}
+.cover-meta .lbl{color:#ddeeed}
+.cover-foot{color:#ddeeed}
+.pill-conf{color:#eef6f6}
+.cal .q .qh .yr{color:#ddeeed}
+.previewbar{background:#1d6762;color:#eef6f6}
+
+</style>
+</head>
+<body>
+
+  <div class="review-banner">
+    <strong>Relecture du rapport — Stroh Insurance</strong>
+    <p>Modifiez directement les textes surlignés (introduction, synthèse, top 5, présentation de
+    l'entreprise, constats, recommandations). Vous pouvez ajouter ou supprimer des constats et des
+    recommandations avec les boutons <span class="kbd">＋</span> et <span class="kbd">✕</span>.
+    Le reste de la mise en page (couleurs, logo, calendrier) est figé. Quand tout est bon,
+    cliquez sur <strong>« Générer le PDF »</strong> en bas de page.</p>
+  </div>
+
+  <section class="page cover r-cover">
+    <div class="cover-inner">
+      <div class="brand-row">
+        <div class="brand"><span class="glyph">B</span> Brokercomply</div>
+        <img class="cover-logo cover-logo--dark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAYsAAAGWCAYAAACJqK/OAABid0lEQVR42u3dB5wkZ3knfq2yBEgCBIgswIDP4LNxQmCbMzb8bXPYBmwfxgbzdzqL82lnUUQJhEQQCJEWgQAFkIRyGK20K+2uNucJO3lmJ6eO05Pz9EzXc/NWPdVdXV1vdVV1Vaf5PXx+Hy3Szkx3T1V964112mkox7Xl8OwZWw7P/tqWw7OXaZmRZDo7R/RMSTIpyYQk41qOmpOQZEySeG6OicQkiUoSsUg4k+PGhHJSo2ZUkpHcnBAZtsiQJIOSDGRSZ0y/JH0W6ZWk57Kaeqt0S3JKkq7sNIh0StIhSbskbZfVNJrTKkmLJM25OSnSZJGTkjRK0pBJkzH1FqmT5IR1mo/L8kZc6VB+YHHhlsOz9285PBvbcnhGkuncHBGZkmRSkglJxjM5akxCkjFJ4tY5FpMkKknEIuHsHNcTykmNmlFJRqxzYtgiQ5IMSjKQnTo9/ZL0WaRXkh4t9eZ0S3JKkq7cNHRK0iFJuyRtWhqNaZWkRZJm65xssshJSRolachOk556i9RJckKS47GaZqsci9Y0H7sKVzqUH1hctOXwbO2WwzNknencHBGZkmRSkglJxjM5akxCkjFJ4tY5FpMkKknEIuHsHNcTykmNmlFJRqxzYtgiQ5IMSjKQnTo9/ZL0WaRXkh4t9eZ0S3JKkq7cNHRK0iFJuyRtWhqNaZWkRZJm65xssshJSRolachOk556i9RJckKS41TTbJVjem7BlQ7lExYztYACUACK6oNisxZggfIDixkJFoACUACKKoACWKCCxAJQAApAUSVQAAtUUFgACkABKKoHiqMiwALlNxaAAlAAiiqDAlig/MYCUAAKQFGFUAALlJ9YTNcCCkABKKoSCmCB8guL6VwsAAWgABTVAgWwQAWEBaAAFICimqAAFqgAsAAUgAJQVBkUR0SABcpHLFxBMUFfPJrJlUfHc3LVMT2JdK7Oyhhdczw316qJW+eElutOxLJyzfEYXX08Ks01xyOShOmaE2G6Vk+dMSE11+VkVJIRNV+qFxmlLzWMSDJM10szpOaGnAzSDY3WuVHPSS3XNfT7AsWW+m760sleuqmpz5Bem/TQTc3Zubm5h25p7aGvtvYa0iNJt3XaTuXktvZuurOrl757yml6JOnOytaeXvp5fz/dI02ffQaM6U3ngaF+emxkiDPoPKMD9MhIP23t66Qb2hq8QgEsUD5hcWT6oi1HBBZuWhQTdNWxieS1dePKl+rH6fr6cbqhfpxubBBJ0E0NCfpy4zh9uTFBX+Hc0pigW0VOJug2NWP09aYx+gbnm01jdHtTnL7VrOXbnDua4/Qdzp0iLTH6Lud76UTT+X6rlh9ytrbpidCPOHdpUX7SHlF+2hGhn3VE6eedUbqnM0L3dkbo/q4I/aIrSr88FaUHu6P0q+4oPSzSE6VHeqL0WE+MHuuN0eO9UXqyN0ZP9sXoqb4YPd0Xo2f6Y1TbH6dnB2JqtnGeH9SyfTBGO4a0vDAUp53DWnYNx2n3SJxeGhlTs2dkjPaOatk3Okb7Q1oOhBNqDoYTdIhzOJygI5EEHY0kaOdIXPlGy5BSCBRXNfTQw4NRap2ao4G5RRr0mOH5RUosr9CE31lZoZlk0vfMra7SwuoqLa6tWWTVc5bX1iiZSnnKSipFs8kkdcxM0V19nfTF5uNuoQAWKD+xmKr10PWkXH18PHl9/bgikLipcZxubkyoEUjcclLLV09mgPhaU4K+3pTQgGgeo9ubx+hbnG+3xOmOljh9h3NnS5y+26rle61x+n5rnH7QGlPzQ5G2GG1VE6Ufce4SaY/Sj9uj9JP2KN3doeWnnJ+pidDPRTojAofUL7qiqQcECqei9NApDYVHGYQnemP0VC8j0CcQiNGz/THa1h+j5wQAAzHaMRhXIy78L4qL/9AY7Roeo93DY/TScJz2jMRp70ic9o3Gaf/oGB3gHAyN0aHQmHahDyfoaDhBxyIJOh4ZpxMi0XGqi45TvUhsnBpi49QYn1BzMj5BTfEJahYZm6CWsQlqHZugtrFJahubEMAwGN66nr7c3EehhSVClU8pikKhxXn6dneLWyiABcovLKYkWDgZoxhXrj0xnryxYVy5mbHQWxNftYTC0IrQkVBjAUWLhkQGiriGhAUUd3F+bISiPYOEDsXP1ahIZFoRnZHUA12RlA7FI90aFI+LFgND8bQEiu02UOy2giKkIZEDRSQDxXETFA0SKJqsoEhMUntC++e+0JjyzZZBxcsYxbWNPXQsMU0pRcFVuoxqTVHoxdgobVFbF46hoM0twAIVGBZuBrPHletOjCdvbhhXvtI4TiK3NJqgOJlpUXwzp0UxJoXi+1lQxA1IxLJaE0YkzFD8zAiFoavpPs79nRH6pYpFJPWoCkVUbVEIKJ6yhSJmgiJOu4ZkLYp4VmtCg2LMBEVCDgVjkQVFPAOFigVDIdIxPkkdiQnaH44bwHA3mP2t9kHqmVkAGGVWzVPjdG1rnRsogAUqKCzcz3r64tFx5Ut1ieRXGhOK3vV0m0XXUw4UzXZQxLK6nba2xTkCipgUibulSETpXjUZJLSxCRULeuBUJPVITzT1RG803fWkQtFnAQV3P70waGhRGFoV+aA4Yuh6Oi7petKhaMgDhdb1ZIAiMUmd45PUxTkQHlO+2Tqo5CKRf9bTHR0Ao9yqZXqCrmurcwHFYRFggfIbC+/TY794NKFcX5dI3tKYUHQkMlAkVCiykRjLQkIKRbo1EacftcfU3GVGwnJsQkPCCMV9aiyg0LAg0bp4vCeaeqovmr9FMWjV9cQD01IoEjldTzoSXloUxq6nHCgmJumUyLjokoqnbm3p9zQ9FmCUIxYn3EABLFB+Y1H4OgodjFtPJpSvS1oUotvJ2PV0p2EwO2cguy2DhR9Q3N8VVZHQoTC0KuhBDQt6uDuSerI3mkpDMRDPHaMYtBrM1qEYU8cn9tsMZJuhSCNhM0bRbDNGoXc96VCoSExMUTdH/P+XQjElA4a7dRQaGPMAoyyxyAsFsED5icVkrV8L7gQYN9Ylkl87OaakB7SzsLAezM5gkTvj6UdpLEyzndqtofhZhwyKaA4UZix+1R2hR7ojqaf7Yikx5fW5gTg9Pxg3QTEmaVHwNFfDYLbeotBbE8bBbB2KOgMUjbEJV4PZZii6TFD0iEyKPxvBcL/g7o6OAYBRdlg4ggJYoPzCYlKChfeV2QKMm+rHkt9oGlNuz5r5pEFxhw0U37dqVbRpLYq72nOnxlpC0WGCojOqrpvQYkCiK4PEQwYsHu6O0GM9kdSz/bGUtEUxlNui2GfRotBbFUdNg9miVWFuUTQyFifNLQrzYPaYBApuVWRBMTFFvZNaBBp7Q3Hl1pY+Tyuz7+gEGOWDhWMogAUqSCwK38Lji0fHlJvrx5LfbBpT9LEKY4viO2koxgxTZK3GKnjWk2WrIpa/RcGtCn2R3S9PaS0JPSoW3RoSegQWj3ZH6IneSGpbfyyV06LIGsy2h+JIzvTY7O4nKyiyxicsBrPbpC2KTKuix9CqEFD0iUxNq3/eGzaC4WYLD4BRtlhIoTgkAixQQWDh315PAowv148lb28eU75talHkTpG1hmKrZA3F3Q5aFPcZoRCtCRMSxq4nHYmHtW4oerRHbV3Qk70R0bpIWc96soMiYbmOImucImboeorJxicm1Ui7niYkUExmWhQ6FP0c8ed9aTDc7/UEMMoMC3sogAUqCCz83xRQAyOe/HZzXJFBYV6Z/UPTyuzsAe1Y7vTYTvP0WCMUETkU3ZlWhRUUj/dqeaovIloXqV1D8ZwxCi+D2XV5VmW3qFBYIyGDotshFAMi09qfxTqM23LAcLYpIMAoJRbH3UABLFB+YxHc7rFXHo0rX6mPJ7/THFfS+zqlxyfyrMw2tiYki+3uyQdFVzYS6XGK7vSAdhqJNBSMxROcp/siqRcGYyltZbazwWyrVdl1jrbvkLcmcqGYctyiEEgMmpINhpvdYwUY/QCj6FiMZ7BwBgWwQPmJxURt0NuMCzBuaYgn72yJKd/LGsiOG1ZlxyxXZWtIxHIX23VkA5E9RpFBwjjb6SFT15OxJfGYAYonenQowmqe7A3TM32R1M6hWEpbR5ELxWEeo8js85TpesqBwrSGInsgW97tZDtGkQPFVFaLwojEkJoZ9c8HImMMhvttxgFGibBwDgWwQPmFxYQEC/+fR3Hlsbjy1YZY8nstMcW8MvtHjMWP2yy27mAsbMcmzIPZVlCoO8jmDmQ/JmlNiDzJUIg81RemZ/sjqd3DsZR5wV16+46wqUVhMUbR4BaKRDYUpyZy11KYoeg3dT1pSMyoQOgZntEyNDNDB1Uwej09jwJglAILx1AAC1SQWAT34KIrj8WUWxtjye+3xhQ3K7PN4xPmQez7uzLTY62g+BVvNf4rw9jEI0YoerOheNICiqfVhGhbfzj10kgsZbdzrHwwe9xmsd2ks1XZFuso0lBYjE/YQTE8M0sjM7Pqnw9G48ptrb3qrCd3Dy4SYPRRz8wcwCgZFjIoDooAC1QQWAT/hDsBxm2NseQP22KKFyjusYPCMD02u0XBz6SwGp+QQCGAMEZg8UxfSM1zA2HRHZWyalH4NZhttyrbyfhEPigEEiOzszTKGZmZoUPRMQbD/RPuAEaxsDjmBgpggQoCi+I9ClWA8bWTseTWtphitdgus+Auoj2DolN/BoW2c+x9vL/T/abFdjlrKCymxuaMUUhaFNlQhNToWNT2h+j5gbDojkrZPYuiIQ8UVlNjO9xAwVNhnUCRaU3kQhHiiD8fio6lbmnpVrw8ClUFYxZgFA+LvFAAC5TfWBT/mdkaGNHk1raocpepVZGZ9ZTB4h7G4l4DFr+w2BDwQdOAdqbrKUyP9oTpMTWGwWyr8Yne7BaFDkUtQ/EsZ8dgJHVwNK5YTY9tcDrrKeGxRWGCYiALihlXUIRF5ubUhGZnlX2R2OpX0mC4eWY2wCgeFo6gABYoP7EYry02FFqidOWxqPL1k9HkXW1RxYzFzyywuDfPzrEPSlZlZ0MRTnc9PW7VouA83ZdJBgoxyK1l20CYnhsI0QuDYToYiqdORBJ5d451OutJun2HaXxCNkYxJO160rAwtyh0LCKc0NyssicSW7u5udsFFG1aGtvojs5egBEoFo6hABYov7AYz2BRZCj06GD8uD2q5K7MjqSfbmd+HoVsHcVDWTOewmoyWOSOU6THKHpzxyg0KLQYoTBi8TyDcTgcT9VHE96hSMhnPJmh6JVCMWMDxWwOFGELKESi81orY09YgHHKFRR6AEaxsTgILFABYnF0/KItR8drSwVFGozjUeUbJyPJn7RHFPliu1woHjCMUxgX2undTioS3XZdT1qskJBBsS0NRViFYjtn51CYjoTHUvm3GC9sMNsKCrvxCSddT2YoRGIMxt5IbO3LKhjOoahpbFUDMIqFhQyKAyLAAhUEFsWHQkuErjoeUb55MpK8uz2imJ9sd59pnEI2RpG92C57jMJ61lPEHgmGotbQmtChMGKxQ2QwRLuGInQ0MpYSrQons546fBijsIfCeiDbqjWRDcV8OpF5OzDkUGTA6AEYvmJx1A0UtLkVWKB8x6J0UOgRYNzeFEn+vCOi3GdqTVi1KKwHsvUZT4Yxih7zYjuGgrGwRMIMRVaLQksaCrUrSuuO2j0UoWORsdTJ+LijLTwKmfUkH8ieTUMxUgAU8QUtURWM+NqXW7pcQQEwgsYiLxTAAuU3FqWHwgjGt5oiyXs6I8r9FoPZ5gcW5ezxZLMq+8kcKCJZSFi1Jqyg2M4RrYkdgxkoXhwM087BMO0ZjtCJyFgqyMFsJ4vtLKGwGqOYy3Q9paEwYDGmgjFP+6I6GM6hqGlsUQMw/MbCERTAAuUnFonacoFiy7GwmquOh5VvN0eS93ZGlHxPttPzqGkNRW63k3FabC4UVkhkD2ZHsrDYMRhWgdDzoo7FUJh2DYVpz0iE6qKJVL7nZecbzO5zOJht7nrKgYLHJ2RQGFsVOhI6FGMLC2piCwKMmAaGCygAht9YOIYCWKD8wiIhwaJ0UKTBOCHACCfv64wodi2Kh632eZJBkR6fiHAyA9g5rYkB4xhFhJ5Xk4FihwkJIxQiu4fDtG8kQvXRRKptbMIGiikP02MLh8KIhBMoEotaBBj7VTA6XUGRAaMbYASChSUUwAIVJBalh2LLcS0CjDuaw8n7O8OKfGW2Nj3WPDXWuGPskw6mxWa3KEK0bUDLc8bup0GrFkVIzU51gFuLgGL3cIheGg6pYDTEEqn2Ug1m27QmjOMTsXkzErlQiIwvLqj/7YAAo7XLFRQ1jc1qAIbfWMig2C8CLFBBYFE+UGw5HlJz1YmQCsYvu8JK7oB2OGdl9uN5sJDNeMrqduoPpddQZM94Mnc7ZaDYqUPBWLzEWOwZDtH+0Qg1xhOpjqxNAf0azM5MjR3xCIWsNWEFhciEDkYsvvbl1k5XUKTB6AIY3rA44gYKYIEKAovyg8IIxndawslfngorDzlemS3HQt6iyF5sZ1xHsYMHsbPHJ0LpZFoVAolwGgqRvcMhOjAapqZ4IuX3YPaIaR1FyGYdRZQjG8i2w8IIhR7x7w/EYms3tXQobqBQc1IHYxZgeMYiLxTAAuU3FuULhUhNGoxQ8sFTYSX/ymx5F9QzeRbbbTMttttumhprHJ/IhkJMmw1zq0LMiMpk70hIzcHRMDXHE6lT45M+QTFrvX2HbIxiTj4+ETchkQ+KyaVFNYmFeWVvJLqqgeEQChWLJjV3dJ0CGJ6wcAQFsED5icVYbblDUXN8VM1VJ0aVO1tCyYdOhRX7ldmyDQFzWxTbLBfbhXOgeNEwNVaDIpxuTWjdT7lQ7FWhEAPdoXQOhyLUMjae6p6YzKzKNm0x7hiKWRdQmKfG2kAh63oyQ5ELRrviBgqA4RULx1AAC5RfWIxJsCg/KIxgfLc1lHy4O6w8Lpn5JNs11m7rDg0JbdaTeQ1FdmvCMOOJu50yXU9mJDLZzzkwEqYjoQi1jY2nLFsTBWwx7mWMIu6i22nSAMWUKSoYUSMYzqAAGC6xaD/iAop9IsACFRQW5QuFEYzvtYaSj/SEFf1Z2dZPttO7nPTnUJinxkZy1k+YZzxZQaG3IvSWxEvmFoURiVEDFKNaRHfU0XCE2hMaGLlQzBQFCqfdTuaWxJQk44sLykuR6NoNze0uoDiZzh1dXQDDCRbOoQAWqKCwKH8oao6PqLnqxIjy/dZQ8rGesCLbXvwZAxZii/HcFkXEsHVH7mI7c9fTLhMW+ownbTDbAgoDFgdGMlCIHBoN0/FwhDoS4ymnj0F1usW4k8HsnIHsBefdTlZQTIssq2DQ7khk7YbmNldQAAwHWMwk6Lr2w26gABaoILCoHCiMYPygbTT5eG9IeUoy48l6jCKSblWkF9o5WGy32zSIbZweq3c/ZbUoOMYWhQ7F4ZDojtLA6ByfSOljFL5sMW4ao4jbtCgSphbFhEsopg1QzCwvqZlYYjBa2lxBATDcYpEXCmCB8huLyoMiDUadBsYTvSHlaQcL7gQWz5mhGLRvUew0rMrO7noyTo/NtCrMSJihOBTKYCFyIhKhrvGJ1ODUtBSKUQ9bjOfrenIzkD3lEAqR2RUBxiKpXVICDMdQNKZzR1cnwLDFwhEUwALlJxbx2kqFoubEsJqr6oazwJA+sEhA0Z8940kbyM7d58m8hsJqsd0eiwFtvevJDMUhQ4xQHA1rqYtE6NT4RMpqjGLUh51jZeMTXscoBBB6zFDomVTBEC2MVldQAIx8WDiGAlig/MIibo1FBUFhBOOHbaPJJ3tDSs6spwHz9uIhAxS5i+1eHHS42G4knI6x+8kKCjFl9nDIGgqRYwxG98REyrhzrOPxCfMeT4FDsZSFRAaK5XTmVpY1MKI6GM6hMILRCzDyYCGDYq8IsEAFhEUFQqFliK6qG1J+2DaSfKovpNRKp8eGsx5YZF5sp3U/maAwYGFclZ0DxYj9GIURCissROoFGJMaGF5bFE5mPHmHYkkCRTYSxtiDIYOiIZ3vdXfR8MI8KRscDGssbKEAFqiAsKhgKPQIMLa2jSSf7gspVjOftlu0Kl60WJm9y7gy23JVtjMoDlp0PdlhIdIQjVDP5ERqdGbG9bMo3Axmj3sZzLbAYjYPFjoYe1QwWlxBIbKlqYG29nbTyAYHIxeLvFAAC1QAWFQBFFlgtI8kn+kLK5lnUWhY7DCNU9itzM6MU4QtxyectCgOheyhMCJx3BABRt/kZMr2WRTFHMxmJOygmMuTqeUlHQzFKRQ1TVo0ME5taDCysXAEBbBA+YTFsfhFW47Fa6sJCi2DdHXdkPKj9pFkbX9YyVpHMWAayHawMluKhGl6rBkJKyiO5oHiRCSTxliU+qYmU6JFEdRgdkFQ5GlNGDOfXFEztbyk7IqE165vaVacQlHTVK9mS1P9hgYjg4VjKIAFyk8sYrXVBoWeq+sGlbvaR5Lb+sOKowcWWUyPtV1sZ9WaMCBhHKcwdjkdlbQmzFjURcJ0MhalfgMYxR/Mdj9GkYWEAQqRBRWMRWVXJGQCwx4KgKFjccgNFLS5DVigfMEiJsGi8qEwgvHjjpHkcwMhxWodxS7LBXc2i+1M3U4HJd1OTgaz80EhUh8NU1MsSgNTk6lI3ocWFRcKp62JBYtMrywqu6I6GM6g0FLHYHRtODDkWMig2CMCLFBBYVE9UGgZoKvrBpSfdAwnnx8IKdK9nkwrs/cYsXANRUTdLFDPUQdjFDlQRDUoRBqiYmvzKA1OT6W0LTzm87Yq/BrMnvE4RjGfB4vFVQ2M3SoYTYpTKPRsaarbcGBYY2ELBbBABYVF9UGh5+p6DYztAyElZ4wip+spe3rsPsnKbGO3U6b7yQiFNRKyMYoTjIQRCh0LkZZ4jIamp1N+bzHu92C2udvJCgo9aTBamxSnUGxUMHKxyAsFsEAFgUX1QqGmTgPj7s7h5I7BkCKHIntq7F4bKKzGKPJNi7VrUZyI5EKhY9EYi6ixAsOvwWzp1NgVF2MUEiiMQJgzvbykvBAZTX2p5aRjKLScYDA6NwQY2Vg4ggJYoPzGovqh0NJPV9f3q2C8MBhS8iHh18rsfOMTsu4nY6tCx+JkLEKt8RgNz0ynRBeU3Rbj4350O3mAYsEFFCJLq+osKdoeHlVywZBDoWdL04kNAUYGC8dQAAuUn1hEazcKFHp0MF4cCilWayjMU2T3jchbFV4Gsy2hiDqDQqQpJh6exGBwy8LpzrFTHqGY8xmKJTXJrGhgjBjAyA/FRgJDw+KgGyiABcovLKISLKoXCiMYP+0cTu4cCilpKIYlUIy42MIj5L5VYduiYCxOmrBojkWofSxGIzPTKfFsCikUTrqeLLCYdYHFvE9Y5ILhDAotx2lL8/GqBqNlZswaCykUL4kAC1RQWFQ/FFr66Or6PuVnXUPJXUMhxfZRqD6szLZqTeRtUUigULGIa2kfi9PozHRqfGHeFRK2UKyUBgo90yt6l1SjYyhqmrVUMxiWWNhDASxQQWGxcaDQo4OxezikmBfc2W8KGPG8MtvYmqizQaLRAgm9VSGgaIlHqSUeoY6xGIVmp1Pun2xX/MFsOyiW1zKZXlmmHZER5UutjY6hqHYwWqbH6Nr2A26gABaoILDYeFDouaa+T/l511DypeGQYh7IPmDZmsidGutkjELHIV9LwgqJZkNrIgNFNANGQoAxk/JrjMJvKJYcQ7Gajg7GdS0NjqHQcoy2NB+jrb0dNLIwVzVgHJ+M0FXt+91AASxQfmOxcaGoqetVc019r3JP11Byz3BIOSAdzDYstAtHCoaiwWWXUzYQ2Vi0jkWoMxGj8OxMSu+Ckj0nuxwGs/NBIbKigrFEz4WH165tqXcMhcjmKgTj8ESIrhRYOIcCWKD8xCJSu9GhMIOxl8HI3WJcjoVl11M4f5dTGopo2BoKB1i0MhZtYxHqSsQowmBYP9mufKAwdjtZQaElSVMrS6lnQ0OrGTDyQ6GnporA0LDY5wKK3SLAAuUHFhELLDYmFGkwGnqVe04NJfeOhBT7VkXE8cpsfY8nJ9Ni3bYqWseiKhQ6FlZgTNtgUapZT86x0FsYy6ltoeHV61rrHUOxufmomprmo7S1t73iwZBjIYUCWKCCwmJjQ1FT16PmmoYe5d5TQ8l9IyHFPOvJyT5P+bAwQ9FoMYhtNZBtjN6aEFi0pSNmR2k5NR6j6NxMyukW44Vs4eEnFCsWSRrBCA+tXtda5xiKagLDGgtbKIAFKggsAIWaei0CjPtODSUPjISUQhbbGbfwaDB3P1mtn4jLBrIZiHh2K0KHop3TkcikZyJOsfnZlGhZzPjwLIogB7PtoEiurXFWaSa5nHouC4z8UFQLGLlY5IUCWKD8xgJQGKHIBmMweWA0pOQdn/AAhR0W5gHslnRLIhuLdgMURiw6OVZgOEWi2IPZ9lBwUmYwnEGxufmImprmI7S1r60iwcjGwhEUwALlJxbhWkCRC0VNfbeaaxq6lfu7B5MHGQzHGwKaVmZ7m/lk6nrKg0WHBRZd4wKMMYrPz6acQbGS1ZIoxfiEFRSrqUx0MLaFh9aubT3hGIo0GC2VCUYGC8dQAAuUX1iEs7EAFFlQmME4NBpSnLQo6iymytqtpThpOUYRzQNFNG+rQsMipqZXBWMupW8zLh/EXnG1xXgpsNDBmF5ZSj0VGlCubjnhGAo1LZUJhhwLGRS7RIAFymcsAIUlFGYwDodCips9nuotBrPtVmbng6LVYYvCjIUOxtiCBoaTVsVCiQaz80GRBmNtVUyrVZ4Y7VeubjnuGIrNLYfV1LQcrigwNCz2uoECWKB8wuJ4+KItx8O1gMIeipr6U2quaexWftE9mDwSCilOF9vl63ayXkuRr+spYjmgbex6yiSmzozS0zeZoIQKhhwKL1uMBzVGIYMiPxj2UFQiGIcnRk1Y5IWCNrcDC5TvWAAKOygyYJzKAkO6v5OkJWE1PpGBwr41YZwaa0QiF4pMa0JHonsink5/DhjeoFgqMRRyMJxBoeUQg9Fa9mBkY+EICmCB8hsLQOEEiiwwegaSR8MhJd8zKGxbFBIoZC0KGRadEixOSbAQM6QGVDDmU95nPAU3PuEGCmswjjmGQk9Ny6GyByODhWMogAXKTyxCtYDCORQ19V1qBBgP9g4mj0fCit34hLNup9x1FLIWhRGKThsoslsVejQoRHoZjPHF+ZS+MruSsVDDYDwy0pu6svWoYygqBQx7LCyhABYov7AI5WABKPJDoedLJ08pj/YPZYHR4GR8Io2FaX8niwV3VjOeOiWxalVkoIilodCxEBmcStAEg1HoFuNBDma7ycTK0trDIz1rKhgOodBykMFooZGF2bIDQ8NijwsodooAC5T/WAAK51CoaeiiLzVpYJyIhJWGaIQao5ItxuPRdOR7PEVzVmS3J2Lq9uN6OjnGFoRVa8KMRY8Bi15D+iYzYCwklz23Joo5RiHLGsceDDkUempaDpYlGNZY2EIBLFD+YwEo3ELRmc71TV3KY/1DybpoWJE/iyJqs8V41LTHkzUWnS6x6LbAwgyFnqGpBE1KwPDamig6FEoqHSMYV7UecQxFFhj9LTSyWD5g5GKRFwpggfIXC0DhHQojGI/3DyXro2HlpHQzQHmLotUCCRkUMiysu57yQyHSr4OxlA2G17GJUkKRTmqNJrPAcAaFlgNU0yrAaC4bMLKxcAQFsED5h0WNigWgKASKbDAGkw3RsGIen7B+DoWz7qdOB1jIWxNasqCYyIVCz/D0uArGYtK/hXZBjU+s2UHhCAw5FGpaBRgHygaMDBaOoQAWKH+qRsVitBZQFApFRzrXN3UqTwwMJhtjYcXZsyhMrQpTi8LtOIV51pN5nMIIRX9WxtQMTI2pYEwtLTAYlY1FKguM7rWrWg87hkJPuYCRg0VeKF4UARYoP7AYlWABKLxAYQTjyYHB5MlYRGlxOKDdlp7tVMAYhQUUsq6nflMEEsaM2IDhfnyiiF1PJihSUjCcQaFlP9W07i85GBoWL7mBAliggsQCUBQChZZ2KRitNlAYsXA6PpHd9ZQfimwgjMnGYnBqjEZnGAxDd1TBW4yXAIoMGKk0GFe2HnIMhZ5Sg6Fi0fGSGyiABSooLACFH1DoEWA8NTCYbIpHFGOXk+UYhQELNy0KqwV3zqEYs8ygIaMzEzS9vJAS4xdOoQhq/cSqw24nuzAYqQeGu1JfTIORH4psMJpKAsbhiRETFnmhABaoILAAFH5CYQdGmwQLbcGdy1aFzYI7uzGKAXMssBgSmTaCkSzJbCc34xPyKOkIMMaXF1O/TIPhDIrNrfvU1LTuKwkY2Vg4ggJYoPzGAlAEAYWWNrq+uUN5anAw2RyPKPIWhb4S2wBFvllP4/I1FPlmPVlhMWiGgrEYnk5QeHaCZpYXs8CoVCzUpFI0IcAY6Up9se2gYyhKCUYGC8dQAAuUn1iM1AKK4KBQ05gBoyUeUdyuzM60JOJ5p8aa109YDmZbJI3EdCKdYUNGZjJgLK8miw+FhzEKKRSKol7gU9zCuG+4I7Wl9aBjKEoFhhwLGRQviAALlB9YjFhjASh8hUKPAONpAcZYVPGChbZrrBUUMdvFdtIBbRMURizMUOiJSMCoNCgUAxiJ5YW1e4fa17ZYYrFPkr1qalr30tb+k0UBQ8NitxsogAUqQCwARSBQ1DS2qrm+uV15ZnAw2ToWVTrcLLZLbzGejUW+gex8M5+ctCj0jHIEGLPLi6kVBqNcB7PzQZEfDHso0mC07aWtA8GDkYtFXiiABSogLABFoFCYwWgbiyp2YxSnJFhYtigm5FDIsMgeyLaAYjoXCj3RNBgBLbTzGQolT3LBcAZFLhgzgYGRjYUjKIAFKgAsAEVRoMgCY2gw2Z7QwLCf8ZT94CKnM57spsjmDmRnY2EHhUhIgDE3SXMrS1lgVCoWuWDsdwzF5rY9amra9tDWgcbAwMhg4RgKYIHyGQtAUVQoahpb1NzQ3KbUMhjyLcbzQGExPpFvsV2m6ykTq64nKyCyMjueBkN0RRVjfGLNZbeTUyhywWgzgWEPRTHAsMfiBWCBChCLEyMX1ZwYrgUUxYdCBoYVElZQOBvEjlsiIRvIlkERkkAhEp4dp9jcJM0XCEY5QJEGQ0lRYsUIhjMoggZDw2KXCyh20OaOHcAC5QcWwxZYAIpiQWEGoyMRU9TpsXmgyL99h01rohAoGAgjFHriBYARxEC2VyiswdjnGIrNbS+pqWl7yXcwrLGwhQJYoILCAlAUG4qaxmY1NzS3Ks8ODyY7x2OK1aNQHa3KtpntZDfjSTbryQ0WEQ9g+L7Qzg8oDP+TgpEHiqDAyMUiLxTAAhUEFoCiVFCYwegajyrSp9vZzHzyisWIByzCFlioYMxP0nzSGRjljkUWGMNta1va9jmGQstuBqPBFzCysXAEBbBA+Y0FoCg1FGkwWlqVbcMDKhg9eRfbjWU9h0KGhNN1FFIoJEAYkTBmbH4qLxiFLbYLHgk5GHsdQ6Gnpm23L2BksHAMBbBA+YnFUC2gKA8oak42qbmhpUXZNjyYPDUeU+RYWCNhBYWTldm2s5/ytCbMic5NqGAsSMCoJCiMYIytLKR+OtScqnEBhZ9g2GNhCQWwQPmFxZAEC0BRKiiMYDw3PJjsnogpsifbOYGioBaFSyiic3omssBYNYDhvdupNEiYwYguz6V+MtjEYDiDQn9mtgZGvWcwNCx2uoBiuwiwQAWFBaAoNRRZYIxoYOR7sp0lFHlaFKP51lKYoLAHIpPY3EQ6YwvTtJBcTgUBhVJEKIxgRJbmUj8ePGkBhhwKPTXtu2jroDcwDk8MW2BhCwWwQAWFBaAoDyhOpiPAeH5kMNljAiMfFsaV2VaD2aMOsbBrTUQtsZjIwiI2P0mJhWlaXGUwKhiKbDBmGQznUOgPLfIKRi4WeaEAFqggsAAU5QaFGYzeyZjibGW2800BnXY95WtRxLJaFJOZzE+qM6TG84BRSVhYg+EMCv3BRRoYda7AyMbCERTAAuU3FoCiXKHIgNGsPD8yYAAj+JXZZiisu5zMUGitCWPiecCoNCiswXAOhZ6a9p2uwFCx6NzpBgpggfITi8FaQFHOUDSmo4EhWhhxxXcobBbbOWtNCCT05EIxxplY1MBYS60pRV2VHdD/MmA0GsDID4UXMA5PMhaOoXheBFig/MBiUIIFoCg3KPTc2NKsbB8ZTPZNxhWrwWxPK7M9YJHTopjPxiJuio5FQgNDWUwuJa3BKO/WhDMwnEGhr8SuaX/RERgaFi+6gQJYoILEAlCUKxRaGujGliZl+8hAGox8g9lOd5C1hWLWaatiIgcIIxRqFqYYjGUTGJUHhSUY7c6hcAOGNRa2UAALVFBYAIpyh0LPja1NyvbRwWT/1JiS8ywKl4vtnA9mT6STM5ht6HbKAmJhKifjnInFGQYjpVQ6FhoYCk+rNYKx0/EzszNgTFuCkYtFXiiABSoILABFpUChpikXDK9dT04X28XM02ILxEIMeGeDUblQpP+nKBTNAmOnq2dm17S/QFsHT1iCkY2FIyiABcpvLABFpUGhpZ5ubD2p7BgdTA5MjSmFjFFEbKGYyF0/oUNhmvkkAyIbiQwWaTBWc8GoNCj0yoDRkKpxAYUdGOKfLyX6aUvHC26gABYoP7EYqAUUlQmFHgHGC6HB5OD0mOJlfMJ+DYUECsn02PytiVwsRCYXZ5Sl1eVkisGoqNYE5XYZpcEY0sFw9ShUqunQwBhenFbhTKbW6LFIu0sonhMBFig/sBjIxgJQVBwU2WAMJIemxxQ3W4zbT411BkQ8DxbjDrAQU2o1MFZUMCoZCiMYkaW5tbsGG9aswbDfPbamYwfdOXCUjk+NUt1UiG7t3e8WCmCBCgALQFGxUNQ01am5sbVRedEEhqsZTyXCYoKxEJlanFWWvYJRZljoYIwuziS/1388VePuCXfpXNO1k67t2uUFCmCB8hkLQFHxUJjBGJ4eU7xCYTmQLVlsF88zqG2LxKI5M6J14Q2MMkPCWKIbqX9hcvW7/ccYjBdcbjO+3SsUtLkTWKD8wKJu4KKaOh0LQFHpUOSAMZNQHC22s5vxZLF+QoaEvpbCSbdTLhYaFHqmlxyAQeXZmvAGRiBQAAuU31gAimqBoqbphJobWxvSYLjbENAai7gJi7GcTFFi3t0YhTGTJiymFmdoxg6MCoLCGoyiQAEsUH5i0V8LKKoLCiMYO8MDydGZhBKZmyBjopLYtSoECHpyZzxN57Qc7FsSFkAsZWd6SQJGBUIhByNIKLaJAAuUH1j0S7AAFJUORRqMNgHGYHJ0dlypRCw0MOY0MLRJtRUHhBSMgaOpmmChABaoILEAFNUCRU3TcappPk43ttXngOEGi0zXU2mwmF6a1cBYKw0YQZQcDF+hABaooLAAFNUGhR4jGM6RmMi72E4g4R6KGVsopnMyWzIwgqxcMHyHAliggsACUFQrFEYwdoUHkqHZhGK9fceE5dRY+T5P+ZHIhmImCwpzS8IaigwWGTCSRQGjGJUNhu9QAAuU31gAimqHoqb5mJqb2uoYjHFFtuAuGwpZ15N7KJx3O+UiYczs8ryyEjAYxawMGEcMYPgBxbMiwALlFxZ9tYBiY0CxmXOjACMymA2GtEUxlTUt1tUYRUBYzCzNBQZGqUq8i4EsMHyBAlig/MKizwILQFHNUOSAMSfAMLcqpiQtimlHYxSyldnmdRRyKGYlmVMzs6xlLgAwSlk6GHcOHE75BAWwQAWFBaCofiiOpqODEZ6bUPJDMeWo28nNYPa049ZENhJ6Zn0GoxxKrCbpnR9fuaP/0JoPUAALVBBYAIqNBIURjN2RwWRkbkLJgcIDFk5WZnvBYkaChQrGyrySLBCMcqpcMDxDASxQfmMBKDYiFGYwonMTitsZT+aZTu7GJiRjEst6rHGYXZ5PZ25Fy/zKgmcwyrEEGN3zieQ3+vYpBUABLFB+YtFbCyg2KhRH0rmx/YTyUnQwGZ03g1EZWHgBo9xrTUkprbOx1a8JMDxBUSsCLFB+YNErwQJQbCQo1LQYwZhUvGIxWUIs3IJRCZULhisogAUqSCwAxYaDgrHY3HI4DUZMBcMJFDOOoXAyPuEUCSso9Cw4AKOSKgPGXsUlFMACFRQWgGIjQ6Hnxvbjyh4GwwsUXlZmW0EhQ0IGxbwhdmBUYgkwDk0OLl/VtV1xAQWwQAWBBaAAFPZgmKfE+tXtZIZiNifzNuMU8iysLKpgKEpmY/NKrs65+Px1p3asuYACWKD8xgJQAApjDqkxg2FsSTgZyJ5yBEQ+KOZsxidkWUhHA2NVBYMqvOyxqAUWqKCx6KkFFIDCDEUGjGMqGPH5KaUSsRBZTC4qq1UAhhwLGRTPiAALlA9Y1PdcVFPfUwsoAIUVFFlgxAaT8YUMGPYD2bOOIh/Izk6+8QnDOEUOFGrrIlkdYFhjYQsFbe4CFqjAsAAUgMKYg2p0MMYYDPt9npxgMecIi7kVp1gsSCOwqAYwcrHICwWwQAWFBaAAFLlQGMHYy2C4Hcg2w5ABYt7xlFjJrKc8UCwaUtlgZGPhCApggQoCC0ABKORQpMHo0MBILEwphWJhBYVbLOZdY7FASwKMVOWBkcHCMRTAAuU3FoACUOSHYnPLATU3dhxV9sYHk4nFbDCKgcV8AVgsMhYqGKtLylqFgWGPhRUUT4sAC5RfWHTXAgpA4RSKza1aBBj74oPJcQbDfrHdXEGL7fyBIpOlVT0CjLWKAUPDYvuaCyiABcovLLolWAAKQCGHIhuMARUMJ1C4WWyXb8Gd866nbChMWNByBYFhjYUtFMACFSQWgAJQ5Idic+t+NTd2HGEwphX7Lid7LJwjMe8YCSsoNCyW0lmuIDA652ImLPJCASxQQWEBKACFcyiywRhMg+H3+gk7JPRpsVoWHXQ9LZqh4CyXPRjZWDiCAliggsACUAAK91CYwZhYnFEqE4vyByODhWMogAXKbywABaDwCsW+dG7sOJwDhnyh3VxeKBbUvZ0WbFdmW2GxaAvFogUSaSxopYzBULHofn7NORRPiQALlF9YnKoFFICiUCj03NRxWNkfH0xOLs4qQa7KlmGxmGdA22K8IguLcgYjjYVzKIAFyi8sTkmwABSAwj0UVmB4mxa74HKxXXaLwgqH5SwoltUsS1OeXVK5WOSFAliggsQCUAAKr1DsTeemzkPK/rHB5ORSBowgsVj0FYt0ygqMbCwcQQEsUEFhASgAReFQmMGYWppVnA9mL/ix2M5Rd5OTlFOXVAYLx1AAC1QQWAAKQOEfFGra9qhgHJCA4QWLhSJjoYKxtlIWYNhj8RSwQBUDC0ABKPyHQs9NnQdVMKYZjHmvUORdmb1kA4VjGGhlbdmUFUqWARgaFs+tOYfiSRFggfILi65aQAEogoLCCMZBBsP5GopFaRYdYOENCusk1SRLCoY1FrZQAAuUX1h05WIBKACFz1BoeSkNxszSnOJ2244CVmb7BYUeJaWUBoxcLPJCASxQAWEBKABFQFDoyQajsNZE/sV2RhBWPCKRBYWa1ZQAI1V0MJpnQ8vXdG9LuYACWKACwAJQAIqAoTCDMb2cC0YhWHgZ0DaOSzjFolRgHJkaoCtP1bqBgjafAhYoP7Bo6LqopqGrFlAAimJBsbltt5qbOg8oBxODyRkDGAs2WORAIemCWrLZysMpFsmcJK3BWCsuGIcn7bCwhAJYoPzEorMWUACKYkKRBqNLB2NesRu4zjeAnX+qrHMsnCBhwILWUqtFA+PwZL8ECxkUT4gAC5QfWHRKsAAUgCJYKLLBGEqD4T8WdgPbdl1PjrEoGhgaFs+4gQJYoILEAlAAiuJAsbltl5qbuvYrhxKDydnleWXR9fqJJdtdZGVI5IfCFRZFASMXi7xQAAtUUFgACkBRXCjUtBvAWMkFwxsWy8XGInAwsrFwBAWwQAWBBaAAFKWBQo8Kxvhgco7BcLZ9h9N1FE5nPhWERaBgZLBwDAWwQPmNBaAAFKWFYnP7TjU3ndqXBqOQKbF2LYhM8mCQyh8LLAIDQ4qFFIrHRYAFyi8sOmoBBaAoByiMYBxWwVhQ8s9uWrGNDImVAoBwgEUgYGhYPO0Yiiu0AAuUH1h0SLAAFICiNFCYwZhfWVD8hWKloJaECyx8ByMHi/xQAAtUkFgACkBRSiheTOemU3vTYCx5HqeQtyxWgm1Z+A5GFhbOoAAWqKCwABSAojygyAVjUbHHIve/BY/FqhMsfAPj8FQ/Xdn9tBsogAUqCCwABaAoLyiswbCDQo5F0gMWziBYcxB/wMhg4RgKYIHyGwtAASjKEYoX0rnp1J48YNh3Q5UBFgWDIcdCBsVjIsAC5RcW7bWAAlCUMxRuwbDe7ymZhYSTLqgAsBD/3zMYGhZPuYECWKD8wqJdggWgABTlBYWajh0ZMJIaGLLHoEoeXORqJpR/WOTEExiHp/pMWOSFAliggsQCUACKMoSifYeKRRqMicHkQnJJqVAsVDAURXEFRjYWjqAAFqigsAAUgKK8odBzc/ce5UgWGHkfh+p6bUXAWFBKSbkCI4OFYyiABSoILAAFoKgMKLRsp5u7X7IEw2pvJ3Hxd9aaMCY4LFKKioUrMHQsXEABLFB+YwEoAEVlQaFHB2MxuaTYPDPb4QK74mBhgMIVGHIsZFA8KgIsUH5h0VYLKABFJUIhB8N+p1hnWKx6iGcsHIFxSMXiSTdQ0BXdwALlCxZtGhaAAlBUKBSbO55Xc3P3bgZjWSkci9VSYCH+vS0YAosvZmGRFwpggfIJi8a2i2oajVgACkBReVC4AUPyDAqPF38Xf19JqUnZZo0UmxbGwcleAxaOoAAWqCCwABSAonKhcAqGv1i4mvnkKIoWSzBeSHS4hQJYoPzGAlAAisqHYnPHc2pu7t4lBaNcsVBykwPGjkS7SygeEQEWKL+waK0FFICiWqDIAWM1G4xyw0KxTxYYciykUAALlF9YtEqwABSAonKh2Nyp5eaeXcrRycHkEoOxWnlYkKKVCoY1FrZQAAtUkFgACkBR+VBs7tym5uaenWkw3K3MXnUxs8kuqQKgULFIg7E90aa4hAJYoILCAlAAiuqBQgZG8FikvIxRyKBIg5GNhSMogAUqCCwABaCoPijMYCyvrijBYlEoFIo02xNtbqEAFii/sQAUgKJaoXg2HQHGMddg5IFD0VI8LNxA8bAIsED5hUVLLaAAFNUORTYYQ8nl1aTifLHdqmV3kwaFk8V23nCQYuEcCmCB8guLFgkWgAJQVB8UGTBe5BaGDIwyxsIdFMACFSQWgAJQVCsUtenYg+EMC6fdTsFg4QgKYIEKCgtAASiqH4ocMNbMYDiFYi2w8Ql7LBxDASxQQWABKADFxoFCyzP05d4XlcbpkdUVdbGemzUUqaJCkcHCFRTAAuU3FoACUGw8KNR0PUO39e2i5pnRlBmMYFoT3qDQsGh1CcWvRIAFyi8smmsBBaDYqFDosQIjuAV3fmJhCwWwQPmFRbM1FoACUGwgKDZ3Pa3mtr6dKhhJBsPfVoVScHKxyAsFsEAFiAWgABQbEIocMFJJWyTExTvoMQp7LBxBASxQAWEBKADFBoYiF4xVn7qfFJ+xcAwFsEAFgAWgABSAgjZ3PaXmtr4XqXkmxGAUPuPJSTnDwg0UD9EVPQ8BC5SPWAAKQAEo0lC4AaM8sJBCASxQPmFxsvmimpNNtYACUACKpyyjgTEqBaP0WNhCASxQfmHRZIEFoAAUgELLk2pu63tBCobTMYpgsMgLBbBABYUFoAAUgMIIRRqM/heoeXY0tWoCw+lgtv9YOIICWKCCwAJQAApAYQWFmlMaGC0MhttZT/5i4RgKYIHyGwtAASgAhR0Um089oSYXDGfTXv3Dwg0UD4oAC5RfWJysBRSAAlDkhyIXjLUiY9HiFgpggfILi5MSLAAFoAAUVlBkwNjhCoxgsMgLBbBABYkFoAAUgEIOxeN0xanH1X/eqoIRSq2lUiXAwhEUwAIVFBaAAlAAinxQGJMGQ0lR0LVjvNUtFMACFQQWgAJQAAo3UBQbDA0LV1AAC5TfWAAKQAEo3EPxWDq39m8PHIwd4y0uoXhABFig/MKisRZQAApA4R2KYoFhjYUtFMAC5RcWjRIsAAWgABRuoEiDMbCdWuZGAwEjF4u8UAALVJBYAApAASjcQ/Golu5H6daB5wMBIxsLR1AAC1RQWAAKQAEoCoFCTxBgZLBwDAWwQAWBBaAAFIDCDyj0R5/6DYaGhRsofikCLFB+YgEoAAWg8BOKIMCQYyGFAlig/MSioRZQAApA4T8UfoNhjYUtFMAC5RcWDdlYAApAASh8hUJ//sStA88VDEYuFnmhoCt6gQXKbywABaAAFIFA4RcY2Vg4ggJYoHzCoqnhopqmhlpAASgARbBQ+AFGBgvHUAALVBBYAApAASiChELfMfbWgW2ewNCwcAPFL0SABcpPLAAFoAAUxYAiDcagezB2jDe7hQJYoPzEor4WUAAKQFE8KNT06GCMOAYjF4u8UAALlF9Y1FtgASgABaAIFArDNuO3Dj7rGIxsLBxBASxQQWEBKAAFoCgWFG7ByGDhGApggQoCC0ABKABFsaFwA4aGhSsogAXKbywABaAAFKWBIrPI7tbBWlswcrDIC8X9IsAC5RcWdbWAAlAAitJC4QSMLCycQQEsUH5hUSfBAlAACkBRbCjygZHGwjkUwAIVJBaAAlAAitJAkZkWe+vgMzlg7JhodgsFsEAFhQWgABSAotRQyMDIYOEYCmCBCgILQAEoAEW5QKGPTWhgDKtgaFi4ggJYoPzGAlAACkBRblDo4xO3DmlgPDd+0iUU94kAC5RfWJyoBRSAAlCUIRSGwWwBxndHd7iFAlig/MLihAQLQAEoAEW5QKHDsNk9FMACFSQWgAJQAIpyg+IKb1AAC1RQWAAKQAEoqggKYIEKAgtAASgARXVBca8IsED5iQWgABSAogqhoCv6gAXKNyyO1wIKQAEoqhIKYIHyCYvm4xfVNFthASgABaCoAiiABSpILAAFoAAUVQIFsEAFhQWgABSAooqgABaoILAAFIACUFQXFPeIAAuUn1gACkABKKoQCmCB8hOLY88ACkABKKoSCmCB8g2Lc2qaj/19TfOxWzZn5agkR7LTouewRQ5JclCSA7dsbrXKfovsk2RvbtpE9kjykkV2S7JLS7s5Oy3yoiQvWKdjhyTbLfK8JM9l0mnMNos8K0mtJM/csrnLnKcleUqSJ7NzSs8TFnn8liss85gkj95yRbc5j0jysCS/yk3PQ5I8KMkDFvllJr3G/EKS+yW5zyL33iLGJHJzjzF/gisdCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFKpoRUSbiOgcIjqXI/68CZ8MKt+BcyYRvZKI3kpEv09EHyeizxPR5ab8BxH9LRF9hIh+i4jeTESvJqKzcaChUGV3Xp9ORK8gojcS0fuI6K+J6D+J6Pr1/3br+rm7lYju5mzlf3c9/52/5q95I3+P0/GJbtwDSdxJvI2IPkFEXyeibUTUsX6gRIlokojmiWjZlCUimiGicSIKrcPRRkQvENH3GZMPENHr1r/fWWX4ft+0/p6uJqJbqjD/IO4Oi/Q5/kmJ3uNXiOhKw03Lp4joQ0T0bj7mzscNi/r7OYuIXk9Ef8oX/l8RUROfr1N8DqdIXin+O1P8NeJrHyGiG4jozxmPc6ro83J7XSjauSZ5vRcR0RYXr/ffiejlXpueF/BJ9i0+EKbzHDxOSxxgkfWLyf71lsrXiOjPuNVxepkcFJetX2hiVJ1VKw6iIn2Ot5Twfa4ablrEcTu23gIeXD/WDq23cu9dv8nZTER/RESvEa3lDdal9EqGXJx7R/izWfXxs1/jm8QTRHRHuZ3fRbwuFO1ck7zeS4loyMXrPb7ecrzE7Q85j4j+x3pr4pfrd2Zh/uUHVWv8C3ie7wIvLfXJCyyqAot8tcIt491EdO365/LbpbwLLFI3k2hVfZqInuD3vlaEz1ncXMaJ6Dki+py4GFUqGsAi94B6G3c1DRORUuQTeJ5f8FX8Rs8AFsCiSHD0rDfBv7N+0/J7VdZ1orckxPjhdm5llapEt/RORuPiSusKBBaZbywGrv94/QN5kZvvpSzRdXBwHax/4ebrJmABLIpQa4zGzUT0liroNhGTST5IRA9wt1C5lADrcSL6cCW15oBFZqBLDF63lqA1ke+geoQP+LOBBbAo4s3Ki3wxO7MCkdjEYzFikL/bp3FGv0vhMaQbeJB9E7AocyxEVw8R/RXfUVGZHlTigL+iWK0MYLHhsTAed6LL5LwKG5t4L7cm5irgcxZdz48R0e+WqtsZWDjAgu9A/mAdi8YKOKhEK+OnYn0HsAAWRSwxweNfK2Ecg7uSxcyjw0UavPaz+6+BiP5nOU6lBxbaN3sDET1dps1UqxLN1j8CFsCiBMfdX5fznS93JYv1JF1l1pXspkRL7jPl2pLbsFjw4JdYYLJQ4C9YQLPId/56ZnmGid/9yGLV6PnAAliUoMSJ9J5y7Fs3QBFkV/IaT3xZCfhzHi3XltxGxuK9vKraS4mDppeIHl2/i/ky/3I/xYPkn+CVi/93HaRv8N9p5ZXeXpvGCq8afxMGuKsai1WLnQC8xu9uGPHafiy2syjDric/oVB4imsvT3P92XqL6jZei/IFIvovni12J5/b9bxmw88ZlP38ns4EFiXGgu9EbiKipIcT5uR6a+Qavsu6wG56IQ+eX8D7SH2MV4we9TDXu5tX224q0of89vUWzLcNe+H4kfu4O8PNndxBn1/D3XzCn1+GWIhj62GLPca8RrSav8kLSw/x2EOhF7QY96tvKpOL1+k8RtHlwwVa9DA0r5+v3+U1Ge/mCSXnWb1fvoZcwFt6fIAnoDzDOzP40a3dwbPRTgcWpcXirbwU3203kJhh8ZtexecD7E3c8niMP/h8/avTfCCeXeST8Fyfcwm3jty03q4I4HWcXUR0b3H5fi/3+eeLm5WX8crl9/M+Obv4ztnrXfejpbwAmCan/HferkMpEAlxU/J/iOjXvHb/8DnzSt75QdyUjBSIhnhP+xitTcCidFh8gjf/clorfGf8Jj9+cXygX8SbjT1ss2BojX/uq0+r8OL3W1vKi2cJ3vMt5fR+GY9LuNu0zmNXlbhz/pMy+GzFOooHC+huS/Hd+xZegHiGj4i9nNF4wOV1xqq1KbrBXgksSoAF93F+3aX6B/iuY5PPb0bfiuDveI+eJdPPPcFjK5uABbDwGQ1xV/6kh67YNe7DP6uEn+vZvOBuroDWxOPc2joroNcozu1XEdG/MUpeWz9T/D3OBBbFx+JCInrK5YH1H0H2HXITVtzd3EhEA3xgic3H/r7cF+oAi8rDwnAxewcRPeuhu+Sg6905/X3dH+RxPC81yRNP3lCkBa5n8njj7gJ2thU7Xr8XWBQfize4XITXR0S/XqQ3dy7vrb+NB8NfflqVFLAov/fLF97LPAwQi66oPyjhcfQLj+MBE+ut9+vEDWORX7O4Gfx1XtPlBYxVHng/v8TH84bD4lK+e3daYjXo64p8YL2mHAYRgUV1Y2Ho0rnVZXeU2KLi8yVqVYgppQkPF9xpfsDRK0p0LIjX/i4+B7yMswzzs3U2lfB43nBY/AYvfHFaYvbIxaehgEUVYsGv8w9cnhMKrzUo9m7Ir+a7c7clJqj8sNQDxYYZXIc8jGGkeJbVy0v4+jccFr/Pi2icltiz5Q243AOLKsbiYr4pclNbi7nKmC+0n+SuJLdTUHcWY081Fz0Hf+FyzZGxdfFBYFE8LN7FH7rTEs/W/R1c7oFFFWNxDl/83dS9xexD5wVwD3m4wI7yxbmcFredy11iix5mot1eqq1ANuqYRb/Lk/iL1TIrCVgAC8ld+1ddXrieLuaFgLvKhl2+xiSvYj+vDI+NNxPRHo8zo94GLIqDxet5Pxc3Vc99jZtOQwGLKsPiNG/7WD1dxD22zuRZTG438WsvhymnNt1Rn/Owml6sLflsKa5FWGfhvPlXy1t9nH4aCligZXFvEffYupif3Od2uunXirlNjof3dYmHsSLiVd3nl+D1btgV3IoHMMQmgJ/mVddoZQCLasFCTJ/9frkOcBPR7/HYoZsSF4nfL/PjQ7Qu/reHxySIrqg3A4uAseBv8rcedn41Lux5hGdmXFKJzygGFsDC9DrFlNQXynHqLLd6/tNiK5x89aty205d8v7EhJtOl+9N7CX3EWBRHCwu5SmxhZTYNmA/nzRiscxry/mRiMACWNi8zt91OXi8UKxFeTxT64cuz81FvmPfVAHHyPlEdI+HgfsvlmCdy4bEQjS7v+JhEzVZ36hYt7GX+0g/wXvuXIDxDWBRISu4v+ryXBDbfXygiK2enR6my76vQo6RTbxRoNuuqLvEFFxgETAWp2WelNdK/laKd4ns5F0tb+CHHomHCb1iI49zAIvye78F7A11uFgbCfIJf8rl6xMt/tdW0HHye/xwKje1XexqW+ZYNPPuwJeXKDe6XMQpxeIsfuDJNAVXa9xd1cELijbzjpmv2WhjHcCivN4vQ/EWnhmYcnlM316sWUYedlwQ9fNyXFth8x7fwM8XIZcX4jeWORYpHx8T7CVup1ofl94EcRP3J0V4CLtxj5oIb1d8E491vGYjLPgDFuXzfnkWzjv5katuH7Va1IcfEdHH+YbLzQXqxkpqxfN0/ic8bP3xzjLHotLKFotN/IjVJ4oIhnmsYxc/L/m3ebBrE7AAFgG2Jl7O21/s9jBmp/CTHYu5cvvzvMut0xKzpv6zwo4TMYj/I5e/i2ixt4nf0FgYTqC38UKXuRK9SAFVLx8wH+ITehOwABY+vY6zeZr3n/POpWGPT26L8hjcpiJ+hpe7bP2IFdF/W2HHySbeJt5NiYv2HwKLImJh+GWJVaLXGJ5UV4pK8YPet3JL4yxgsWGwWOHuk0t9yDt4LyXRgvh3IrqTHw085vGhQXpLeGux1y54wEKMQX6iyo8Vfer+/wQWRcbC8GGI3SA/TESPedgK2e8uqjY+US4CFhsCC33B55APGeZWwISHnU1ldYSI3lOCuf3Awrqmiv0+gYV1K+PV/ESup/mpXKVqaYgD4gdE9KZK75YCFhVdfdz9dHoJPkNgYV3iuvSnwKKEWFig8XGeMdXl412am1riabeXVjIYwKJiS4xv/GsJn6HgFgsxGP7ZChyzuM3DmMVlwKIMsDD9IsUspf+2fuL8B1+4u4lotsgD4GKXz9cDC2BRpBKt6R7eRvu8En6Gn3U5G0rM8NpSYcfJuXxD6qbExoq/BSzKCAsLOMRK7Hevg/EZ7iI6zP3DSwG/kQXeh+o8YAEsAq4kH9d/XupJFkT0lx7GD79dSYtePZwbxLMn3wosyhQLCzjO4SmJH+Dmspgtso9nNM0H8GZG+ATeBCyARUCtCXHj812+ITq9DD7D3+GFgG5KrEq/sIKOkzfximw3dWi9NfK6MsdCPGf8Pp6uXYr8yuVyiONF2cbGgMdr+Kl6n2c8jvKUxVWfTmZxIrwaWAALn5EQx+iTPN325WX0Gb6Ft8txU23Fvusu8D1+0MOWJg8V+/fkAYttfDN9bonybpe7KR8v1p5nMjzEvi9/Stoutwd5hlMhleBB903AAlgUWHO86eVPuMX6qnI7rvhBY8+5fF9iDcLHKuQYEdeJ/3I5iK/wIr4zyhyL6th1tgQv/EyG4+/4rmCsgLvAHxV7e2JgUXVYiAHS/8sP3ynbbWZ4w887XL63NX5cwFkVcIy8grtL3CL/mRK8VmBRgjsJsXHYX/P+PF72pBIPbnoTsAAWBZRYj/CFCrmgftbDGODRSjhHxHM3iKjf5XsTYwG/CSyqHAvDGzmdn3Nxj4eZVPFi7vwJLIqCxRp3U3oZyLvHwzMpiJ8T8Ufl3qUpLoy8DY+bEntE/WM5vzfubbjeww2jGAt4JbDYIFgYWhlv5GbomstptJ+vsAsnsMj/fq/wOJAnupH+l4dBUoUvPG8q88/xQh58d1vPlPNkEL6YHfew5urqUjzWAFiUBxi/ywugnJbYDO56YFF1WFxewM8SOxV/08PzKZZ4sPT8Mv4cT+dBYLct8AkeIzy9DN+TaFXUeHicqnhk7PtL9JqBRRkcOOfzCm03dQuwABamnyeezfKCh73MxJYenyznZ8ZzV1SPh9aFGBd8cxneIIr3c9LD+3m8VBdgYFE+B8/VLtdiAAtgYXUH/mFe3eu2jpZiV1mXN1R3edhifZHHBc4to/ciutV+7GHt1SwP9m8q0eve2FiI7TPEHiul3grcw4ZpwAJYWP1MsbbnSg8P8lrlZ1e/qoxvqD7iYVxG3/ngr8rh8cXc/fQvHh+BIJ5J8oYSvvaNiwX/4v6BV3zewYPNpVL7Cy6x+AqwABaSnyt2EXjQ5aSJsp9Oy3fkD3p8ZEADPxDq9BK+/jMYvG4Pr3+efzdnlPD1b0wsDE32DkNz9XEebD6zyG9KvJYbXJzcYqO3zcACWNjchYv5+03VNJ3W0LoIeXhfovtqL5/fpXguhzjH309EdR6x21nqWWsbEgs+6ET/7H7TL26NB53+sZiPj+QtDZ52OYf874EFsMjT3fE53h6maqbTEtHL1o+l73vcay3F5/wfFvOGkH8XH+ZxIS+PtR0rhwkIGxWLN69j8YTNnfwYbz/+3qAPKobrL13+EsT0ufcBC2CR5+e/gneQdbvoq6yn0/J56aXVpGMovvbTxdiIj6c0613dXloUqzwYfkEZfO4bCwu+i/+hg/EB8Utq5H7C1wehOkMh9uZ50eWBdKDY2xMDi8rDgl/DO7j7pWqm0/Kd+r96HCTWSwyU305EvxbEOACPT7yDf0a0gNd5vFxmqW0oLLgJ+yUeyHNac9xf+DlG4wyf3sjpfBA8yWMQbprSYjD+bGABLBweZ3/JM4KqZjotH09bPe6tZlwNLd7j/+ZNPs/wCYlLeMbTIQ+LJK3APqNMPvONgQXvXvnPBTzpSYwT7OFVl+J5FRd4uevik/c13DQ96mHGitgX6s8q8MIJLEr0fnlLkOs9bMZXttNpuVX+Tm6Vp6iwmuOHltUwjq9wA6ThCZrv4ZXmu/h6UUiJG9pryunJmBsJiw97nLJm1Z/bxzOnruGHxYiHbLyOL4jnmfbtOY+n/Ik7l9/n/X+2F9CEfqpc58IDi/LEgl/L67kVm/Jw0bq8HKfTGmYY1XscD7A6t3t5rzYBx0f53Bbn7sV8DF/Ef34D/7eP8t/9FX/tog+vQ3yPO0uxWSCw0LD4R27W+VmrfNEXWwwf4Y3Lfm7aEfRnfIGv459fSLNUDLz/DR6rCiw83olf5uGpc8QPSPpgmXZH6WsXOnw+t0UX1ThfbBq4tVDL2cX/boj/zoqPP3eJdxF+fRl+1hsGi/O5G6rbp7uQYlfZzIoAFpWHxWmZBwn9Bz9Jzu0MInEj9MYy/ZzFgPcnGIxKPLf1WmAo3lSmMG+oAe6z+C7kJZ/vBopRR8p57x5gUf5YGH4Pd3tYpyC6Rr5cTn3oFmB8hFvwqQqEYponrry+jPfn2nBTZ0/ngbGt3ISshBKtoY+V866gwKJisBDdUb/ONx9uK8RPeDy9TD9v0SX1e+t5vsJuBsVMtc2l3p8OWMhXcF/IOzjWuZy6WuwS2zJ/qhIefwksyh8Lww3TJz2O4R1hbMr17lec22/jxYiJMkdCXHcOE9HHxQaQFXA8b+iNBMWdyG+sN62/RUTDZdZ8FX2vLdwXW9FQAIvye788hnebhwcKrXI3VrnfBYuprP/E09PLsZURY9DeXSk9BnieRWab8j/mk2CkDNAQA13P8gyUM0+rggIW5fd+edub7R4GhSd5oPysMv/8z+AdEm7jaa1rZYCEWH/xHG+Z/vIKO56BhaH5+nJG43s8XXCpyAeSaJa28vMI3lipg9nAomKwEMf8hzyuPyrb6bQW7/Nc3p78B7xGarUESEwbdoJ4bYVOfwcWkoPrN3g15jbeuG85wANpjhcW3cSbpJ11WpUVsCjP9yu2jeGFom5XHJf1dFoJjOfxAPitvE5iJuCptivcvf0wb1x4SYVPUgEWNj9MDAS+ig8wAcd9fJDFuKtIKaAFMc5jEj/ngfZLqxEJw2cpJhT8gj87JxG/5M9X+Hu+uhLeLxG9mo/DiIvXKzJQzg9LygOkON/+joh+xOd0woexDYVv/Ab5JvNqbtFcWA29BPwskFYXx4c43y8s4et9M9+EO329okv2tX7dmbyMF8yI/fA/z3eO964fEDtYpVN80pvTyZuKPcV78W/hOeFv4YHGqulusvn8zuTBvMsc5v2VtrOuxXt+UyW8Xz62L+HXcJnLvLtSx9X4fZ/Lv6c/4+mrW3nqbTO3CqJ8YzdtyBTv0RbmsZBD3HoQLZbPrJ/nv8m7W59RZefwKxiMijg2+BHD73Pxet8b2Aat3PI4n1sfl/DF/1KLvJn3jrqQ72qqHgcUqkLxOIfP5zfyFOH3843dJwz5ax7reR+f36/jC+kZ+BRRKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUCgUCoVCoVAoFAqFQqFQKBQKhUKhUChj8VP/zuW4epofP2HsLMPXn+7xNWzin13Q9zF8vzPEA+P5sZn6UwvFny/mJ6JtKsXnZfO5nVHA1zrJWcV6SiN/9q/hJ0i+qtDfpeT9n8Pvy/Pv0q/v4+D4+w1+6t5v8BM1Ly702eX8qOJzfQie8IdydeC9nYi+vX5y301EXxCPi3XxteIi9I/8tT8iov/PywHIj6j9An8f8Vre7vG9iJP+d4joeiJ6hh8yrz8PvZ2IdhHRD4joH/iRt2cU8/OSfG7fI6Lf9vi1TvNdIqohoj8molf7fQE3vT7xyNHt/Gz6x4nobT5/f/GI4usMx8p7PIItPoev8/cR3+9CHxB7OcNwo+H4G+XneYt/nuJj8A5+ROvrvPwuiOjjLn//VnF13KFQp/EDy2OkVa24I3LxtefygadXAz/YfZPL13AR/2zi13KZh/ch7mKv4hMySfY1Q0QH13/W5UT0WpetKc+fl+RzmxbPdy7gM3da4jOJrP9+niOivxUXtgCOJdHS+gYRrfHPXGBQz/DxZ1zCEBH/nMfEc7M9fJ9L+SaC+PtdUuCd/m+tA7SVv+dqnt+FQkQT67C8QESfFM/xdvnzbqHCy9Vxh0L5jYU4eZ8Uze9iYsFffzsjIGpx/SRsIaKH+fX9dP0O9In1i2Sb4e+ImiOiR4jo1ysUixTftQ7ZZJiIEkS0bHjf8XUgvyqA9flY+m/8GRtrz/rn//qAsNB/17d7uOD6ggX/Pv6Ob5RWDTCLz33nOmQ/59+X+OcOIuqz+F2I1/96pzctBiwEOoP8+t3mJSL6H7gCokqFhaglbmZfUAwsuH/480Q0yV8/sn5Hew0RvUNcQPg1nsfdF2/nLqgnDX9fnLx/XKFYJPjO9FKbvIuIPrz+fjcT0W6+uOqtqy2iNeDTcSTurq/mC2GSL4IKv79P+zUmYIGFqHEi+nc378UPLLjb81/4mNPx7mKIf5e7us4zHIOi9fve9d/BtXwzs2oAb6tT8AxYLHMX2iUeIrrAzsUVEFUKLBRD988Ed/GcUwQsLuY7OP3Ce7ndScB9y+Ik/mciOsJ9+ecU4/MKAAvHnxUPzItxmju5e4i4FfAen44jMXh7lL9vB1/EEvz/RavulQFgoRi6vHqI6CNOxwAKxYI/zz/nmw29NfEsHx9n5/laMe70m9zamOFj4GqnF28TFpfjKoaqNCzEnfqjfOCL6l2/GH/UyclbIBb/3XBnJ8Yh3uDiTvjtHrovKhILw9eL7o5thlbgFwq96+cL579wt94atyzFTKDnDV0tf+5H68KExQTfKCQZjn2iS9HJz/EBi7dyF5ti6H59h4uuJP2mRYyz3ezyvAMWqIrGQnyPjxHRj4lohU+ig05mqxSIRcEX7w2GhbhI/aehO+r7hXZF8SSBHfz9hvgzMgKi8F30y334/I1YDPEMvJcMF+1fiKm7QWLBNxpXMbai6vmmxcusLNGVdZ7LrwEWqIrH4gNE9M717/mi4eT9legfDRCL9/Mgr6hDXmbGbCQs+Ht80tACvLuQvmvG55N8ly9+5/fpKJi6poa8vFYHWIjW4YeIqNMwaUHcqb8sQCzeYngNczxeckYRz1lggap4LPQ7yj/kOeb69Mlb7E7eArH4NZ4uqw/aXhHkwF2VYCEGnGf5e/y4QCzExIGH+HuNcety02m5g95rPOvnnAI/fzMWl/LP+Wf++cRThMVEhjMDwuJTBmyPup39ByxQwIIvXHzy/qPhjl/0Wf+T7OQtEIuX8WtIGWZDXcUXg7PL6fMqk24o0e3xLb54i9xU4Mr7D/PFmXgh2qtNf8c4nba90AF1KywMx8FXDYP3YrbRB2VdQ16x4GP769yKSvGfzyryOQssUNWBheHkFd0B84YZMh+yujAViIW4YP0e9xsr/D3Ez6zjFb6ii+TdPG3xzI2MBU8z/qhhBo/A/E8L+CzEdNAf8kVTtFQ+a744M063M0zLPG30zAJ+piUWp2UG7x/mn6XwSvK3W4FRABYX8EJAvQvqMyU4ZwudOnthsbZ/qbSL4et4St1fVHHEIN9bygmL0zIDnw8YTt6dPKaxyS8sDBfBP+GBziXD/PsUX4x7+cIh7gL/SoxreL1gVSIWhv2aPrP+s5oN40k/dbMexuL7/i5/trYz0fgzM16YLw0Ii028juEIv0cx0eIuq2m7BWAhjun9hhbzh0qIhddFede5nNb+p1V+/fwLtcXLU/j+lvswqzX/S/TdlyEWm3gq4wHDyXu3RVeFH9t9nM7TGa/kk3nMMAffiMckX0xEV9Xb3HbBlBkWU3zif8Imn+MW3g4ehCb+PWznFpfXjfjO5m6fJN/hbpEN8vKeSffxMSBaff9RQNeXFAvDcfAXhtbTNC9IPMcnLIw/P+bHoH0BWHitu12s6biYj6N/qPL8PppWJcTCcPJ+lBdN6YPQVxmnC/qBhalP+RL+mTdwl0Ebr/JdNa0038utsjMrFAuFu0KmbTJvQHOVt6G4kycGnF7A5/wubqUQ//NdeboKP2YYgBYtzNcGgYWh6+tyA44jvPneGT5g8Tq+2SiHlkWKP/tal/lCEON5KGBRcJcI34X+O1+wRYV4RskZfmNhAdUF3OL4KN9h7zXsD6XwrK0PuFhMZfy8nvWyMtnnjQRX+M7eKophz65j/P4/kG9aqcNurS38MwRAtzlYtfxq/rz0BZyf8rguIS8Wp2Vmad1p6JY8wTsSbyoQC+OxKsZpPl3iMYsr+TW5yfkYs0CVJRb8d1/BA536YrBGHpjeFBQWklbH67kbpM8Axi9c7MvzXsaOuHvttR5ex3k8XqB3Jf2Nx898hgfxL7eI2MbksGHWzuP51ru4eA1v4DEK/TV8OU9X2CcYh/sMrbtHPLbKHGHBf1d0QT/N73+NP4M3FojF2by9t35nf6sfEycKwAKzoVDVhQX//TfyCbvGJ9rTfEIXBQvD6xB78/z/hm6KPqc7z/KCLH1dR5eXwVq+633CS1eGi9bc6Tyxo9cwc+faQteg8Pf9nGGdhsJ/nnaQBUOLKMqvz+129m6w0GfKNZp3qC0Ai028pkOf5bff6RYzwAIFLJxjsYm7Ak4Yxg3u5G6i2mIOGvKsll2G3Vs/4vDrLubdW/W9if7Cw89+u2HtQbfYUyig1pzou/8vbr0Y++4LGau42LC3VMqmC0yWFcPX/sRtl5gbLAxdZp/ghw8Zd6h9VwGL8t5p+P3N8K7HpxfxnAUWqOrGwnDyfpyn/OkX3C8Z9hbyss7iZW67AvhrfmF4DX/pohviDkPXxh0ud63dxFNY9XGTJ908pc0D0K807Nelrzh+TwGPg/24YTfZ/bxi/nIXudbQBdgv7vyDxMLwmV1lWHXdw2AMe8TiXF7YuGr4TH/d42d6Nrd03DyAC1igqh8Lwx3vZsPJGzWMA7jF4s382NC/d7MhG1909Pny4q7zt1x87ccMF8xeflyp062x38TTVvVukcvd3JV6bM2902KzvYs9HCsX8LoZhbH7rIduJPH6v8OvQ1xsv+byORSusTgt8yRF4yaX3YauJC+7zoqxqybDLLNf8u/WzUVf3LD8G49fvcvDw4+ABaq6sTgtM6tkq+GOlzyg8wreNVV0Z4X5JHprvosvY/VvBqx2url48syeJ/mio3C31Pvsfi5ftN9geL3EM5Te4fL35aU158v4BaOod+fs89pXb/o+rXbTbn3EYpNpk0tjecHiTB67GTN0qT7Ez6k408Hv460M5Rhj87DTCQjAArWhsOCvfxvfZac8YvEavqNbMpyw+3kL7nfzQPJZhovFufwzv2joBpt2u2sof68/MQx0r/EF5/Pc0nkZXxD0nynm5v8l7520YBjY/ozb3UoLbM15Hr/gn/tdfq9L3DI8w+MxJ1ooD/JFe5m7iM50+LWesDBcpP+Q96gqCAtDy+Aaw0SJNR5M/y8+/l5hmB5+Oi9OfAsPkO8xHLfiGPym09X0Pj0pT+R8XAFRlYLFJv75zR6x2MRN/69zN5Zi2Om2i+/+7+ST61YeUK03dD8sctfEqz18bmfxs5e7DT93lvekup9f0638/ffxHaRigOIaL+sdCmzNvZK/dtXt+AU/r6HHySI8h7+3vzFcZA873a6mECwMLYJ/MmxyWegzuF/B4zb9Fsffw4zALXw8PMCYGGeS6RtfvtLFz/TjGdxi6vOncAVEVQQWhpP309yN5BWdl/GT2B7nr1/Ls91Bigc3v8brLrxueXEWL/Z73jBgbVdL3PX0Ga8L4wrEQt9+5aCb8Qt+nzfx1h5J3ubDzwcmzfGDkpw8VbEgLE6z3uTSMxaGVtuH+eYkYdHNZS6F/95TfNy67Q4sdLsPdGGhPB3o7+YLhoDiejcXMZ7J8QX+WvE93u3xNZzP3+dpr9+HL4Sv5E3PbuULeAe3OGJ8JznAd/nf5n7z8334/E7nbqZ/4tfeZPiZMUawnbcd+T/86M0zCvh5BX3m/Hr/jBfF1XJ30AfyfM2FvEq7lu+Of9Onz+1TfIGt5ZXI5zn4ulfy7098zc8K2DZEYPUN/j7fLvQZ4YbHpH6cx+KOcqshZjj+hvkBXT/gv/dqjzOo/sHDFh/mPOFl2jdqY2NxJl8MLuI7rk0uT5Dz+WsvLHDr6bP9+D6G9/QqHj94L7ee/oAHOF8T0HMuNnGf9Bu5y+Yyzvu4n/oCP+bi+/GZ8/TlCw3bP5zr4MJ+Af/dC/xaU2D4nV/E3TlOWhan898t6LXw53iem5/t4vueyy2g9xqOg8v42R6v45bIpgJ+xrketviwyjm4Ambq/wFioQlKLfpg4QAAAABJRU5ErkJggg==" alt="Logo Stroh Insurance">
+      </div>
+      <div class="cover-mid">
+        <div class="kicker">Compliance Officer externe</div>
+        <h1>Diagnostic de conformité</h1>
+        <div class="subtitle">Rapport du compliance officer&nbsp;·&nbsp;Plan d'action</div>
+        <div class="rule"></div>
+        <div class="cover-meta">
+          <div class="cell"><div class="lbl">Bureau</div><div class="val">Stroh Insurance</div></div>
+          <div class="cell"><div class="lbl">Date</div><div class="val">2026-06-18</div></div>
+          <div class="cell"><div class="lbl">Audience</div><div class="val">Confidentielle</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="r-block">
+    
+    <div class="h-section">
+      
+      <div class="txt"><div class="eyebrow">Introduction</div><h2>Préambule</h2></div>
+    </div>
+    <div id="f-intro" class="r-edit" contenteditable="true" data-ph="Introduction du rapport…">Le présent rapport expose les résultats du diagnostic de conformité réalisé auprès de Stroh Insurance, courtier en assurances soumis aux obligations découlant notamment de la réglementation IDD, de la législation AML, du RGPD et des exigences prudentielles de la FSMA. Ce diagnostic a pour objet d'identifier les écarts par rapport au cadre réglementaire applicable et de formuler des recommandations permettant au bureau de renforcer son dispositif de conformité de manière structurée et proportionnée.</div>
+  </section>
+
+  <section class="r-block">
+    
+    <div class="h-section">
+      <div class="num">03</div>
+      <div class="txt"><div class="eyebrow">Vue d'ensemble</div><h2>Synthèse principale</h2></div>
+    </div>
+    <div class="callout">
+      <div id="l-synthese"><div class="r-item r-para" contenteditable="true">Le diagnostic révèle un nombre significatif d'écarts réglementaires couvrant l'ensemble des domaines analysés. Sur le plan organisationnel, le bureau n'a pas encore procédé à la désignation formelle d'un haut dirigeant AML, et la tenue des dossiers relatifs à l'honorabilité et aux aptitudes professionnelles demeure partielle. Par ailleurs, le dossier d'inscription auprès de la FSMA n'est pas maintenu à jour de manière systématique, et la conservation des communications officielles de l'autorité de contrôle est insuffisante. Le suivi du recyclage permanent des personnes soumises à cette obligation présente également des lacunes.</div>
+<div class="r-item r-para" contenteditable="true">Sur le plan des règles de conduite IDD, les constats sont particulièrement nombreux et touchent à des obligations fondamentales. Le bureau ne dispose d'aucune politique formalisée dans les domaines clés que sont la gestion des conflits d'intérêts, la rémunération, les incitations, le traitement des plaintes, la durabilité et la protection des données. Les obligations d'information précontractuelle à l'égard des clients ne sont pas systématiquement respectées : les informations générales sur l'activité et le statut du bureau, le mode de rémunération, la nature du conseil fourni, les documents d'information standardisés ainsi que les coûts et frais de résiliation ne sont pas communiqués de manière structurée. L'analyse des exigences et besoins des clients apparaît limitée, et l'évaluation de l'adéquation pour les produits d'épargne et d'investissement n'est pas réalisée conformément aux attentes légales et aux exigences de la FSMA, notamment au regard des quatre dimensions réglementaires requises. La traçabilité des dossiers clients est insuffisante, au point que le bureau n'est pas en mesure de reconstituer les dossiers dans leur intégralité.</div>
+<div class="r-item r-para" contenteditable="true">En matière de protection des données, plusieurs obligations RGPD fondamentales ne sont pas respectées : absence de procédure en cas de violation de données, absence de documentation des bases légales de traitement, défaut de communication systématique de la politique de confidentialité aux clients, et absence de mesures de sécurité formalisées. La vérification des clauses contractuelles avec les sous-traitants repose sur un principe de confiance sans contrôle formel. Enfin, si le règlement DORA ne semble pas applicable au bureau sur la base des informations disponibles, aucune analyse formelle d'applicabilité n'a été documentée. L'ensemble de ces constats appelle la mise en place d'un plan d'action structuré, priorisé et documenté.</div></div>
+      <button type="button" class="r-add" data-act="add-synthese">＋ Ajouter un paragraphe</button>
+    </div>
+  </section>
+
+  <section class="r-block">
+    
+    <div class="h-section">
+      <div class="num">04</div>
+      <div class="txt"><div class="eyebrow">Priorités</div><h2>Top 5 des actions prioritaires</h2></div>
+    </div>
+    <div class="top5" id="l-top5">
+      <div class="item r-row">
+        <span class="rank">1</span>
+        <strong class="r-item" contenteditable="true">Mettre en place les politiques IDD clés manquantes</strong>
+      </div>
+
+      <div class="item r-row">
+        <span class="rank">2</span>
+        <strong class="r-item" contenteditable="true">Désigner formellement un haut dirigeant AML et notifier la FSMA</strong>
+      </div>
+
+      <div class="item r-row">
+        <span class="rank">3</span>
+        <strong class="r-item" contenteditable="true">Systématiser la communication des informations précontractuelles aux clients</strong>
+      </div>
+
+      <div class="item r-row">
+        <span class="rank">4</span>
+        <strong class="r-item" contenteditable="true">Réaliser une analyse d'adéquation conforme pour les produits d'épargne et d'investissement</strong>
+      </div>
+
+      <div class="item r-row">
+        <span class="rank">5</span>
+        <strong class="r-item" contenteditable="true">Mettre en place un plan de re-documentation structuré des dossiers clients</strong>
+      </div></div>
+  </section>
+
+  <section class="r-block">
+    
+    <div class="h-section">
+      <div class="num">01</div>
+      <div class="txt"><div class="eyebrow">Contexte</div><h2>L'entreprise</h2></div>
+    </div>
+    <div class="col-head">Description</div>
+    <div id="f-ent-desc" class="r-edit" contenteditable="true" data-ph="Présentation de l'entreprise…"></div>
+    <div class="grid-3" style="margin-top:12px">
+      <div class="card tint stat"><div class="k">Typologie clientèle</div><div class="v v-txt">75% personnes physiques - 25% personnes morales</div><div class="small">Personnes physiques / morales</div></div>
+      <div class="card tint stat"><div class="k">Résidence</div><div class="v v-txt">Très rarement (&lt;5%)</div><div class="small">Part de clients non résidents belges</div></div>
+      <div class="card tint stat"><div class="k">Production</div><div class="v v-txt">Principalement non-vie (&gt;75%)</div><div class="small">Répartition vie / non-vie</div></div>
+    </div>
+    <div class="col-head" style="margin-top:14px">Organisation</div>
+    <div id="f-ent-org" class="r-edit" contenteditable="true" data-ph="Structure et organisation du bureau…"></div>
+  </section>
+
+  <section class="r-block">
+    
+    <div class="h-section">
+      <div class="num">05</div>
+      <div class="txt"><div class="eyebrow">Résultats du diagnostic</div><h2>Analyse et constats</h2></div>
+    </div>
+    <div id="l-constats">
+        <div class="constat r-csec" data-si="0">
+          <div class="subj">
+            <span class="name r-section-title">Partie 1 - Organisation</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau n'a pas désigné un haut dirigeant AML. Il s'agit d'une obligation légale.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Un historique semble être partiellement conservé concernant les aptitudes et l'honorabilité professionnelle.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="1">
+          <div class="subj">
+            <span class="name r-section-title">Partie 1 - Relation avec la FSMA</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne met pas régulièrement à jour son dossier d'inscription.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne conserve partiellement un enregistrement des communications et documents officiels de la FSMA.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="2">
+          <div class="subj">
+            <span class="name r-section-title">Partie 1 - Recyclage permanent</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Les personnes soumises aux obligations de recyclage sont partiellement en ordre de formation.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="3">
+          <div class="subj">
+            <span class="name r-section-title">Partie 2.A - Documentation</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Aucun directives IDD n'existent au sein du bureau.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="4">
+          <div class="subj">
+            <span class="name r-section-title">Partie 2.B - Obligation d'information</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne communique pas les informations précontractuelles à ses clients</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Les communications à l'égard des clients ne sont formellement pas vérifiées.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne tient pas compte (ou n'a pa connaissance) du code de conduite sectoriel relatif aux incitations.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Aucun critère n'est défini fixant les conditions d'octroi des rémunérations variables.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne communique pas d'informations générales relatives à son activité et son statut avant la conclusion du contrat.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau fonde ses conseils sur base d'une analyse impartiale et personnalisé, mais n'informe pas ses clients à ce sujet.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne communique pas aux clients des informations sur les frais de résiliation et les coûts additionnels liés au contrat.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne précise pas au client s'il fournit un conseil.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne précise pas au client son mode de rémunération.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne transmet pas systématiquement aux clients le(s) document(s) d'information standardisé (KID, IPID, etc.).</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau n'informe pas systématiquement les clients des changements importants dans les informations fournies initialement.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="5">
+          <div class="subj">
+            <span class="name r-section-title">Partie 2.B - Analyse des besoins et de l'adéquation</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Lorsqu'il fournit un conseil sur base d'une analyse impartiale, le bureau documente ne documente pas l'analyse.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">L'analyse des exigences et besoins du client semble limité.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau collecte oralement les informations requises pour un produit d'épargne et d'investissement. Ceci est un risque dans la mesure la loi impose de disposer d'un écrit.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">La collecte des informations sur les connaissances du client repose sur base d'une auto-évaluation ou confirmation du client.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne réalise pas d'analyse d'adéquation pour les produits d'épargne et d'investissement. Or, la réglementation impose une telle évaluation.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">L'analyse de l'adéquation ne semble pas respecter entièrement le cadre légal et les attentes FSMA qui impose une analyse sur base des 4 dimensions et individualisée à la situation du client.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau indique ne pas procéder à une réévaluation de l’adéquation en cas de recommandation de vente, de rachat ou de modification des actifs sous-jacents, alors que ces événements peuvent nécessiter une mise à jour de l’analyse d’adéquation et de sa traçabilité.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="6">
+          <div class="subj">
+            <span class="name r-section-title">Partie 2.B - Tenue et suivi des dossiers clients</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau n'a pas défini de procédure concernant la mise à jour des informations clients.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau n'a pas défini de procédure concernant la mise à jour des informations clients en ce qui concerne l'évolution de leurs besoins pendant la durée du contrat.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau indique conserver les dossiers clients pendant une durée supérieure à 10 ans. Or, le cadre applicable prévoit une durée de conservation limitée (notamment 5 ans pour certains éléments relevant des obligations IDD), sous réserve d’exigences spécifiques ou d’obligations légales distinctes pouvant justifier une conservation plus longue.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="7">
+          <div class="subj">
+            <span class="name r-section-title">Partie 2.B - Formation et sensibilisation</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau indique que les politiques et procédures relatives aux règles de conduite ne sont pas accessibles à l’ensemble du personnel. Cette situation peut limiter l’appropriation et l’application uniforme des exigences au quotidien.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Les collaborateurs du bureau ne suivent pas de formation en lien avec les règles de conduite IDD.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau n'a mis en place aucun mécanisme de contrôle du respect des règles de conduite IDD.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="8">
+          <div class="subj">
+            <span class="name r-section-title">Partie 2.C - Documentation</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Aucune procédure interne n’a été mise en place concernant la notification des violations de données à l’autorité de contrôle compétente (et, le cas échéant, aux personnes concernées).</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="9">
+          <div class="subj">
+            <span class="name r-section-title">Partie 2.C - Contrôle, données collectées et informations</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau indique appliquer un principe de confiance à l’égard de ses prestataires et sous-traitants, sans vérification particulière des clauses
+contractuelles. Le RGPD impose au responsable du traitement de vérifier, au moins de manière formelle, que les contrats conclus avec chaque sous-traitant comportent les clauses requises en matière de protection des données, même si dans certaines cas il est difficile de modifier des conditions générales avec des prestataires systématiques (p.ex. prestataires tels que Microsoft).</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne document pas la base légale de traitement. Le RGPD impose toutefois de documenter chaque base légale au travers du registre de traitement des activités.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le client doit toujours être informé de manière proactive sur le traitement de ses données, ainsi que ses droits en la matière. Sans cette information, le traitement pourrait être considéré illégal.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Aucun mesure spécifique n'est mise en place concernant la sécurité des données à caractère personnel.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="10">
+          <div class="subj">
+            <span class="name r-section-title">Partie 2.D - Analyse d'applicabilité</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau n’a pas documenté d’analyse formelle relative à l’applicabilité du règlement DORA. Sur la base des informations disponibles, notamment la taille bilantaire, il apparaît toutefois que le règlement ne serait pas applicable au bureau (CA &gt; 20M).</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div>
+
+        <div class="constat r-csec" data-si="11">
+          <div class="subj">
+            <span class="name r-section-title">Partie 2 - IDD</span>
+          </div>
+          <div class="body">
+            <ul class="r-bullets" style="margin:0">
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne dispose pas de politique en matière de gestion des conflits d'intérêts.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">(Si pas coché): Le bureau ne dispose pas de politique en matière de rémunération.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne dispose pas de politique en matière d'avantages et d'incitations.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne dispose pas de politique en matière de traitement de plaintes</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne dispose pas de politique en matière RGPD</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau ne dispose pas de politique en matière de durabilité.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li>
+
+          <li class="r-csli">
+            <span class="r-item r-bullet" contenteditable="true">Le bureau n'est pas en mesure de reconstituer les dossiers clients au regard de la documentation de l’analyse des exigences et besoins et, le cas échéant, de l’évaluation de l’adéquation.</span>
+            <button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>
+          </li></ul>
+            <button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button>
+          </div>
+        </div></div>
+  </section>
+
+  <section class="r-block">
+    
+    <div class="h-section">
+      <div class="num">06</div>
+      <div class="txt"><div class="eyebrow">Recommandations</div><h2>Plan d'action</h2></div>
+    </div>
+    <div id="l-recos">
+      <div class="reco-item r-reco">
+        <span class="rank">1</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau doit mettre en place les politiques clés manquantes en matière IDD</span>
+          <span class="reco-src r-recosrc">Partie 2 - IDD</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">2</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau doit procéder à une désignation formelle d'un haut dirigeant AML. Cette désignation doit, si ce n'est pas encore le cas, être porté à la connaissance de la FSMA via CABRIO.</span>
+          <span class="reco-src r-recosrc">Partie 1 - Organisation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">3</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau doit être vigilant à porter à la connaissance de la FSMA toute modification sur le dossier d'inscription dans un délai raisonnable. Idéalement immédiatement.</span>
+          <span class="reco-src r-recosrc">Partie 1 - Relation avec la FSMA</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">4</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Nous recommandons de conserver les communications officielles et documents FSMA.</span>
+          <span class="reco-src r-recosrc">Partie 1 - Relation avec la FSMA</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">5</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau doit mettre en place un plan de rattrapage et s'assurer que les personnes soient en ordre au 31/12 de l'année en cours.</span>
+          <span class="reco-src r-recosrc">Partie 1 - Recyclage permanent</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">6</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau doit conserver un historique des aptitudes et l'honorabilité professionnelle. Cela concerne principalement les questionnaires &quot;Fonctions réglementées&quot; et &quot;Actionnaires&quot;. Si des informations venaient à changer, elles doivent en principe être transmises immédiatement à la FSMA.</span>
+          <span class="reco-src r-recosrc">Partie 1 - Organisation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">7</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau doit mettre en place des directives IDD permettant d'assurer le respect de la réglementation applicable.</span>
+          <span class="reco-src r-recosrc">Partie 2.A - Documentation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">8</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau doit mettre en place une communication systématique des informations précontractuelles à l'attention de ses prospects et clients.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">9</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau doit être vigilant à la qualité de l'information transmise au client. Si nécessaire, un contrôle devrait être mis en place.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">10</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau doit intégrer les exigences du code de conduite sectoriel relatif aux incitations dans ses directives internes, afin qu'il soit bien connu et respecter en interne.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">11</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait définir et mettre en place des critères permettant de s'assurer que l'octroi de rémunérations variables ne se fassent pas au détriment des intérêts des clients ((produit du mois, mono-produit ou compagnies, etc.)</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">12</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait systématiser la transmission systématique des informations générales sur ses activités au client avant tout contrat (notamment via la fiche client et la fiche d'intermédiation).</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">13</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau doit revoir sa fiche d'intermédiation (partie conseil) et y intégrer l'information selon laquelle le conseil se base sur une analyse impartiale et personnalisée.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">14</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait systématiser la documentation en cas de conseil sur base d'une analyse impartiale. Cette documentation pourrait être standardisée.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Analyse des besoins et de l'adéquation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">15</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Les coûts additionnels et les frais de résiliation liés au contrat doivent, idéalement, être transmis au client avant la signature du contrat. Au plus tard, au moment de la signature. Le bureau devrait revoir sa fiche d'information ou son processus commercial afin de veiller à ce que ces informations soient transmises.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">16</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait toujours inclure la mention &quot;conseil&quot; ou &quot;pas de conseil&quot;. Une présomption existe dans le secteur de l'assurance selon laquelle il y aurait toujours un conseil. La fiche d'intermédiation ou le processus commercial devrait être revu.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">17</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait toujours indiquer au client son mode de rémunération (en général : commission payée par la compagnie et inclut dans la prime).</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">18</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait transmettre systématiquement le(s) document(s) d'information standardisé. A tout le moins, informer adéquatement le client sur l'accessibilité de ces documents (ex. SectorCatalog, fiche produit, etc.)</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">19</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait mettre en place un processus informatif permettant d'informer le client en temps utile si des changements importants surviennent par rapport aux informations fournies initialement.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Obligation d'information</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">20</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait mettre en place une procédure de mise à jour des informations clients. Celle-ci devrait décrire les situations et déclencheurs, ainsi que la fréquence et les modalités de mise à jour des informations clients.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Tenue et suivi des dossiers clients</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">21</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait clarifier en quoi l'analyse des exigences et besoins est limité. Si nécessaire, il devrait renforcer sa fiche d'intermédiation ou son processus commercial afin de s'assurer que les obligations précontractuelles, en fonction du produit, son bel et bien remplies.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Analyse des besoins et de l'adéquation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">22</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait collecter par écrit les informations requises pour un produit d'épargne et d'investissement, par exemple via des questionnaires standardisés.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Analyse des besoins et de l'adéquation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">23</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait questionner le client, par exemple via des questions ouvertes et à choix multiples. Prévoir des questions de type &quot;Oui&quot; ou &quot;Non&quot; ne permet pas au bureau d'évaluer réellement si le client connait le(s) produit(s). Rien n'empêche au bureau de fournir au bureau des explications générales au préalable.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Analyse des besoins et de l'adéquation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">24</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait systématiquement réaliser une analyse de l'adéquation en cas de produit d'épargne et d'investissement. L'analyse doit respecter les attentes légales et celles énoncées par la FSMA. Le client doit être informé de cette analyse, qui précède la signature et est, généralement, reprise dans la fiche d'intermédiation.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Analyse des besoins et de l'adéquation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">25</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">L'analyse d'adéquation doit respecter les attentes légales et celles énoncées par la FSMA. Cette analyse doit se faire au regard des 4 dimensions prévues dans le bulletin financier (connaissance, expérience, situation financière et objectifs d'investissement).  Le bureau devrait s'assurer que l'analyse respecte ce cadre réglementaire.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Analyse des besoins et de l'adéquation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">26</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait mettre en place une procédure de mise à jour des informations clients liées à l'évolution des besoins du client sur la durée du contrat. Celle-ci devrait décrire les situations et déclencheurs, ainsi que la fréquence et les modalités de mise à jour des informations clients.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Tenue et suivi des dossiers clients</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">27</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait procéder à une réévaluation de l’adéquation en cas de recommandation de vente, de rachat ou de modification des actifs sous-jacents, alors que ces événements peuvent nécessiter une mise à jour de l’analyse d’adéquation et de sa traçabilité. Il ne faut pas nécessairement mettre à jour toutes les informations, mais confirmer et matérialiser que l'opération en question est toujours adéquate par rapport au profil du client.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Analyse des besoins et de l'adéquation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">28</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le fait que le bureau n'est pas en mesure de constituer les dossiers clients (analyse des besoins et de l'adéquation) suggère la nécessité de mettre en place un plan de re-documentation structuré, afin de compléter et harmoniser les dossiers existants. Cette mesure pourra être confirmée sur base de l'analyse concrète d'un ou de plusieurs dossiers.</span>
+          <span class="reco-src r-recosrc">Partie 2 - IDD</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">29</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait revoir (ou développer) sa procédure de conservation des données clients relatives aux règles de conduite IDD afin de s'aligner avec le cadre réglementaire.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Tenue et suivi des dossiers clients</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">30</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait s'assurer que les politiques et procédures relatives aux règles de conduite IDD soient accessibles et connues des collaborateurs. Des formations devraient être mises en place et un contrôle de l'application effective pourrait s'avérer nécessaire.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Formation et sensibilisation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">31</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait mettre en place un dispositif de sensibilisation et de formation aux règles de conduite IDD.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Formation et sensibilisation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">32</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait mettre en place un mécanisme de contrôle des règles de conduite IDD selon une approche proportionnelle à sa taille et à ses activités.</span>
+          <span class="reco-src r-recosrc">Partie 2.B - Formation et sensibilisation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">33</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Une procédure en cas de violation des données devrait être mise en place. Celle-ci devrait prévoir que la notification à l'autorité doit se réaliser dans les 72 heures suivant l'incident.</span>
+          <span class="reco-src r-recosrc">Partie 2.C - Documentation</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">34</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait systématiser la vérification des clauses contractuelles et l'enregistrement des tiers dans son &quot;Registre des tiers&quot;. Une analyse devrait être réalisée. Le registre des tiers peut être intégré dans le registre de traitement.</span>
+          <span class="reco-src r-recosrc">Partie 2.C - Contrôle, données collectées et informations</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">35</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait identifier chaque type de données à caractère personnel faisant l'objet d'un traitement, ainsi que documenter chaque base légale associée. Cet exercice s'effectue au travers du registre de traitement des activités.</span>
+          <span class="reco-src r-recosrc">Partie 2.C - Contrôle, données collectées et informations</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">36</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait systématiser la communication de sa politique de confidentialité aux clients avant tout traitement de données. De manière générale, la fiche client est une manière de collecter le consentement du client au traitement de ses données, ainsi que la politique mise en place par le bureau en la matière.</span>
+          <span class="reco-src r-recosrc">Partie 2.C - Contrôle, données collectées et informations</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div>
+
+      <div class="reco-item r-reco">
+        <span class="rank">37</span>
+        <div class="reco-txt">
+          <span class="r-item r-recotxt" contenteditable="true">Le bureau devrait mettre en place des mesures de sécurité, même si celles-ci ne sont pas sophistiquées.</span>
+          <span class="reco-src r-recosrc">Partie 2.C - Contrôle, données collectées et informations</span>
+        </div>
+        <button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>
+      </div></div>
+    <button type="button" class="r-add" data-act="add-reco">＋ Ajouter une recommandation</button>
+  </section>
+
+  <div class="r-actionbar">
+    <div class="r-status" id="r-status"></div>
+    <button type="button" class="r-submit" id="r-submit">Générer le PDF</button>
+  </div>
+
+  <script type="application/json" id="__cfg">{"format":"brokercomply-review/v1","submitUrl":"https://massive-flowing-baboon.ngrok-free.app/webhook/rapport-review","token":"rv_ylb71n29595fd4","metaFile":"rapport-conformite-stroh-insurance-2026-06-18.meta.json","client":"Stroh Insurance","ref":"Réf. 29595FD4-4"}</script>
+  <script>(function reviewClient() {
+  var cfg = {};
+  try { cfg = JSON.parse(document.getElementById('__cfg').textContent); } catch (e) {}
+  var STORAGE_KEY = 'bcr_' + (cfg.token || 'draft');
+  var dirty = false;       // modifs non envoyées (avertissement de fermeture)
+  var sent = false;        // soumission réussie → ne plus alerter
+  var saveTimer = null;
+  var txt = function (el) { return el ? (el.innerText || el.textContent || '').replace(/ /g, ' ').trim() : ''; };
+
+  // collage en texte brut uniquement (évite le HTML riche venu de Word)
+  document.addEventListener('paste', function (e) {
+    var t = e.target;
+    if (!t || !t.closest || !t.closest('[contenteditable="true"]')) return;
+    e.preventDefault();
+    var data = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, data);
+  });
+
+  // toute frappe dans une zone éditable → marque sale + auto-sauvegarde différée
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (!t || !t.closest || !t.closest('[contenteditable="true"]')) return;
+    markDirty();
+  });
+
+  // délégation des boutons ＋ / ✕
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('[data-act]') : null;
+    if (!btn) return;
+    var act = btn.getAttribute('data-act');
+    if (act === 'add-synthese') {
+      var d = document.createElement('div'); d.className = 'r-item r-para'; d.contentEditable = 'true';
+      document.getElementById('l-synthese').appendChild(d); d.focus();
+    } else if (act === 'add-bullet') {
+      var ul = btn.closest('.r-csec').querySelector('.r-bullets');
+      var li = document.createElement('li'); li.className = 'r-csli';
+      li.innerHTML = '<span class="r-item r-bullet" contenteditable="true"></span>' +
+        '<button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button>';
+      ul.appendChild(li); li.querySelector('.r-bullet').focus();
+    } else if (act === 'del-bullet') {
+      var liD = btn.closest('.r-csli'); if (liD) liD.remove();
+    } else if (act === 'add-reco') {
+      var list = document.getElementById('l-recos');
+      var div = document.createElement('div'); div.className = 'reco-item r-reco';
+      div.innerHTML = '<span class="rank"></span><div class="reco-txt">' +
+        '<span class="r-item r-recotxt" contenteditable="true"></span></div>' +
+        '<button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>';
+      list.appendChild(div); renumber(); div.querySelector('.r-recotxt').focus();
+    } else if (act === 'del-reco') {
+      var rD = btn.closest('.r-reco'); if (rD) { rD.remove(); renumber(); }
+    } else { return; }
+    markDirty();
+  });
+
+  function renumber() {
+    var rks = document.querySelectorAll('#l-recos .r-reco .rank');
+    for (var i = 0; i < rks.length; i++) rks[i].textContent = String(i + 1);
+    var t5 = document.querySelectorAll('#l-top5 .item .rank');
+    for (var j = 0; j < t5.length; j++) t5[j].textContent = String(j + 1);
+  }
+
+  // ---------- auto-sauvegarde locale (localStorage) ----------
+  function markDirty() {
+    dirty = true;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveLocal, 600);
+  }
+  function saveLocal() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ at: Date.now(), edits: collectEdits() }));
+      setStatus('Brouillon enregistré dans ce navigateur · cliquez « Générer le PDF » pour l’envoyer.', '');
+    } catch (e) {}
+  }
+  function clearLocal() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+
+  // rebuild du DOM éditable depuis un objet edits sauvegardé
+  function applyEdits(ed) {
+    if (!ed) return;
+    if (ed.narrative) {
+      document.getElementById('f-intro').textContent = ed.narrative.intro || '';
+      var ls = document.getElementById('l-synthese'); ls.innerHTML = '';
+      (ed.narrative.synthese || []).forEach(function (p) {
+        var d = document.createElement('div'); d.className = 'r-item r-para'; d.contentEditable = 'true';
+        d.textContent = p; ls.appendChild(d);
+      });
+      if (!ls.children.length) { var d0 = document.createElement('div'); d0.className = 'r-item r-para'; d0.contentEditable = 'true'; ls.appendChild(d0); }
+      var lt = document.getElementById('l-top5'); lt.innerHTML = '';
+      (ed.narrative.top5 || []).forEach(function (t, i) {
+        var row = document.createElement('div'); row.className = 'item r-row';
+        row.innerHTML = '<span class="rank">' + (i + 1) + '</span><strong class="r-item" contenteditable="true"></strong>';
+        row.querySelector('.r-item').textContent = t; lt.appendChild(row);
+      });
+    }
+    if (ed.entreprise) {
+      document.getElementById('f-ent-desc').textContent = ed.entreprise.description || '';
+      document.getElementById('f-ent-org').textContent = ed.entreprise.organisation || '';
+    }
+    if (ed.constats_sections) {
+      var lc = document.getElementById('l-constats'); lc.innerHTML = '';
+      ed.constats_sections.forEach(function (sec, si) {
+        var div = document.createElement('div'); div.className = 'constat r-csec'; div.setAttribute('data-si', si);
+        var bullets = '';
+        (sec.constats || []).forEach(function () {
+          bullets += '<li class="r-csli"><span class="r-item r-bullet" contenteditable="true"></span>' +
+            '<button type="button" class="r-x" data-act="del-bullet" title="Supprimer cette puce">✕</button></li>';
+        });
+        div.innerHTML = '<div class="subj"><span class="name r-section-title"></span></div>' +
+          '<div class="body"><ul class="r-bullets" style="margin:0">' + bullets + '</ul>' +
+          '<button type="button" class="r-add" data-act="add-bullet">＋ Ajouter un constat</button></div>';
+        div.querySelector('.r-section-title').textContent = sec.section || '';
+        var bEls = div.querySelectorAll('.r-bullet');
+        (sec.constats || []).forEach(function (c, ci) { if (bEls[ci]) bEls[ci].textContent = c; });
+        lc.appendChild(div);
+      });
+    }
+    if (ed.recommendations) {
+      var lr = document.getElementById('l-recos'); lr.innerHTML = '';
+      ed.recommendations.forEach(function (r, i) {
+        var div = document.createElement('div'); div.className = 'reco-item r-reco';
+        div.innerHTML = '<span class="rank">' + (i + 1) + '</span><div class="reco-txt">' +
+          '<span class="r-item r-recotxt" contenteditable="true"></span>' +
+          (r.source_section ? '<span class="reco-src r-recosrc"></span>' : '') + '</div>' +
+          '<button type="button" class="r-x" data-act="del-reco" title="Supprimer cette recommandation">✕</button>';
+        div.querySelector('.r-recotxt').textContent = r.recommendation || '';
+        if (r.source_section) div.querySelector('.r-recosrc').textContent = r.source_section;
+        lr.appendChild(div);
+      });
+    }
+  }
+
+  function collectEdits() {
+    var synthese = [];
+    document.querySelectorAll('#l-synthese .r-item').forEach(function (el) {
+      var v = txt(el); if (v) synthese.push(v);
+    });
+    var top5 = [];
+    document.querySelectorAll('#l-top5 .r-item').forEach(function (el) {
+      var v = txt(el); if (v) top5.push(v);
+    });
+    var constats_sections = [];
+    document.querySelectorAll('#l-constats .r-csec').forEach(function (sec) {
+      var section = txt(sec.querySelector('.r-section-title'));
+      var constats = [];
+      sec.querySelectorAll('.r-bullet').forEach(function (b) {
+        var v = txt(b); if (v) constats.push(v);
+      });
+      if (constats.length) constats_sections.push({ section: section, constats: constats });
+    });
+    var recommendations = [];
+    document.querySelectorAll('#l-recos .r-reco').forEach(function (r) {
+      var rec = txt(r.querySelector('.r-recotxt'));
+      var src = txt(r.querySelector('.r-recosrc')) || null;
+      if (rec) recommendations.push({ recommendation: rec, source_section: src });
+    });
+    return {
+      narrative: { intro: txt(document.getElementById('f-intro')), synthese: synthese, top5: top5.slice(0, 5) },
+      entreprise: {
+        description: txt(document.getElementById('f-ent-desc')),
+        organisation: txt(document.getElementById('f-ent-org')),
+      },
+      constats_sections: constats_sections,
+      recommendations: recommendations,
+    };
+  }
+
+  function setStatus(msg, kind) {
+    var s = document.getElementById('r-status');
+    s.textContent = msg; s.className = 'r-status' + (kind ? ' r-status--' + kind : '');
+  }
+
+  document.getElementById('r-submit').addEventListener('click', function () {
+    var btn = this;
+    var edits = collectEdits();
+    if (!edits.constats_sections.length) { setStatus('Ajoutez au moins un constat avant de générer le PDF.', 'err'); return; }
+    if (!edits.recommendations.length) { setStatus('Ajoutez au moins une recommandation avant de générer le PDF.', 'err'); return; }
+    if (!cfg.submitUrl) { setStatus('Aucune URL de soumission configurée (mode hors-ligne).', 'err'); return; }
+    btn.disabled = true; setStatus('Envoi en cours…', '');
+    fetch(cfg.submitUrl, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: cfg.token, metaFile: cfg.metaFile, format: cfg.format, edits: edits }),
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) { return { ok: res.ok, data: data }; });
+    }).then(function (r) {
+      if (r.ok && r.data && r.data.ok !== false) {
+        sent = true; dirty = false; clearLocal();
+        setStatus('✅ Corrections envoyées. Le PDF final vous sera transmis par email dans quelques instants.', 'ok');
+      } else {
+        var errs = (r.data && r.data.errors) ? r.data.errors.join(' ') : 'Erreur lors de la génération.';
+        setStatus('⚠️ ' + errs, 'err'); btn.disabled = false;
+      }
+    }).catch(function () {
+      setStatus('⚠️ Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.', 'err');
+      btn.disabled = false;
+    });
+  });
+
+  // restauration au chargement : si un brouillon local existe, le proposer
+  (function restorePrompt() {
+    var raw = null;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (!raw) return;
+    var saved; try { saved = JSON.parse(raw); } catch (e) { return; }
+    if (!saved || !saved.edits) return;
+    var when = '';
+    try { when = ' (' + new Date(saved.at).toLocaleString('fr-BE') + ')'; } catch (e) {}
+    if (window.confirm('Un brouillon de relecture non envoyé a été retrouvé dans ce navigateur' + when +
+      '.\n\nOK = restaurer vos modifications · Annuler = repartir de la version d’origine.')) {
+      applyEdits(saved.edits);
+      setStatus('Brouillon restauré. Continuez l’édition puis cliquez « Générer le PDF ».', 'ok');
+    } else {
+      clearLocal();
+    }
+  })();
+
+  // avertissement avant fermeture si modifs non envoyées
+  window.addEventListener('beforeunload', function (e) {
+    if (!dirty || sent) return;
+    e.preventDefault(); e.returnValue = ''; return '';
+  });
+})();</script>
+</body>
+</html>
