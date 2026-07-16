@@ -106,8 +106,9 @@ function toImports(rows: string[][]): ParseStats {
     stats.imported.push({
       societe: societe || email!, // societe is NOT NULL; fall back to the email
       sourceStatus: (r[iStatut] ?? '').trim() || null,
-      // Everyone in this CSV received the offer e-mail — funnel position known.
-      ...(offerSentAt ? { pipelineStage: 'offer_sent' as const } : {}),
+      // Everyone in this CSV received the offer e-mail — but only place NEW
+      // agencies there; never downgrade a richer stage set by the Notion import.
+      ...(offerSentAt ? { pipelineStageOnCreate: 'offer_sent' as const } : {}),
       offerSentAt,
       lastReplyAt: parseDate(r[iRecu] ?? ''),
       lastReplySubject: (r[iObjetRecu] ?? '').trim() || null,

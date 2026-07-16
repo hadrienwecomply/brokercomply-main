@@ -75,6 +75,13 @@ export type ProspectImport = Pick<
   contact?: ContactImport;
   /** Extra known addresses — stored as secondary email-only contacts. */
   otherEmails?: string[];
+  /**
+   * Funnel stage applied only when the agency is CREATED — a weaker signal
+   * than `pipelineStage`, which always wins. Lets the CSV import place new
+   * prospects at 'offer_sent' without downgrading richer existing stages
+   * (e.g. a 'won'/'lost' set by the Notion board import).
+   */
+  pipelineStageOnCreate?: PipelineStage;
 };
 
 function normalizeEmail(raw: string | null | undefined): string | null {
@@ -155,7 +162,12 @@ export async function upsertProspect(
   } else {
     const [row] = await db
       .insert(prospects)
-      .values(agencyFields as NewProspect)
+      .values({
+        ...(input.pipelineStageOnCreate
+          ? { pipelineStage: input.pipelineStageOnCreate }
+          : {}),
+        ...agencyFields,
+      } as NewProspect)
       .returning({ id: prospects.id });
     prospectId = row!.id;
     created = true;
