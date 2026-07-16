@@ -111,25 +111,34 @@ export async function upsertProspect(
 
   // 1. Match by any contact address, else 2. by agency name.
   let prospectId: string | null = null;
+  let matchedByEmail = false;
   if (allEmails.length > 0) {
     const [byEmail] = await db
       .select({ prospectId: prospectContacts.prospectId })
       .from(prospectContacts)
       .where(inArray(prospectContacts.email, allEmails))
       .limit(1);
-    if (byEmail) prospectId = byEmail.prospectId;
+    if (byEmail) {
+      prospectId = byEmail.prospectId;
+      matchedByEmail = true;
+    }
   }
   if (!prospectId) {
+    // Compare with the SAME expression as the unique index (Postgres lower()),
+    // not JS toLowerCase() — they disagree on accented chars in some locales.
     const [byName] = await db
       .select({ id: prospects.id })
       .from(prospects)
-      .where(sql`lower(${prospects.societe}) = ${societe.toLowerCase()}`)
+      .where(sql`lower(${prospects.societe}) = lower(${societe})`)
       .limit(1);
     if (byName) prospectId = byName.id;
   }
 
   const agencyFields: Partial<NewProspect> = {
-    societe,
+    // An email match never RENAMES the agency: shared mailboxes across two
+    // agency spellings would steal a name already held by another row
+    // (unique lower(societe)). The name only sets on create or a name match.
+    ...(matchedByEmail ? {} : { societe }),
     ...definedOnly({
       siteInternet: input.siteInternet,
       verticale: input.verticale,
