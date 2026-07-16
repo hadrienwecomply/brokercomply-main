@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  addProspectContact,
   cancelTask,
   completeTask,
   createTask,
@@ -11,6 +12,8 @@ import {
   setProspectPhone,
   setProspectPipelineStage,
   setTaskDue,
+  updateProspectContact,
+  updateProspectFields,
   updateProspectNotes,
 } from "@brokercomply/shared";
 import { currentOfficer } from "./officer.server";
@@ -114,6 +117,49 @@ export async function movePipeline(
 ) {
   await setProspectPipelineStage({ db: getDb() }, id, stage, lostReason ?? null);
   refresh(id);
+}
+
+export interface ProspectFieldsInput {
+  societe?: string;
+  siteInternet?: string | null;
+  verticale?: string | null;
+  leadFrom?: string | null;
+  conversionProbability?: string | null;
+  mrr?: number | null;
+  /** ISO datetime, or null to clear. */
+  meetingDate?: string | null;
+}
+
+/** Edit the agency's qualification attributes (detail page « Données »). */
+export async function saveProspectFields(id: string, fields: ProspectFieldsInput) {
+  const { mrr, meetingDate, ...rest } = fields;
+  await updateProspectFields({ db: getDb() }, id, {
+    ...rest,
+    ...(mrr !== undefined ? { mrr: mrr != null ? String(mrr) : null } : {}),
+    ...(meetingDate !== undefined
+      ? { meetingDate: meetingDate ? new Date(meetingDate) : null }
+      : {}),
+  });
+  refresh(id);
+}
+
+export interface ContactInput {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  role?: string | null;
+}
+
+/** Edit one contact of the agency. */
+export async function saveContact(prospectId: string, contactId: string, patch: ContactInput) {
+  await updateProspectContact({ db: getDb() }, contactId, patch);
+  refresh(prospectId);
+}
+
+/** Add a person to the agency. */
+export async function addContact(prospectId: string, input: ContactInput) {
+  await addProspectContact({ db: getDb() }, prospectId, input);
+  refresh(prospectId);
 }
 
 export async function saveNotes(id: string, notes: string) {

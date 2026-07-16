@@ -4,6 +4,7 @@ import {
   prospectContacts,
   prospects,
   type NewProspect,
+  type NewProspectContact,
   type Prospect,
   type ProspectContact,
 } from '../db/schema.js';
@@ -306,6 +307,98 @@ export async function updateProspectNotes(
     .update(prospects)
     .set({ notes: notes?.trim() || null, updatedAt: new Date() })
     .where(eq(prospects.id, id));
+}
+
+/**
+ * Agency attributes editable from the detail page (qualification data only —
+ * chase facts like offerSentAt/lastReplyAt are written by tasks, never here).
+ */
+export interface ProspectFieldsPatch {
+  societe?: string;
+  siteInternet?: string | null;
+  verticale?: string | null;
+  leadFrom?: string | null;
+  conversionProbability?: string | null;
+  /** Monthly revenue in EUR, as a numeric string (e.g. '150.00'). */
+  mrr?: string | null;
+  meetingDate?: Date | null;
+}
+
+/** Patch the provided agency fields; blank strings clear the value. */
+export async function updateProspectFields(
+  { db }: ProspectsServiceDeps,
+  id: string,
+  patch: ProspectFieldsPatch,
+): Promise<void> {
+  const set: Partial<NewProspect> = {};
+  if (patch.societe !== undefined) {
+    const societe = patch.societe.trim();
+    if (!societe) throw new Error('societe cannot be blank');
+    set.societe = societe;
+  }
+  if (patch.siteInternet !== undefined) set.siteInternet = patch.siteInternet?.trim() || null;
+  if (patch.verticale !== undefined) set.verticale = patch.verticale?.trim() || null;
+  if (patch.leadFrom !== undefined) set.leadFrom = patch.leadFrom?.trim() || null;
+  if (patch.conversionProbability !== undefined)
+    set.conversionProbability = patch.conversionProbability?.trim() || null;
+  if (patch.mrr !== undefined) set.mrr = patch.mrr?.trim() || null;
+  if (patch.meetingDate !== undefined) set.meetingDate = patch.meetingDate;
+  if (Object.keys(set).length === 0) return;
+  await db
+    .update(prospects)
+    .set({ ...set, updatedAt: new Date() })
+    .where(eq(prospects.id, id));
+}
+
+/** Person-level fields editable from the detail page. */
+export interface ContactPatch {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  role?: string | null;
+}
+
+/** Patch the provided fields of one contact; blank strings clear the value. */
+export async function updateProspectContact(
+  { db }: ProspectsServiceDeps,
+  contactId: string,
+  patch: ContactPatch,
+): Promise<void> {
+  const set: Partial<NewProspectContact> = {};
+  if (patch.name !== undefined) set.name = patch.name?.trim() || null;
+  if (patch.email !== undefined) set.email = normalizeEmail(patch.email);
+  if (patch.phone !== undefined) set.phone = patch.phone?.trim() || null;
+  if (patch.role !== undefined) set.role = patch.role?.trim() || null;
+  if (Object.keys(set).length === 0) return;
+  await db
+    .update(prospectContacts)
+    .set({ ...set, updatedAt: new Date() })
+    .where(eq(prospectContacts.id, contactId));
+}
+
+/** Add a person to the agency — primary only when it has none yet. */
+export async function addProspectContact(
+  { db }: ProspectsServiceDeps,
+  prospectId: string,
+  input: ContactImport,
+): Promise<string> {
+  const existing = await db
+    .select({ id: prospectContacts.id })
+    .from(prospectContacts)
+    .where(eq(prospectContacts.prospectId, prospectId))
+    .limit(1);
+  const [row] = await db
+    .insert(prospectContacts)
+    .values({
+      prospectId,
+      name: input.name?.trim() || null,
+      email: normalizeEmail(input.email),
+      phone: input.phone?.trim() || null,
+      role: input.role?.trim() || null,
+      isPrimary: existing.length === 0,
+    })
+    .returning({ id: prospectContacts.id });
+  return row!.id;
 }
 
 /** The call-list: prospects that hit +15d with no reply, oldest offer first. */

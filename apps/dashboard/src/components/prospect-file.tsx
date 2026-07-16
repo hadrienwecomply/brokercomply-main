@@ -10,6 +10,7 @@ import {
   Check,
   Globe,
   Mail,
+  Pencil,
   Phone,
   Plus,
   RotateCcw,
@@ -22,22 +23,30 @@ import { OFFICER_OPTIONS, officerName } from "@/lib/officers";
 import {
   LOST_REASON_LABEL,
   PIPELINE_COLUMNS,
+  PROBABILITY_OPTIONS,
   TASK_OUTCOME_LABEL,
   TASK_TYPE_LABEL,
+  VERTICALE_OPTIONS,
   type PipelineStage,
+  type ProspectContactDTO,
   type ProspectDTO,
   type TaskDTO,
   type TaskType,
 } from "@/lib/prospects-types";
 import {
+  addContact,
   addTask,
   assignTask,
   dropTask,
   finishTask,
   movePipeline,
+  saveContact,
   saveNotes,
   savePhone,
+  saveProspectFields,
   undoTask,
+  type ContactInput,
+  type ProspectFieldsInput,
 } from "@/lib/prospects-actions";
 import { Badge, TaskActions, dueInfo } from "./suivi-commercial-board";
 
@@ -53,6 +62,9 @@ export function ProspectFile({
   const [tasks, setTasks] = useState(initialTasks);
   const [notesDraft, setNotesDraft] = useState(initial.notes ?? "");
   const [showNewTask, setShowNewTask] = useState(false);
+  const [editData, setEditData] = useState(false);
+  const [editContactId, setEditContactId] = useState<string | null>(null);
+  const [showNewContact, setShowNewContact] = useState(false);
   const [, startTransition] = useTransition();
 
   const openTasks = tasks.filter((t) => t.status === "open");
@@ -159,7 +171,42 @@ export function ProspectFile({
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Left column: data + contacts + notes */}
         <div className="space-y-5">
-          <Card title="Données">
+          <Card
+            title="Données"
+            action={
+              !editData && (
+                <button
+                  onClick={() => setEditData(true)}
+                  className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-xs font-medium text-ink-soft hover:border-brand-500/45 hover:bg-brand-50/60 hover:text-brand-700"
+                >
+                  <Pencil className="size-3" />
+                  Modifier
+                </button>
+              )
+            }
+          >
+            {editData ? (
+              <DataEditForm
+                prospect={p}
+                onCancel={() => setEditData(false)}
+                onSave={(v) => {
+                  setEditData(false);
+                  patch({
+                    societe: v.societe ?? p.societe,
+                    leadFrom: v.leadFrom ?? null,
+                    conversionProbability: v.conversionProbability ?? null,
+                    verticale: v.verticale ?? null,
+                    meetingDate: v.meetingDate ?? null,
+                    siteInternet: v.siteInternet ?? null,
+                    mrr: v.mrr ?? null,
+                  });
+                  startTransition(async () => {
+                    await saveProspectFields(p.id, v);
+                    router.refresh();
+                  });
+                }}
+              />
+            ) : (
             <dl className="space-y-2 text-sm">
               <Row label="Source">{p.leadFrom ?? "—"}</Row>
               <Row label="Probabilité">{p.conversionProbability ?? "—"}</Row>
@@ -207,18 +254,67 @@ export function ProspectFile({
                 </Row>
               )}
             </dl>
+            )}
           </Card>
 
-          <Card title="Contacts">
-            {p.contacts.length === 0 && (
+          <Card
+            title="Contacts"
+            action={
+              !showNewContact && (
+                <button
+                  onClick={() => setShowNewContact(true)}
+                  className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2 py-1 text-xs font-medium text-ink-soft hover:border-brand-500/45 hover:bg-brand-50/60 hover:text-brand-700"
+                >
+                  <Plus className="size-3.5" />
+                  Ajouter
+                </button>
+              )
+            }
+          >
+            {showNewContact && (
+              <ContactForm
+                onCancel={() => setShowNewContact(false)}
+                onSave={(v) => {
+                  setShowNewContact(false);
+                  startTransition(async () => {
+                    await addContact(p.id, v);
+                    router.refresh();
+                  });
+                }}
+              />
+            )}
+            {p.contacts.length === 0 && !showNewContact && (
               <p className="text-sm text-st-na">Aucun contact connu.</p>
             )}
             <div className="space-y-3">
-              {p.contacts.map((c) => (
-                <div key={c.id} className="text-sm">
+              {p.contacts.map((c) =>
+                editContactId === c.id ? (
+                  <ContactForm
+                    key={c.id}
+                    initial={c}
+                    onCancel={() => setEditContactId(null)}
+                    onSave={(v) => {
+                      setEditContactId(null);
+                      patch({
+                        contacts: p.contacts.map((x) =>
+                          x.id === c.id ? { ...x, ...v } : x,
+                        ),
+                      });
+                      startTransition(() => saveContact(p.id, c.id, v));
+                    }}
+                  />
+                ) : (
+                <div key={c.id} className="group text-sm">
                   <div className="flex items-center gap-1.5 font-medium text-ink">
                     {c.isPrimary && <Star className="size-3.5 fill-brand-500 text-brand-500" />}
                     {c.name ?? "—"}
+                    <button
+                      onClick={() => setEditContactId(c.id)}
+                      title="Modifier le contact"
+                      className="rounded p-0.5 text-st-na opacity-0 transition-opacity hover:bg-line/40 hover:text-ink group-hover:opacity-100"
+                    >
+                      <Pencil className="size-3" />
+                    </button>
                   </div>
                   {c.email && (
                     <a
@@ -252,7 +348,8 @@ export function ProspectFile({
                     )
                   )}
                 </div>
-              ))}
+                ),
+              )}
             </div>
           </Card>
 
@@ -312,12 +409,7 @@ export function ProspectFile({
                 const due = dueInfo(t.dueAt);
                 return (
                   <div key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
-                    <span
-                      className={cn(
-                        "w-28 shrink-0 text-xs font-medium",
-                        due.overdue ? "text-[#bb1626]" : "text-ink-soft",
-                      )}
-                    >
+                    <span className="w-28 shrink-0 text-xs font-medium text-ink-soft">
                       {due.label}
                     </span>
                     <span className="min-w-0 flex-1 text-sm text-ink">{t.title}</span>
@@ -480,6 +572,211 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
       <dt className="shrink-0 text-ink-soft">{label}</dt>
       <dd className="text-right text-ink">{children}</dd>
     </div>
+  );
+}
+
+/** ISO → value for <input type="datetime-local"> (local time, minute precision). */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+const FIELD_CLS =
+  "w-full rounded-md border border-line bg-white px-2.5 py-1.5 text-sm text-ink placeholder:text-st-na focus:border-brand-500 focus:outline-none";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-0.5 block text-xs text-ink-soft">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function FormButtons({ onCancel, disabled }: { onCancel: () => void; disabled?: boolean }) {
+  return (
+    <div className="flex justify-end gap-1.5 pt-1">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="rounded-md px-2.5 py-1.5 text-xs text-ink-soft hover:bg-line/40"
+      >
+        Annuler
+      </button>
+      <button
+        type="submit"
+        disabled={disabled}
+        className="rounded-md bg-brand-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+      >
+        Enregistrer
+      </button>
+    </div>
+  );
+}
+
+/** Editable qualification attributes of the « Données » card. */
+function DataEditForm({
+  prospect: p,
+  onSave,
+  onCancel,
+}: {
+  prospect: ProspectDTO;
+  onSave: (v: ProspectFieldsInput) => void;
+  onCancel: () => void;
+}) {
+  const [societe, setSociete] = useState(p.societe);
+  const [leadFrom, setLeadFrom] = useState(p.leadFrom ?? "");
+  const [probability, setProbability] = useState(p.conversionProbability ?? "");
+  const [verticale, setVerticale] = useState(p.verticale ?? "");
+  const [meeting, setMeeting] = useState(toLocalInput(p.meetingDate));
+  const [site, setSite] = useState(p.siteInternet ?? "");
+  const [mrr, setMrr] = useState(p.mrr != null ? String(p.mrr) : "");
+
+  // Keep an imported value not in our list selectable rather than dropping it.
+  const withCurrent = (options: string[], current: string) =>
+    current && !options.includes(current) ? [current, ...options] : options;
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!societe.trim()) return;
+        onSave({
+          societe: societe.trim(),
+          leadFrom: leadFrom.trim() || null,
+          conversionProbability: probability || null,
+          verticale: verticale || null,
+          meetingDate: meeting ? new Date(meeting).toISOString() : null,
+          siteInternet: site.trim() || null,
+          mrr: mrr.trim() ? Number(mrr) : null,
+        });
+      }}
+      className="space-y-2.5"
+    >
+      <Field label="Société">
+        <input value={societe} onChange={(e) => setSociete(e.target.value)} className={FIELD_CLS} />
+      </Field>
+      <Field label="Source">
+        <input
+          value={leadFrom}
+          onChange={(e) => setLeadFrom(e.target.value)}
+          placeholder="Événement, campagne, referral…"
+          className={FIELD_CLS}
+        />
+      </Field>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Probabilité">
+          <select
+            value={probability}
+            onChange={(e) => setProbability(e.target.value)}
+            className={FIELD_CLS}
+          >
+            <option value="">—</option>
+            {withCurrent(PROBABILITY_OPTIONS, probability).map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Verticale">
+          <select
+            value={verticale}
+            onChange={(e) => setVerticale(e.target.value)}
+            className={FIELD_CLS}
+          >
+            <option value="">—</option>
+            {withCurrent(VERTICALE_OPTIONS, verticale).map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
+      <Field label="RDV / démo">
+        <input
+          type="datetime-local"
+          value={meeting}
+          onChange={(e) => setMeeting(e.target.value)}
+          className={FIELD_CLS}
+        />
+      </Field>
+      <Field label="Site internet">
+        <input
+          value={site}
+          onChange={(e) => setSite(e.target.value)}
+          placeholder="www.exemple.be"
+          className={FIELD_CLS}
+        />
+      </Field>
+      <Field label="MRR (€/mois)">
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={mrr}
+          onChange={(e) => setMrr(e.target.value)}
+          className={FIELD_CLS}
+        />
+      </Field>
+      <FormButtons onCancel={onCancel} disabled={!societe.trim()} />
+    </form>
+  );
+}
+
+/** Edit an existing contact, or add a new one (no `initial`). */
+function ContactForm({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial?: ProspectContactDTO;
+  onSave: (v: ContactInput) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [email, setEmail] = useState(initial?.email ?? "");
+  const [phone, setPhone] = useState(initial?.phone ?? "");
+  const empty = !name.trim() && !email.trim() && !phone.trim();
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (empty) return;
+        onSave({
+          name: name.trim() || null,
+          email: email.trim() || null,
+          phone: phone.trim() || null,
+        });
+      }}
+      className="mb-3 space-y-2 rounded-lg border border-brand-200 bg-brand-50/40 p-3"
+    >
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Nom…"
+        className={FIELD_CLS}
+      />
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="E-mail…"
+        className={FIELD_CLS}
+      />
+      <input
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+        placeholder="Téléphone…"
+        className={FIELD_CLS}
+      />
+      <FormButtons onCancel={onCancel} disabled={empty} />
+    </form>
   );
 }
 

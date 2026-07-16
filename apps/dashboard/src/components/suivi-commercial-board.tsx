@@ -345,13 +345,12 @@ function Count({ tone, children }: { tone: "alert" | "muted"; children: React.Re
 
 /* -------------------------------- Task list ------------------------------- */
 
-export function dueInfo(iso: string | null): { label: string; overdue: boolean } {
-  if (!iso) return { label: "Sans échéance", overdue: false };
+export function dueInfo(iso: string | null): { label: string } {
+  if (!iso) return { label: "Sans échéance" };
   const due = new Date(iso);
   const days = Math.floor((Date.now() - due.getTime()) / 86_400_000);
-  if (days > 0) return { label: `En retard · J+${days}`, overdue: true };
-  if (days === 0) return { label: "Aujourd'hui", overdue: false };
-  return { label: formatDate(iso), overdue: false };
+  if (days === 0) return { label: "Aujourd'hui" };
+  return { label: formatDate(iso) };
 }
 
 function TaskList({
@@ -415,12 +414,7 @@ function TaskRow({
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line/60 px-4 py-3 last:border-0 hover:bg-line/20">
       {/* Due */}
-      <div
-        className={cn(
-          "w-28 shrink-0 text-xs font-medium",
-          due.overdue ? "text-[#bb1626]" : "text-ink-soft",
-        )}
-      >
+      <div className="w-28 shrink-0 text-xs font-medium text-ink-soft">
         {due.label}
       </div>
 

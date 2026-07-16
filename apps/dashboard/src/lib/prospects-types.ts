@@ -59,6 +59,18 @@ export const LOST_REASON_LABEL: Record<LostReason, string> = {
   other: "Autre",
 };
 
+/** Known values of `conversion_probability` (free text — imports may differ). */
+export const PROBABILITY_OPTIONS = [
+  "Impossible",
+  "Faible",
+  "Moyenne",
+  "Haute",
+  "Très haute",
+];
+
+/** Known verticals (free text — imports may differ). */
+export const VERTICALE_OPTIONS = ["Courtiers", "Immo"];
+
 export type CallOutcome = "reachable" | "callback" | "not_interested" | "signed";
 
 export const CALL_OUTCOMES: { key: CallOutcome; label: string }[] = [
