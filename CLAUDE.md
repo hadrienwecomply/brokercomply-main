@@ -10,6 +10,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Languages**: Content is multilingual FR/NL/EN. Code and comments should be in English.
 
+## Development Workflow
+
+**ALWAYS start a new feature in its own git worktree** — never develop directly in the main checkout. Use the repo script (it copies gitignored config like `.env`/`.claude`, installs deps, and creates the branch):
+
+```bash
+pnpm wt feat/<name>            # = scripts/new-worktree.sh feat/<name> [--from main]
+```
+
+Then work inside the new worktree. This keeps parallel Claude sessions from clobbering each other's uncommitted changes and avoids drizzle migration-number collisions (coordinate migration renumbering at merge time). Clean up with `pnpm wt:rm` when the branch is merged.
+
 ## Tech Stack (from PRD)
 
 - **Runtime**: TypeScript / Node.js

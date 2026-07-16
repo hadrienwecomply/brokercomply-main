@@ -12,6 +12,22 @@ const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
   // Monorepo root (multiple lockfiles present); silences workspace-root inference.
   outputFileTracingRoot: path.join(dirname, "../.."),
+  // Baseline security headers — the dashboard is exposed on the public
+  // internet (app.brokercomply.be). No CSP yet (would need a careful audit of
+  // inline styles/scripts); these are the safe, non-breaking ones.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+        ],
+      },
+    ];
+  },
   // Compile the workspace shared package from source.
   transpilePackages: ["@brokercomply/shared"],
   // Keep Node-only deps external to the bundle (used server-side only).

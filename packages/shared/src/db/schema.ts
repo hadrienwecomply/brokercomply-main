@@ -861,3 +861,30 @@ export const agentToolAudit = pgTable(
 
 export type AgentToolAuditRow = typeof agentToolAudit.$inferSelect;
 export type NewAgentToolAuditRow = typeof agentToolAudit.$inferInsert;
+
+/**
+ * Dashboard user accounts. Replaces the env-based credential list
+ * (`DASHBOARD_BASIC_AUTH_USERS`): the /login server action now checks the
+ * submitted password against `password_hash` (scrypt, see `src/auth/`).
+ * Expected volume: a handful of internal users (2 officers + founder).
+ */
+export const users = pgTable(
+  'users',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Login identifier — stored lowercase, unique. */
+    email: text('email').notNull(),
+    /** Shown in the UI (sidebar, audit trails). */
+    displayName: text('display_name').notNull(),
+    /** PHC-style string: `scrypt$N$r$p$<salt b64url>$<hash b64url>`. */
+    passwordHash: text('password_hash').notNull(),
+    /** Soft disable: inactive users cannot log in (sessions die on next check). */
+    isActive: boolean('is_active').default(true).notNull(),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('idx_users_email').on(t.email)],
+);
+
+export type UserRow = typeof users.$inferSelect;
+export type NewUserRow = typeof users.$inferInsert;

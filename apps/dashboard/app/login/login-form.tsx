@@ -14,18 +14,18 @@ export function LoginForm({ next }: { next: string }) {
       <input type="hidden" name="next" value={next} />
 
       <div className="space-y-1.5">
-        <label htmlFor="login-user" className="block text-sm font-medium text-ink">
-          Identifiant
+        <label htmlFor="login-email" className="block text-sm font-medium text-ink">
+          Email
         </label>
         <input
-          id="login-user"
-          name="user"
-          type="text"
+          id="login-email"
+          name="email"
+          type="email"
           autoComplete="username"
           autoFocus
           required
           className="w-full rounded-md border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink shadow-sm outline-none transition-colors placeholder:text-st-na/60 focus:border-brand-500 focus:ring-2 focus:ring-brand-200"
-          placeholder="prenom"
+          placeholder="prenom@we-comply.be"
         />
       </div>
 

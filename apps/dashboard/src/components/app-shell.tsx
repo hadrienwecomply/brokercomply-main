@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -27,14 +28,22 @@ const NAV = [
 export function AppShell({
   children,
   user,
+  authEnabled = false,
 }: {
   children: React.ReactNode;
   user?: string | null;
+  authEnabled?: boolean;
 }) {
   const pathname = usePathname();
   // The login page owns its whole layout — no sidebar, no frame.
   if (pathname === "/login") {
     return <>{children}</>;
+  }
+  // Gate is on but the DB-side check rejected the session (password changed,
+  // account deactivated): the cookie is still HMAC-valid so the middleware let
+  // the request through — clear it and send the user back to /login.
+  if (authEnabled && !user) {
+    return <StaleSessionSignout />;
   }
   // The assistant chat fills the whole main area (no max-width / padding frame).
   const fullBleed = pathname.startsWith("/assistant");
@@ -116,6 +125,21 @@ export function AppShell({
           <div className="mx-auto max-w-[1200px] px-6 py-8">{children}</div>
         )}
       </main>
+    </div>
+  );
+}
+
+/** POSTs to /api/auth/logout (clears the stale cookie) then lands on /login. */
+function StaleSessionSignout() {
+  useEffect(() => {
+    fetch("/api/auth/logout", { method: "POST" }).finally(() => {
+      window.location.assign("/login");
+    });
+  }, []);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <p className="text-sm text-ink-soft">Session expirée — redirection…</p>
     </div>
   );
 }
