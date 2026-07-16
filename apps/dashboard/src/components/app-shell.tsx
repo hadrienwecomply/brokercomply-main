@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutGrid,
   ListChecks,
+  PhoneCall,
   Zap,
   BookOpen,
   Map,
@@ -18,6 +19,7 @@ import { cn } from "@/lib/cn";
 const NAV = [
   { href: "/", label: "Portfolio", icon: LayoutGrid },
   { href: "/actions", label: "Prochaines actions", icon: ListChecks },
+  { href: "/suivi-commercial", label: "Suivi commercial", icon: PhoneCall },
   { href: "/assistant", label: "Assistant", icon: Sparkles },
   { href: "/faq", label: "Base de connaissances", icon: BookOpen },
   { href: "/roadmap", label: "Roadmap", icon: Map },

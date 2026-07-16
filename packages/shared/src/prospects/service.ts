@@ -323,6 +323,29 @@ export async function markProspectCalled(
 }
 
 /**
+ * Move a prospect to another funnel stage (manual board action). Reaching a
+ * terminal deal state (won/lost) also closes the chase cadence; leaving it
+ * re-opens nothing — the tick recomputes the cadence from the stored facts.
+ */
+export async function setProspectPipelineStage(
+  { db }: ProspectsServiceDeps,
+  id: string,
+  pipelineStage: PipelineStage,
+  lostReason: LostReason | null = null,
+): Promise<void> {
+  const terminal = pipelineStage === 'won' || pipelineStage === 'lost';
+  await db
+    .update(prospects)
+    .set({
+      pipelineStage,
+      lostReason: pipelineStage === 'lost' ? lostReason ?? 'other' : null,
+      ...(terminal ? { stage: 'closed', nextActionAt: null } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(prospects.id, id));
+}
+
+/**
  * Set/replace the phone of the agency's primary contact (manual entry from the
  * call-list UI). Creates a primary contact when the agency has none yet.
  */
