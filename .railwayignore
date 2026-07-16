@@ -16,3 +16,7 @@
 /integrations/
 /check-conformite-pub-courtier/
 /stroh-review-full.html
+/.claude/
+/prospects_a_recontacter.csv
+# Orphan script from the prospects worktree session (not part of this branch).
+/apps/dashboard/scripts/ingest-notion-leads.ts
