@@ -6,6 +6,7 @@ export * from './retrieval/index.js';
 export * from './knowledge/index.js';
 export * from './roadmap/index.js';
 export * from './brokers/index.js';
+export * from './prospects/index.js';
 export * from './forms/index.js';
 export * from './integrations/index.js';
 export * from './conversations/index.js';

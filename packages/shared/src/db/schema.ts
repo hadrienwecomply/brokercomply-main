@@ -861,3 +861,147 @@ export const agentToolAudit = pgTable(
 
 export type AgentToolAuditRow = typeof agentToolAudit.$inferSelect;
 export type NewAgentToolAuditRow = typeof agentToolAudit.$inferInsert;
+
+/**
+ * Commercial follow-up mini-CRM — sales prospects (démarchage), NOT signed
+ * clients. A prospect row is the AGENCY (the company being courted); the people
+ * we talk to live in `prospect_contacts` (1-N). Signed clients live in
+ * `brokers`; when a prospect converts we link it via `broker_id`.
+ *
+ * Two independent axes, never mixed:
+ *  - `pipeline_stage` — the commercial funnel (where the deal stands).
+ *  - `stage`          — the chase cadence (offer T0 → +7d reminder → +15d call),
+ *    a pure state machine (see `prospects/sequence.ts`). This table only
+ *    persists the facts the machine reads plus the derived `stage` /
+ *    `next_action_at` kept current by the daily tick so the call-list is a
+ *    cheap indexed query.
+ * The AI intent fields (P2) record what the classifier read in the mailbox /
+ * calendar and are mapped deterministically onto the two axes.
+ */
+export const prospects = pgTable(
+  'prospects',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Agency (company) name — the identity of the prospect. */
+    societe: text('societe').notNull(),
+    siteInternet: text('site_internet'),
+    /** Vertical: 'Courtiers' | 'Immo'. */
+    verticale: text('verticale'),
+    /** 'FR' | 'NL' | 'EN' — drives the reminder template language. */
+    language: text('language'),
+    /** Owning officer email — who chases this prospect. */
+    owner: text('owner'),
+    /** Verbatim lifecycle tag(s) from the import source (CSV statut / raw tags). */
+    sourceStatus: text('source_status'),
+    /** Set when the prospect converts to a signed client (links to brokers). */
+    brokerId: uuid('broker_id').references(() => brokers.id, { onDelete: 'set null' }),
+
+    // --- Funnel (commercial pipeline) ---------------------------------------
+    /**
+     * 'to_contact' | 'contacted' | 'demo_planned' | 'demo_done' |
+     * 'offer_to_send' | 'offer_sent' | 'won' | 'lost'.
+     */
+    pipelineStage: text('pipeline_stage').default('to_contact').notNull(),
+    /**
+     * Why the deal was lost (only when pipeline_stage = 'lost'):
+     * 'not_interested' | 'budget' | 'wrong_target' | 'unreachable' | 'other'.
+     */
+    lostReason: text('lost_reason'),
+    /** Booked a demo then didn't show — candidate for a re-booking chase. */
+    noShow: boolean('no_show').default(false).notNull(),
+    /** Import mapping was ambiguous (conflicting tags) — surfaced in the UI. */
+    needsReview: boolean('needs_review').default(false).notNull(),
+
+    // --- Commercial qualification -------------------------------------------
+    mrr: numeric('mrr', { precision: 10, scale: 2 }),
+    /** 'Impossible' | 'Faible' | 'Moyenne' | 'Haute' | 'Très haute'. */
+    conversionProbability: text('conversion_probability'),
+    /** Acquisition source (event, campaign, referral, cold-calling…). */
+    leadFrom: text('lead_from'),
+    meetingDate: timestamp('meeting_date', { withTimezone: true }),
+
+    // --- Chase cadence (pure machine in prospects/sequence.ts) ---------------
+    /** T0 — when the commercial offer was sent. Null until an offer goes out. */
+    offerSentAt: timestamp('offer_sent_at', { withTimezone: true }),
+    /** Last inbound reply after the offer. Presence past the offer cancels chase. */
+    lastReplyAt: timestamp('last_reply_at', { withTimezone: true }),
+    lastReplySubject: text('last_reply_subject'),
+    /** When the +7d reminder was actually sent (drives the 'reminded' stage). */
+    reminderSentAt: timestamp('reminder_sent_at', { withTimezone: true }),
+    /** When the officer logged the +15d call. Presence closes the sequence. */
+    calledAt: timestamp('called_at', { withTimezone: true }),
+    /** Call outcome: 'reachable' | 'callback' | 'not_interested' | 'signed'. */
+    outcome: text('outcome'),
+    /**
+     * Cadence stage kept current by the daily tick:
+     * 'awaiting_reply' | 'reminded' | 'to_call' | 'replied' | 'closed'.
+     */
+    stage: text('stage').default('awaiting_reply').notNull(),
+    /** Next transition time — used to schedule and to filter due prospects. */
+    nextActionAt: timestamp('next_action_at', { withTimezone: true }),
+
+    // --- AI interpretation (P2) ----------------------------------------------
+    /**
+     * What the classifier read in the thread/calendar:
+     * 'no_reply' | 'interested' | 'not_interested' | 'later' | 'meeting_booked'
+     * | 'unreachable' | 'converted'.
+     */
+    intent: text('intent'),
+    /** Classifier confidence 0..1 — low values flag `needs_review`. */
+    intentConfidence: real('intent_confidence'),
+    /** Verbatim excerpt from the email that justifies the intent (audit trail). */
+    intentQuote: text('intent_quote'),
+    /** 'ai' | 'human' — a human-set intent is never overwritten by the AI. */
+    intentSource: text('intent_source'),
+    intentUpdatedAt: timestamp('intent_updated_at', { withTimezone: true }),
+
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    // Agencies are deduped by case-insensitive name (import reconciliation).
+    uniqueIndex('uq_prospects_societe').on(sql`lower(${t.societe})`),
+    index('idx_prospects_stage').on(t.stage),
+    index('idx_prospects_next_action').on(t.stage, t.nextActionAt),
+    index('idx_prospects_pipeline').on(t.pipelineStage),
+    index('idx_prospects_owner').on(t.owner),
+  ],
+);
+
+export type Prospect = typeof prospects.$inferSelect;
+export type NewProspect = typeof prospects.$inferInsert;
+
+/**
+ * People attached to a prospect agency. The `is_primary` contact receives the
+ * chase e-mails; ANY contact's address matches inbound replies (P2). Secondary
+ * rows may be email-only (extra known addresses from imports).
+ */
+export const prospectContacts = pgTable(
+  'prospect_contacts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    prospectId: uuid('prospect_id')
+      .notNull()
+      .references(() => prospects.id, { onDelete: 'cascade' }),
+    name: text('name'),
+    email: text('email'),
+    /** Phone for the call-list. From source when present, else added in the UI. */
+    phone: text('phone'),
+    /** Free-form role/title at the agency. */
+    role: text('role'),
+    /** The contact chased by the cadence. At most one per prospect (by convention). */
+    isPrimary: boolean('is_primary').default(false).notNull(),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    // Reply matching + idempotent import by address (only when an email exists).
+    uniqueIndex('uq_prospect_contacts_email').on(t.email).where(sql`${t.email} is not null`),
+    index('idx_prospect_contacts_prospect').on(t.prospectId),
+  ],
+);
+
+export type ProspectContact = typeof prospectContacts.$inferSelect;
+export type NewProspectContact = typeof prospectContacts.$inferInsert;
