@@ -1,43 +1,30 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { SESSION_COOKIE, checkCredentials, loadCredentials, verifySession } from "@/lib/auth";
+import { SESSION_COOKIE, isAuthEnabled, verifySession } from "@/lib/auth";
 
 /**
  * Auth gate for the whole dashboard.
  *
  * The product was designed "private network, no auth in v1", but the Railway
  * deployment exposes it publicly on the internet (app.brokercomply.be), so
- * everything a browser can reach sits behind a per-person credential.
+ * everything a browser can reach sits behind a per-person account (the `users`
+ * table — the old env-based Basic Auth credentials are gone).
  *
- * Browser flow: a signed session cookie set by the branded /login page (no
- * more native Basic Auth popup). Unauthenticated page loads redirect to
- * /login?next=…; non-HTML requests (fetch/API) get a plain 401.
+ * Flow: a signed session cookie set by the branded /login page. Unauthenticated
+ * page loads redirect to /login?next=…; non-HTML requests (fetch/API) get a
+ * plain 401.
  *
- * Script flow: a valid `Authorization: Basic` header is still honoured on any
- * route, so curl/monitoring keep working without a cookie jar.
- *
- * Runs on the Edge runtime — everything it uses lives in src/lib/auth.ts and
- * is Web Crypto only. Enforcement stays OPT-IN: with no credential configured
+ * Runs on the Edge runtime — the cookie's HMAC and expiry are checked locally
+ * (src/lib/auth.ts, Web Crypto only); DB-side staleness (password changed,
+ * account deactivated) is delegated to the internal /api/auth/validate route
+ * (Node), with a short cache and a fail-open on infra errors.
+ * Enforcement stays OPT-IN: with no `DASHBOARD_SESSION_SECRET` configured
  * (local `next dev`), the gate is disabled entirely.
  */
 
-function parseBasicHeader(header: string | null): { user: string; password: string } | null {
-  if (!header?.startsWith("Basic ")) return null;
-  let decoded: string;
-  try {
-    decoded = atob(header.slice("Basic ".length));
-  } catch {
-    return null;
-  }
-  // Username can't contain ':'; password may — split on the first colon only.
-  const sep = decoded.indexOf(":");
-  if (sep === -1) return null;
-  return { user: decoded.slice(0, sep), password: decoded.slice(sep + 1) };
-}
-
 export async function middleware(request: NextRequest): Promise<NextResponse> {
-  // Opt-in: nothing configured → do not gate (keeps local dev frictionless).
-  if (loadCredentials().length === 0) {
+  // Opt-in: no secret configured → do not gate (keeps local dev frictionless).
+  if (!isAuthEnabled()) {
     return NextResponse.next();
   }
 
@@ -48,16 +35,27 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next();
   }
 
-  // 1. Session cookie (browser flow).
+  // Session cookie: HMAC signature + expiry (edge-safe, no DB), then a
+  // DB-side staleness check (deactivated / password changed) through the
+  // internal Node route — so revocation applies to API calls and server
+  // actions too, not just page renders. 401 = definitively stale; any other
+  // outcome (204, 5xx, network error) fails open: the HMAC already proves a
+  // real login, and a transient DB blip must not lock the whole app.
   const cookie = request.cookies.get(SESSION_COOKIE)?.value;
   if (cookie && (await verifySession(cookie, Date.now())) !== null) {
-    return NextResponse.next();
-  }
-
-  // 2. Basic header (scripts / curl — no popup is ever triggered by us).
-  const basic = parseBasicHeader(request.headers.get("authorization"));
-  if (basic && checkCredentials(basic.user, basic.password) !== null) {
-    return NextResponse.next();
+    let stale = false;
+    try {
+      const res = await fetch(new URL("/api/auth/validate", request.url), {
+        headers: { cookie: request.headers.get("cookie") ?? "" },
+      });
+      stale = res.status === 401;
+    } catch {
+      // fail open
+    }
+    if (!stale) {
+      return NextResponse.next();
+    }
+    // Fall through to the unauthenticated branch (redirect or 401) below.
   }
 
   // Unauthenticated: browsers navigating to a page go to /login, the rest 401.
