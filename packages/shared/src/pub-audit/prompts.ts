@@ -1,6 +1,6 @@
 import REFERENCES_JSON from './data/references.json' with { type: 'json' };
 import type { PubCheck, PubPass } from './catalog.js';
-import type { PubProduit, PubQualification } from './types.js';
+import type { ConstatType, PubProduit, PubQualification } from './types.js';
 
 /**
  * Prompts for the print-advertising audit. The pipeline runs, per image:
@@ -45,9 +45,55 @@ export interface PubExtraContext {
   landingText?: string;
 }
 
+/**
+ * A promoted officer-added check the cabinet now wants evaluated on every audit
+ * (see pub_custom_checks). Injected into pass A alongside the catalog checks;
+ * the checker returns a constat under this same id, which the assembler enriches.
+ */
+export interface PubActiveCustomCheck {
+  /** Stable injected id (CUST-…), reused verbatim by the checker + assembler. */
+  id: string;
+  section: string;
+  intitule: string;
+  type: ConstatType;
+  baseLegale: string | null;
+  /** An approved exemplar reformulation, if the officer supplied one. */
+  exampleReformulation?: string | null;
+}
+
+/** Deterministic prompt/constat id for an active custom check, from its row id. */
+export function customCheckPromptId(rowId: string): string {
+  return `CUST-${rowId.replace(/[^A-Za-z0-9]/g, '').slice(0, 24)}`;
+}
+
 export interface BuildPassPromptOptions extends PubExtraContext {
   guidance?: PubGuidanceMap;
   feedback?: PubFeedbackMap;
+  /** Active cabinet custom checks to also evaluate (injected once, in pass A). */
+  customChecks?: PubActiveCustomCheck[];
+}
+
+const CONSTAT_TYPE_FR: Record<ConstatType, string> = {
+  interdiction: 'interdiction (formulation/pratique à bannir)',
+  mention_obligatoire: 'mention obligatoire (doit figurer)',
+  principe: 'principe / bonne pratique',
+};
+
+/** "CONTRÔLES ADDITIONNELS DU CABINET" block — promoted officer checks. */
+function additionalChecksBlock(customChecks?: PubActiveCustomCheck[]): string {
+  if (!customChecks || customChecks.length === 0) return '';
+  const lines = customChecks.map((c) => {
+    const example = c.exampleReformulation?.trim()
+      ? ` — reformulation type : « ${c.exampleReformulation.trim()} »`
+      : '';
+    const base = c.baseLegale?.trim() ? ` [base légale : ${c.baseLegale.trim()}]` : '';
+    return `- ${c.id} — ${c.intitule} (${CONSTAT_TYPE_FR[c.type]})${base}${example}`;
+  });
+  return [
+    'CONTRÔLES ADDITIONNELS DU CABINET (points ajoutés par les compliance officers — évalue-les AUSSI, un constat par contrôle, réutilise l\'id tel quel) :',
+    ...lines,
+    '',
+  ].join('\n');
 }
 
 /** Fence untrusted supplied text so injected instructions inside stay inert. */
@@ -256,6 +302,8 @@ export function buildPassPrompt(
   if (guidance) lines.push(guidance);
   const feedback = feedbackBlock(checks, opts.feedback);
   if (feedback) lines.push(feedback);
+  const additional = additionalChecksBlock(opts.customChecks);
+  if (additional) lines.push(additional);
   lines.push('CHECKS À TRAITER (un constat par check, réutilise l\'id) :');
   for (const c of checks) {
     lines.push(`- ${c.id} — ${c.intitule}  [base légale : ${c.baseLegale}]`);

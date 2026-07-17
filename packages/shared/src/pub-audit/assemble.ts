@@ -5,6 +5,7 @@ import {
   PUB_SECTIONS,
   type PubCheck,
 } from './catalog.js';
+import type { PubActiveCustomCheck } from './prompts.js';
 import type {
   Decompte,
   NiveauGlobal,
@@ -85,34 +86,59 @@ export interface AssemblePubInput {
   dateAnalyse: string;
   entiteName?: string;
   branding?: PubAuditPayload['branding'];
+  /** Promoted cabinet custom checks the passes were asked to also evaluate. */
+  customChecks?: PubActiveCustomCheck[];
 }
 
 export function assemblePubPayload(input: AssemblePubInput): PubAuditPayload {
   const { qualification, rawConstats, fileName, dateAnalyse } = input;
   const applicable = applicableChecks(qualification.produits);
   const applicableIds = new Set(applicable.map((c) => c.id));
+  // Active cabinet custom checks are always applicable (not product-scoped).
+  const customById = new Map((input.customChecks ?? []).map((c) => [c.id, c]));
 
   // Merge raw constats by id: keep the most severe verdict, drop unknown ids.
   const byId = new Map<string, PubConstat>();
   for (const raw of rawConstats) {
     const check = PUB_CHECK_BY_ID[raw.id];
-    if (!check || !applicableIds.has(raw.id)) continue; // hors périmètre → ignoré
-    const enriched: PubConstat = {
-      id: check.id,
-      intitule: check.intitule,
-      type: check.type,
-      section: check.section,
-      base_legale: check.baseLegale,
-      verdict: raw.verdict,
-      citation: raw.citation ?? null,
-      explication: raw.explication ?? '',
-      reformulation: raw.reformulation ?? null,
-      a_verifier_ou: raw.a_verifier_ou ?? null,
-      commentaire: null,
-    };
-    const prev = byId.get(check.id);
+    const custom = customById.get(raw.id);
+    let enriched: PubConstat;
+    if (check && applicableIds.has(raw.id)) {
+      enriched = {
+        id: check.id,
+        intitule: check.intitule,
+        type: check.type,
+        section: check.section,
+        base_legale: check.baseLegale,
+        verdict: raw.verdict,
+        citation: raw.citation ?? null,
+        explication: raw.explication ?? '',
+        reformulation: raw.reformulation ?? null,
+        a_verifier_ou: raw.a_verifier_ou ?? null,
+        commentaire: null,
+      };
+    } else if (custom) {
+      // A promoted cabinet check: enrich from the store (intitulé/type/section
+      // are cabinet-owned, like the catalog — never the LLM's to decide).
+      enriched = {
+        id: custom.id,
+        intitule: custom.intitule,
+        type: custom.type,
+        section: custom.section,
+        base_legale: custom.baseLegale ?? undefined,
+        verdict: raw.verdict,
+        citation: raw.citation ?? null,
+        explication: raw.explication ?? '',
+        reformulation: raw.reformulation ?? null,
+        a_verifier_ou: raw.a_verifier_ou ?? null,
+        commentaire: null,
+      };
+    } else {
+      continue; // hors périmètre → ignoré
+    }
+    const prev = byId.get(enriched.id);
     if (!prev || VERDICT_RANK[enriched.verdict] > VERDICT_RANK[prev.verdict]) {
-      byId.set(check.id, enriched);
+      byId.set(enriched.id, enriched);
     }
   }
 
@@ -134,13 +160,34 @@ export function assemblePubPayload(input: AssemblePubInput): PubAuditPayload {
     });
   }
 
-  // Order by section, then by catalog order within the section.
+  // Fill any active custom check the pass didn't return — honest "à vérifier",
+  // so a promoted check always appears in the report.
+  for (const custom of customById.values()) {
+    if (byId.has(custom.id)) continue;
+    if (!PUB_SECTIONS.includes(custom.section)) continue;
+    byId.set(custom.id, {
+      id: custom.id,
+      intitule: custom.intitule,
+      type: custom.type,
+      section: custom.section,
+      base_legale: custom.baseLegale ?? undefined,
+      verdict: 'a_verifier',
+      citation: null,
+      explication: "Ce point n'a pas pu être analysé lors de cette passe.",
+      reformulation: null,
+      a_verifier_ou: null,
+      commentaire: null,
+    });
+  }
+
+  // Order by section, then by catalog order within the section. Custom checks
+  // (no catalog order) sort after the catalog constats of their section.
   const catalogOrder = new Map(PUB_CATALOG.map((c, i) => [c.id, i]));
   const constats = [...byId.values()].sort((a, b) => {
     const sa = PUB_SECTIONS.indexOf(a.section ?? '');
     const sb = PUB_SECTIONS.indexOf(b.section ?? '');
     if (sa !== sb) return sa - sb;
-    return (catalogOrder.get(a.id) ?? 0) - (catalogOrder.get(b.id) ?? 0);
+    return (catalogOrder.get(a.id) ?? 1e9) - (catalogOrder.get(b.id) ?? 1e9);
   });
 
   const niveauGlobal = computeNiveau(constats);

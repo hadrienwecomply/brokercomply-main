@@ -70,8 +70,43 @@ export const PubConstatSchema = z.object({
   commentaire: z.string().nullable().optional(),
   /** Grouping label for the report. */
   section: z.string().optional(),
+  /**
+   * Provenance of the constat. `catalog` (or absent) = a code-owned check from
+   * {@link PUB_CATALOG}; `officer` = a constat the compliance officer added by
+   * hand in the editable report (see {@link PubAddedConstatSchema}). Only
+   * `officer` constats are user-removable and mined for the custom-check store.
+   */
+  origin: z.enum(['catalog', 'officer']).optional(),
 });
 export type PubConstat = z.infer<typeof PubConstatSchema>;
+
+/** Max officer-added constats accepted per report (abuse / payload-size guard). */
+export const MAX_ADDED_CONSTATS = 15;
+
+/** Prefix of every officer-added constat id (namespaced away from catalog ids). */
+export const PUB_ADDED_ID_PREFIX = 'CUST-';
+
+/**
+ * An officer-added constat as collected by the editable report. Unlike a catalog
+ * constat, its `intitule`, `type` and `base_legale` are officer-authored (the
+ * catalog can't supply them), so they travel in full — there is no base to diff
+ * against. The `id` is a client-generated `CUST-…` token, stable across saves.
+ * Field lengths are capped because this text is rendered into HTML and the PDF.
+ */
+export const PubAddedConstatSchema = z.object({
+  id: z.string().regex(new RegExp(`^${PUB_ADDED_ID_PREFIX}[A-Za-z0-9_-]{1,48}$`)),
+  section: z.string().min(1).max(120),
+  intitule: z.string().min(1).max(300),
+  type: ConstatTypeSchema.default('principe'),
+  verdict: PubVerdictSchema.default('a_verifier'),
+  citation: z.string().max(4000).nullable().optional(),
+  explication: z.string().max(4000).optional(),
+  base_legale: z.string().max(500).optional(),
+  reformulation: z.string().max(4000).nullable().optional(),
+  a_verifier_ou: z.string().max(1000).nullable().optional(),
+  commentaire: z.string().max(4000).nullable().optional(),
+});
+export type PubAddedConstat = z.infer<typeof PubAddedConstatSchema>;
 
 /** Result of the shared transcription + qualification pass (pass 0). */
 export const PubQualificationSchema = z.object({

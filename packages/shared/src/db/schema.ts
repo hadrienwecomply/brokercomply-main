@@ -768,6 +768,54 @@ export type PubAuditFeedbackRow = typeof pubAuditFeedback.$inferSelect;
 export type NewPubAuditFeedbackRow = typeof pubAuditFeedback.$inferInsert;
 
 /**
+ * Officer-added checks — net-new constats a compliance officer typed by hand in
+ * the editable pub report (checks the code catalog doesn't cover). Each add is
+ * upserted here (deduped by section + normalised intitulé, occurrences counted).
+ * They surface in /config/pub as candidates: promoting one flips `status` to
+ * `active`, after which it is injected into every future audit (cabinet-wide) as
+ * an additional check. `dismissed` hides it. `broker_id`/`source_audit_id` are
+ * kept for traceability only — an active check applies to all brokers.
+ */
+export const pubCustomChecks = pgTable(
+  'pub_custom_checks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Report section the constat was filed under (a real PUB_SECTIONS label). */
+    section: text('section').notNull(),
+    /** Officer-authored title of the check. */
+    intitule: text('intitule').notNull(),
+    /** Normalised intitulé (lower/trim/collapsed) — the dedup key with section. */
+    intituleKey: text('intitule_key').notNull(),
+    /** interdiction | mention_obligatoire | principe. */
+    type: text('type').default('principe').notNull(),
+    /** Officer-authored legal basis, if any. */
+    baseLegale: text('base_legale'),
+    /** Most-recent exemplar values (config preview + prompt few-shot). */
+    exampleVerdict: text('example_verdict'),
+    exampleCitation: text('example_citation'),
+    exampleExplication: text('example_explication'),
+    exampleReformulation: text('example_reformulation'),
+    /** How many times officers added an equivalent constat. */
+    occurrences: integer('occurrences').default(1).notNull(),
+    /** proposed | active | dismissed. */
+    status: text('status').default('proposed').notNull(),
+    /** Most recent audit that produced it (traceability; nullable). */
+    sourceAuditId: uuid('source_audit_id').references(() => pubAudits.id, { onDelete: 'set null' }),
+    /** Broker whose audit surfaced it (info only — active checks apply cabinet-wide). */
+    brokerId: uuid('broker_id').references(() => brokers.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('idx_pub_custom_checks_key').on(t.section, t.intituleKey),
+    index('idx_pub_custom_checks_status').on(t.status),
+  ],
+);
+
+export type PubCustomCheckRow = typeof pubCustomChecks.$inferSelect;
+export type NewPubCustomCheckRow = typeof pubCustomChecks.$inferInsert;
+
+/**
  * Assistant agent — shared conversations.
  *
  * The embedded Claude Agent SDK chat, visible to all officers (no per-user

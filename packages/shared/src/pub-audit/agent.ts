@@ -6,6 +6,7 @@ import {
   buildQualificationPrompt,
   PUB_CHECKER_SYSTEM_PROMPT,
   QUALIFICATION_SYSTEM_PROMPT,
+  type PubActiveCustomCheck,
   type PubExtraContext,
   type PubFeedbackMap,
   type PubGuidanceMap,
@@ -39,6 +40,8 @@ export interface PubAuditInput {
   guidance?: PubGuidanceMap;
   /** Phase 4 — past officer corrections per check (few-shot). */
   feedback?: PubFeedbackMap;
+  /** Promoted officer-added checks to also evaluate (cabinet-wide). */
+  customChecks?: PubActiveCustomCheck[];
   onProgress?: (event: PubAuditProgressEvent) => void;
 }
 
@@ -140,6 +143,9 @@ export async function runPubAudit(llm: LLMClient, input: PubAuditInput): Promise
             ...extra,
             guidance: input.guidance,
             feedback: input.feedback,
+            // Inject the cabinet custom checks once (pass A) to avoid duplicate
+            // evaluation across passes.
+            customChecks: pass === 'A' ? input.customChecks : undefined,
           }),
           image,
           (raw) => PassResultSchema.parse(JSON.parse(extractJsonObject(raw))),
@@ -161,6 +167,7 @@ export async function runPubAudit(llm: LLMClient, input: PubAuditInput): Promise
     dateAnalyse,
     entiteName: input.entiteName,
     branding: input.branding,
+    customChecks: input.customChecks,
   });
 
   return { payload, qualification, errors };

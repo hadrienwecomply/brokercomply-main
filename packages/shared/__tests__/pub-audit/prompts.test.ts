@@ -58,6 +58,27 @@ describe('buildPassPrompt guidance & feedback', () => {
     const out = buildPassPrompt('A', checks, qualification, 'pub.png');
     expect(out).not.toContain('CONSIGNES DU CABINET');
     expect(out).not.toContain('CORRECTIONS PASSÉES');
+    expect(out).not.toContain('CONTRÔLES ADDITIONNELS DU CABINET');
+  });
+
+  it('injects promoted officer-added checks as additional checks', () => {
+    const checks = checksForPass('A', qualification.produits);
+    const out = buildPassPrompt('A', checks, qualification, 'pub.png', {
+      customChecks: [
+        {
+          id: 'CUST-abc',
+          section: 'Identité & mentions FSMA',
+          intitule: 'Vérifier le disclaimer maison',
+          type: 'mention_obligatoire',
+          baseLegale: 'Art. Y CDE',
+          exampleReformulation: 'Ajouter le disclaimer maison',
+        },
+      ],
+    });
+    expect(out).toContain('CONTRÔLES ADDITIONNELS DU CABINET');
+    expect(out).toContain('CUST-abc');
+    expect(out).toContain('Vérifier le disclaimer maison');
+    expect(out).toContain('Ajouter le disclaimer maison');
   });
 });
 

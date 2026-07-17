@@ -1,13 +1,15 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import {
   pubAuditFeedback,
   pubAudits,
   pubCheckGuidance,
+  pubCustomChecks,
   type Db,
   type NewPubAuditFeedbackRow,
   type PubAuditFeedbackRow,
   type PubAuditRow,
   type PubCheckGuidanceRow,
+  type PubCustomCheckRow,
 } from '../db/index.js';
 import { normalizePubText } from './edits.js';
 import type { PubFeedbackMap, PubGuidanceMap } from './prompts.js';
@@ -291,4 +293,123 @@ export async function getPubCalibration(
     .sort((a, b) => b.verdictFlips - a.verdictFlips);
 }
 
-export type { PubAuditFeedbackRow };
+// ── Officer-added checks (custom-check learning store) ────────────────────
+
+export type PubCustomCheckStatus = 'proposed' | 'active' | 'dismissed';
+
+/** One officer-added constat to persist as a candidate custom check. */
+export interface PubCustomCheckInput {
+  section: string;
+  intitule: string;
+  type: string;
+  baseLegale?: string | null;
+  verdict?: string | null;
+  citation?: string | null;
+  explication?: string | null;
+  reformulation?: string | null;
+}
+
+/** Dedup key for a custom check: normalised, lower-cased intitulé. */
+function customCheckKey(intitule: string): string {
+  return normalizePubText(intitule).toLowerCase();
+}
+
+/**
+ * Upsert the officer-added constats of one audit into the custom-check store,
+ * deduped by (section, normalised intitulé). Occurrences count *distinct* audits
+ * (re-generating the same audit's PDF does not double-count, via the source-audit
+ * guard). The candidate's `status` is never changed here — a prior promote or
+ * dismiss decision is preserved. Best-effort: callers must not let a failure
+ * block the PDF request.
+ */
+export async function recordPubCustomChecks(
+  { db }: PubAuditServiceDeps,
+  input: { brokerId?: string | null; auditId?: string | null; added: PubCustomCheckInput[] },
+): Promise<void> {
+  const auditId = input.auditId ?? null;
+  const brokerId = input.brokerId ?? null;
+  for (const a of input.added) {
+    const intitule = normalizePubText(a.intitule);
+    if (!intitule) continue;
+    const intituleKey = customCheckKey(a.intitule);
+    if (!intituleKey) continue;
+    await db
+      .insert(pubCustomChecks)
+      .values({
+        section: a.section,
+        intitule,
+        intituleKey,
+        type: a.type || 'principe',
+        baseLegale: a.baseLegale ?? null,
+        exampleVerdict: a.verdict ?? null,
+        exampleCitation: a.citation ?? null,
+        exampleExplication: a.explication ?? null,
+        exampleReformulation: a.reformulation ?? null,
+        occurrences: 1,
+        status: 'proposed',
+        sourceAuditId: auditId,
+        brokerId,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [pubCustomChecks.section, pubCustomChecks.intituleKey],
+        set: {
+          intitule,
+          type: a.type || 'principe',
+          baseLegale: a.baseLegale ?? null,
+          exampleVerdict: a.verdict ?? null,
+          exampleCitation: a.citation ?? null,
+          exampleExplication: a.explication ?? null,
+          exampleReformulation: a.reformulation ?? null,
+          // Only count a fresh audit, not a re-generation of the same one.
+          occurrences: sql`case when ${pubCustomChecks.sourceAuditId} is distinct from ${auditId} then ${pubCustomChecks.occurrences} + 1 else ${pubCustomChecks.occurrences} end`,
+          sourceAuditId: auditId,
+          brokerId,
+          updatedAt: new Date(),
+        },
+      });
+  }
+}
+
+/** Custom checks (optionally filtered by status), most-added first. */
+export async function listPubCustomChecks(
+  { db }: PubAuditServiceDeps,
+  opts: { status?: PubCustomCheckStatus } = {},
+): Promise<PubCustomCheckRow[]> {
+  const order = [desc(pubCustomChecks.occurrences), desc(pubCustomChecks.updatedAt)] as const;
+  if (opts.status) {
+    return db
+      .select()
+      .from(pubCustomChecks)
+      .where(eq(pubCustomChecks.status, opts.status))
+      .orderBy(...order);
+  }
+  return db.select().from(pubCustomChecks).orderBy(...order);
+}
+
+/** Active custom checks, injected into future audits (cabinet-wide). */
+export async function getActivePubCustomChecks(
+  { db }: PubAuditServiceDeps,
+): Promise<PubCustomCheckRow[]> {
+  return db
+    .select()
+    .from(pubCustomChecks)
+    .where(eq(pubCustomChecks.status, 'active'))
+    .orderBy(desc(pubCustomChecks.updatedAt));
+}
+
+/** Set a custom check's status (promote → 'active', dismiss → 'dismissed'). */
+export async function setPubCustomCheckStatus(
+  { db }: PubAuditServiceDeps,
+  id: string,
+  status: PubCustomCheckStatus,
+): Promise<PubCustomCheckRow | undefined> {
+  const [row] = await db
+    .update(pubCustomChecks)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(pubCustomChecks.id, id))
+    .returning();
+  return row;
+}
+
+export type { PubAuditFeedbackRow, PubCustomCheckRow };
