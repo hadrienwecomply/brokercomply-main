@@ -123,11 +123,29 @@ export interface ProspectFieldsInput {
   societe?: string;
   siteInternet?: string | null;
   verticale?: string | null;
+  language?: string | null;
   leadFrom?: string | null;
   conversionProbability?: string | null;
   mrr?: number | null;
   /** ISO datetime, or null to clear. */
   meetingDate?: string | null;
+  // --- Enrichment fields (editable) ----------------------------------------
+  bce?: string | null;
+  formeJuridique?: string | null;
+  gerantsTous?: string | null;
+  rue?: string | null;
+  codePostal?: string | null;
+  ville?: string | null;
+  province?: string | null;
+  pays?: string | null;
+  fsmaStatut?: string | null;
+  typesProduits?: string | null;
+  activite?: string | null;
+  tailleEquipe?: string | null;
+  telSociete?: string | null;
+  linkedinSociete?: string | null;
+  instagram?: string | null;
+  xTwitter?: string | null;
 }
 
 /** Edit the agency's qualification attributes (detail page « Données »). */
@@ -148,6 +166,7 @@ export interface ContactInput {
   email?: string | null;
   phone?: string | null;
   role?: string | null;
+  linkedin?: string | null;
 }
 
 /** Edit one contact of the agency. */

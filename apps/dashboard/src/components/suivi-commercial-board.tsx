@@ -17,10 +17,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { formatDate, formatEur } from "@/lib/format";
-import { OFFICER_OPTIONS, officerName } from "@/lib/officers";
+import { officerName } from "@/lib/officers";
 import {
   anyPhone,
   LOST_REASON_LABEL,
+  NO_LIST_LABEL,
   PIPELINE_COLUMNS,
   primaryContact,
   taskGroup,
@@ -58,10 +59,28 @@ export function SuiviCommercialBoard({
   const [group, setGroup] = useState("all");
   const [mineOnly, setMineOnly] = useState(false);
   const [query, setQuery] = useState("");
+  const [listFilter, setListFilter] = useState(""); // "" = all, NO_LIST_LABEL = untagged
   const [ticking, setTicking] = useState(false);
   const [, startTransition] = useTransition();
 
   const byId = useMemo(() => new Map(prospects.map((p) => [p.id, p])), [prospects]);
+
+  // Distinct import lists across all prospects, for the toolbar filter.
+  const allLists = useMemo(() => {
+    const set = new Set<string>();
+    let hasUntagged = false;
+    for (const p of prospects) {
+      if (p.lists.length === 0) hasUntagged = true;
+      else for (const l of p.lists) set.add(l);
+    }
+    const sorted = [...set].sort((a, b) => a.localeCompare(b));
+    return hasUntagged ? [...sorted, NO_LIST_LABEL] : sorted;
+  }, [prospects]);
+
+  const matchesList = (p: ProspectDTO | undefined) =>
+    !listFilter ||
+    (p != null &&
+      (listFilter === NO_LIST_LABEL ? p.lists.length === 0 : p.lists.includes(listFilter)));
 
   const q = query.trim().toLowerCase();
   const matchesQuery = (p: ProspectDTO | undefined) =>
@@ -78,9 +97,10 @@ export function SuiviCommercialBoard({
         (t) =>
           (group === "all" || taskGroup(t) === group) &&
           (!mineOnly || t.assignee === me) &&
+          matchesList(byId.get(t.prospectId)) &&
           matchesQuery(byId.get(t.prospectId)),
       ),
-    [open, group, mineOnly, me, q, byId],
+    [open, group, mineOnly, me, q, listFilter, byId],
   );
 
   const groupCounts = useMemo(() => {
@@ -171,7 +191,7 @@ export function SuiviCommercialBoard({
       const contacts =
         p.contacts.length > 0
           ? p.contacts.map((c, i) => (c.isPrimary || i === 0 ? { ...c, phone } : c))
-          : [{ id: "new", name: null, email: null, phone, isPrimary: true }];
+          : [{ id: "new", name: null, email: null, phone, role: null, linkedin: null, isPrimary: true }];
       patchProspect(prospectId, { contacts });
     }
     startTransition(() => savePhone(prospectId, phone));
@@ -217,6 +237,22 @@ export function SuiviCommercialBoard({
             className="w-full rounded-lg border border-line bg-white py-1.5 pl-8 pr-3 text-sm text-ink placeholder:text-st-na focus:border-brand-500 focus:outline-none"
           />
         </label>
+
+        {allLists.length > 0 && (
+          <select
+            value={listFilter}
+            onChange={(e) => setListFilter(e.target.value)}
+            className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm text-ink focus:border-brand-500 focus:outline-none"
+            aria-label="Filtrer par liste"
+          >
+            <option value="">Toutes les listes</option>
+            {allLists.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+          </select>
+        )}
 
         {missingPhone > 0 && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fdf1da] px-2.5 py-1 text-xs font-medium text-[#8a5300] ring-1 ring-inset ring-[#f0ad4e]/55">
@@ -277,7 +313,10 @@ export function SuiviCommercialBoard({
           <RecentStrip tasks={recent} byId={byId} onUndo={undo} />
         </>
       ) : (
-        <Pipeline prospects={prospects.filter((p) => matchesQuery(p))} onMove={onMove} />
+        <Pipeline
+          prospects={prospects.filter((p) => matchesList(p) && matchesQuery(p))}
+          onMove={onMove}
+        />
       )}
     </div>
   );
@@ -288,7 +327,9 @@ const emptyP: ProspectDTO = {
   societe: "",
   siteInternet: null,
   verticale: null,
+  language: null,
   sourceStatus: null,
+  lists: [],
   pipelineStage: "to_contact",
   lostReason: null,
   noShow: false,
@@ -305,6 +346,29 @@ const emptyP: ProspectDTO = {
   stage: "awaiting_reply",
   nextActionAt: null,
   notes: null,
+  bce: null,
+  formeJuridique: null,
+  gerantsTous: null,
+  rue: null,
+  codePostal: null,
+  ville: null,
+  province: null,
+  pays: null,
+  fsmaStatut: null,
+  debutStatut: null,
+  typesProduits: null,
+  activite: null,
+  tailleEquipe: null,
+  telSociete: null,
+  telSource: null,
+  siteStatus: null,
+  siteQuality: null,
+  siteSummary: null,
+  linkedinSociete: null,
+  instagram: null,
+  xTwitter: null,
+  dateEnrichissement: null,
+  hasLogo: false,
   contacts: [],
 };
 
@@ -845,8 +909,8 @@ export function Badge({
   icon: Icon,
   children,
 }: {
-  tone: "warn" | "alert";
-  icon: React.ComponentType<{ className?: string }>;
+  tone: "warn" | "alert" | "muted";
+  icon?: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
 }) {
   return (
@@ -855,10 +919,12 @@ export function Badge({
         "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset",
         tone === "warn"
           ? "bg-[#fdf1da] text-[#8a5300] ring-[#f0ad4e]/55"
-          : "bg-[#fde2e5] text-[#bb1626] ring-[#ea384c]/55",
+          : tone === "muted"
+            ? "bg-line/50 text-ink-soft ring-line"
+            : "bg-[#fde2e5] text-[#bb1626] ring-[#ea384c]/55",
       )}
     >
-      <Icon className="size-3" />
+      {Icon && <Icon className="size-3" />}
       {children}
     </span>
   );
