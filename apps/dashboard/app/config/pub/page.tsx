@@ -14,7 +14,12 @@ export default async function PubConfigPage() {
         <h1 className="text-3xl font-semibold text-ink">Configuration de l&apos;audit pub</h1>
         <p className="text-ink-soft">
           Définissez les reformulations approuvées et les consignes d&apos;interprétation par check. Elles
-          orientent l&apos;analyse des prochaines pubs, sans toucher à la grille légale (code).
+          orientent l&apos;analyse des prochaines pubs, sans toucher à la grille légale (code). Nouveau
+          sur l&apos;outil ?{" "}
+          <Link href="/guide/audit-pub" className="font-medium text-brand-700 underline">
+            Consultez le guide de l&apos;audit publicité
+          </Link>
+          .
         </p>
         <nav className="flex gap-1 border-b border-line pt-2">
           <Link href="/config" className="px-3 py-2 text-sm font-medium text-ink-soft hover:text-ink">
