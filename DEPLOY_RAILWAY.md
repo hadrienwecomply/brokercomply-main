@@ -98,10 +98,28 @@ railway add --service gotenberg --image gotenberg/gotenberg:8
 # PAS de domaine public. Joignable en interne : http://gotenberg.railway.internal:3000
 ```
 
-Repointer les nodes HTTP des workflows PDF (`rapport-pub`, `audit-site-web`,
-`brokercomply-rapport`) de `localhost:3001` →
-`http://gotenberg.railway.internal:3000/forms/chromium/convert/html`.
-On conserve les marges + `@page{size:A4}` → **rendu identique à aujourd'hui**.
+Les nodes HTTP « Gotenberg » des workflows PDF (`rapport-pub`, `audit-site-web`,
+`brokercomply-rapport`) ne codent **plus** l'URL en dur. Ils utilisent une expression
+pilotée par variable d'environnement (fallback dev sur `localhost:3001`) :
+
+```
+={{ $env.GOTENBERG_URL || 'http://127.0.0.1:3001' }}/forms/chromium/convert/html
+```
+
+Pré-requis côté service `n8n` (sinon l'expression échoue avec `access to env vars denied`
+ou tombe sur `localhost:3001` injoignable en prod → *« The service refused the connection »*) :
+
+```bash
+railway variables --service n8n --set 'GOTENBERG_URL=http://gotenberg.railway.internal:3000'
+railway variables --service n8n --set 'N8N_BLOCK_ENV_ACCESS_IN_NODE=false'  # requis pour lire $env
+```
+
+> ⚠️ En **dev local**, le n8n doit aussi avoir `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` pour que
+> le fallback `localhost:3001` soit évalué (l'accès `$env` est bloqué par défaut). Sinon
+> définir `GOTENBERG_URL` localement, ou l'accès `$env` lève une erreur avant le fallback.
+
+Chaque node PDF porte aussi un `timeout` de 120 s. On conserve les marges + `@page{size:A4}`
+→ **rendu identique à aujourd'hui**.
 
 ## Phase 5 — Domaine & DNS (OVH)
 
