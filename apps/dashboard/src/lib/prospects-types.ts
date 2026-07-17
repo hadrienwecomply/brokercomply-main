@@ -10,6 +10,8 @@ export interface ProspectContactDTO {
   name: string | null;
   email: string | null;
   phone: string | null;
+  role: string | null;
+  linkedin: string | null;
   isPrimary: boolean;
 }
 
@@ -18,8 +20,12 @@ export interface ProspectDTO {
   societe: string;
   siteInternet: string | null;
   verticale: string | null;
+  /** 'FR' | 'NL' | 'EN' — drives the reminder template language. */
+  language: string | null;
   /** Verbatim lifecycle tags from the import source (Notion/CSV). */
   sourceStatus: string | null;
+  /** Import list tags (cumulative); empty = « Sans liste ». */
+  lists: string[];
   pipelineStage: PipelineStage;
   lostReason: LostReason | null;
   noShow: boolean;
@@ -37,6 +43,33 @@ export interface ProspectDTO {
   stage: string;
   nextActionAt: string | null;
   notes: string | null;
+  // --- Enrichment (FSMA lead CSV) — editable, but a re-import may overwrite ---
+  bce: string | null;
+  formeJuridique: string | null;
+  gerantsTous: string | null;
+  rue: string | null;
+  codePostal: string | null;
+  ville: string | null;
+  province: string | null;
+  pays: string | null;
+  fsmaStatut: string | null;
+  debutStatut: string | null;
+  typesProduits: string | null;
+  activite: string | null;
+  tailleEquipe: string | null;
+  telSociete: string | null;
+  /** Provenance of the phone number (read-only enrichment metadata). */
+  telSource: string | null;
+  /** Site probe outputs (read-only enrichment metadata). */
+  siteStatus: string | null;
+  siteQuality: string | null;
+  siteSummary: string | null;
+  linkedinSociete: string | null;
+  instagram: string | null;
+  xTwitter: string | null;
+  dateEnrichissement: string | null;
+  /** Whether a company logo is stored (bytes served from the logo endpoint). */
+  hasLogo: boolean;
   contacts: ProspectContactDTO[];
 }
 
@@ -70,6 +103,16 @@ export const PROBABILITY_OPTIONS = [
 
 /** Known verticals (free text — imports may differ). */
 export const VERTICALE_OPTIONS = ["Courtiers", "Immo"];
+
+/** Template languages (drives reminder language). */
+export const LANGUAGE_OPTIONS: { key: string; label: string }[] = [
+  { key: "FR", label: "Français" },
+  { key: "NL", label: "Nederlands" },
+  { key: "EN", label: "English" },
+];
+
+/** Placeholder label for prospects with no import list. */
+export const NO_LIST_LABEL = "Sans liste";
 
 export type CallOutcome = "reachable" | "callback" | "not_interested" | "signed";
 

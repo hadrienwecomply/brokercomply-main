@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, sql, type SQL } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import {
   prospectContacts,
@@ -47,6 +47,7 @@ export interface ContactImport {
   email?: string | null;
   phone?: string | null;
   role?: string | null;
+  linkedin?: string | null;
 }
 
 /** Agency-level fields an import may set (only provided keys are written). */
@@ -71,11 +72,39 @@ export type ProspectImport = Pick<
   | 'lastReplySubject'
   | 'calledAt'
   | 'notes'
+  // --- Enrichment fields (FSMA lead CSV). Empty cells map to `undefined` so a
+  // re-import never clears a value; non-empty values overwrite. ---
+  | 'bce'
+  | 'formeJuridique'
+  | 'gerantsTous'
+  | 'rue'
+  | 'codePostal'
+  | 'ville'
+  | 'province'
+  | 'pays'
+  | 'fsmaStatut'
+  | 'debutStatut'
+  | 'typesProduits'
+  | 'activite'
+  | 'tailleEquipe'
+  | 'telSociete'
+  | 'telSource'
+  | 'siteStatus'
+  | 'siteQuality'
+  | 'siteSummary'
+  | 'linkedinSociete'
+  | 'instagram'
+  | 'xTwitter'
+  | 'dateEnrichissement'
 > & {
   /** The person we talk to — becomes/updates the primary contact. */
   contact?: ContactImport;
   /** Extra known addresses — stored as secondary email-only contacts. */
   otherEmails?: string[];
+  /** Import list tags to append (cumulative — existing tags are kept). */
+  lists?: string[];
+  /** Seed `notes` on CREATE only (never overwrites an officer's later edits). */
+  notesOnCreate?: string | null;
   /**
    * Funnel stage applied only when the agency is CREATED — a weaker signal
    * than `pipelineStage`, which always wins. Lets the CSV import place new
@@ -88,6 +117,12 @@ export type ProspectImport = Pick<
 function normalizeEmail(raw: string | null | undefined): string | null {
   const e = raw?.trim().toLowerCase();
   return e && e.includes('@') ? e : null;
+}
+
+/** Belgian company number → digits only (drops 'BE', dots, spaces). */
+export function normalizeBce(raw: string | null | undefined): string | null {
+  const digits = raw?.replace(/\D/g, '') ?? '';
+  return digits.length >= 9 ? digits : null;
 }
 
 /**
@@ -103,17 +138,26 @@ function normalizeEmail(raw: string | null | undefined): string | null {
 export async function upsertProspect(
   { db }: ProspectsServiceDeps,
   input: ProspectImport,
-): Promise<{ created: boolean; id: string }> {
+): Promise<{ created: boolean; id: string; nearDuplicate: boolean }> {
   const societe = input.societe.trim();
+  const bce = normalizeBce(input.bce);
   const primaryEmail = normalizeEmail(input.contact?.email);
   const allEmails = [
     ...new Set([primaryEmail, ...(input.otherEmails ?? []).map(normalizeEmail)]),
   ].filter((e): e is string => e !== null);
 
-  // 1. Match by any contact address, else 2. by agency name.
+  // Match order: 0. BCE (strongest), 1. any contact address, 2. agency name.
   let prospectId: string | null = null;
   let matchedByEmail = false;
-  if (allEmails.length > 0) {
+  if (bce) {
+    const [byBce] = await db
+      .select({ id: prospects.id })
+      .from(prospects)
+      .where(eq(prospects.bce, bce))
+      .limit(1);
+    if (byBce) prospectId = byBce.id;
+  }
+  if (!prospectId && allEmails.length > 0) {
     const [byEmail] = await db
       .select({ prospectId: prospectContacts.prospectId })
       .from(prospectContacts)
@@ -135,6 +179,19 @@ export async function upsertProspect(
     if (byName) prospectId = byName.id;
   }
 
+  // On CREATE only: flag when an alphanumeric-squashed name already exists
+  // (catches spacing/punctuation/case variants that the exact match missed) so
+  // the officer can merge. Never blocks the import.
+  let nearDuplicate = false;
+  if (!prospectId) {
+    const [dup] = await db
+      .select({ id: prospects.id })
+      .from(prospects)
+      .where(sql`${squashName(prospects.societe)} = ${squashLiteral(societe)}`)
+      .limit(1);
+    if (dup) nearDuplicate = true;
+  }
+
   const agencyFields: Partial<NewProspect> = {
     // An email match never RENAMES the agency: shared mailboxes across two
     // agency spellings would steal a name already held by another row
@@ -148,14 +205,40 @@ export async function upsertProspect(
       sourceStatus: input.sourceStatus,
       pipelineStage: input.pipelineStage,
       lostReason: input.lostReason,
-      noShow: input.noShow,
-      needsReview: input.needsReview,
       mrr: input.mrr,
       conversionProbability: input.conversionProbability,
       leadFrom: input.leadFrom,
       meetingDate: input.meetingDate,
       notes: input.notes,
+      // Enrichment fields — the mapper emits `undefined` for empty cells, so
+      // definedOnly keeps existing values (blanks never clear).
+      formeJuridique: input.formeJuridique,
+      gerantsTous: input.gerantsTous,
+      rue: input.rue,
+      codePostal: input.codePostal,
+      ville: input.ville,
+      province: input.province,
+      pays: input.pays,
+      fsmaStatut: input.fsmaStatut,
+      debutStatut: input.debutStatut,
+      typesProduits: input.typesProduits,
+      activite: input.activite,
+      tailleEquipe: input.tailleEquipe,
+      telSociete: input.telSociete,
+      telSource: input.telSource,
+      siteStatus: input.siteStatus,
+      siteQuality: input.siteQuality,
+      siteSummary: input.siteSummary,
+      linkedinSociete: input.linkedinSociete,
+      instagram: input.instagram,
+      xTwitter: input.xTwitter,
+      dateEnrichissement: input.dateEnrichissement,
     }),
+    // `needsReview` is OR-ed: a near-duplicate flag never gets cleared by a
+    // later plain import that doesn't set it.
+    ...(input.needsReview || nearDuplicate ? { needsReview: true } : {}),
+    // BCE only backfills — never blank an existing number with an empty cell.
+    ...(bce ? { bce } : {}),
     // Never blank progress facts on a re-import when the source cell is empty.
     ...(input.offerSentAt ? { offerSentAt: input.offerSentAt } : {}),
     ...(input.lastReplyAt ? { lastReplyAt: input.lastReplyAt } : {}),
@@ -163,11 +246,29 @@ export async function upsertProspect(
     ...(input.calledAt ? { calledAt: input.calledAt } : {}),
   };
 
+  // Import lists are cumulative — union the incoming tags with the stored ones.
+  const newLists = (input.lists ?? []).map((l) => l.trim()).filter(Boolean);
+
   let created = false;
   if (prospectId) {
+    // Merge lists in JS (binding a JS array inside a raw sql`` template does not
+    // cast to text[]; drizzle serializes the column value correctly instead).
+    let mergedLists: string[] | undefined;
+    if (newLists.length > 0) {
+      const [cur] = await db
+        .select({ lists: prospects.lists })
+        .from(prospects)
+        .where(eq(prospects.id, prospectId))
+        .limit(1);
+      mergedLists = [...new Set([...(cur?.lists ?? []), ...newLists])];
+    }
     await db
       .update(prospects)
-      .set({ ...agencyFields, updatedAt: new Date() })
+      .set({
+        ...agencyFields,
+        ...(mergedLists ? { lists: mergedLists } : {}),
+        updatedAt: new Date(),
+      })
       .where(eq(prospects.id, prospectId));
   } else {
     const [row] = await db
@@ -177,6 +278,11 @@ export async function upsertProspect(
           ? { pipelineStage: input.pipelineStageOnCreate }
           : {}),
         ...agencyFields,
+        // Seed notes on create only (agencyFields.notes wins if the import set it).
+        ...(input.notesOnCreate && !agencyFields.notes
+          ? { notes: input.notesOnCreate }
+          : {}),
+        ...(newLists.length > 0 ? { lists: newLists } : {}),
       } as NewProspect)
       .returning({ id: prospects.id });
     prospectId = row!.id;
@@ -184,7 +290,17 @@ export async function upsertProspect(
   }
 
   await upsertContacts(db, prospectId, input.contact ?? {}, primaryEmail, allEmails);
-  return { created, id: prospectId };
+  return { created, id: prospectId, nearDuplicate };
+}
+
+/** SQL: alphanumeric-squash of a name column (lowercased, non-alnum removed). */
+function squashName(col: typeof prospects.societe): SQL {
+  return sql`regexp_replace(lower(${col}), '[^a-z0-9]', '', 'g')`;
+}
+
+/** JS-side squash matching squashName, for the bind value. */
+function squashLiteral(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 /** Keep only keys whose value is not undefined (null IS a deliberate value). */
@@ -227,6 +343,7 @@ async function upsertContacts(
         // Never blank an existing phone with an empty import value.
         ...(contact.phone ? { phone: contact.phone } : {}),
         ...(contact.role ? { role: contact.role } : {}),
+        ...(contact.linkedin ? { linkedin: contact.linkedin } : {}),
         updatedAt: new Date(),
       })
       .where(eq(prospectContacts.id, personRow.id));
@@ -246,6 +363,7 @@ async function upsertContacts(
         email: primaryEmail,
         phone: contact.phone ?? null,
         role: contact.role ?? null,
+        linkedin: contact.linkedin ?? null,
         isPrimary: true,
       })
       .onConflictDoNothing();
@@ -317,12 +435,55 @@ export interface ProspectFieldsPatch {
   societe?: string;
   siteInternet?: string | null;
   verticale?: string | null;
+  language?: string | null;
   leadFrom?: string | null;
   conversionProbability?: string | null;
   /** Monthly revenue in EUR, as a numeric string (e.g. '150.00'). */
   mrr?: string | null;
   meetingDate?: Date | null;
+  // --- Enrichment fields (editable; a re-import may overwrite them) ---------
+  bce?: string | null;
+  formeJuridique?: string | null;
+  gerantsTous?: string | null;
+  rue?: string | null;
+  codePostal?: string | null;
+  ville?: string | null;
+  province?: string | null;
+  pays?: string | null;
+  fsmaStatut?: string | null;
+  typesProduits?: string | null;
+  activite?: string | null;
+  tailleEquipe?: string | null;
+  telSociete?: string | null;
+  linkedinSociete?: string | null;
+  instagram?: string | null;
+  xTwitter?: string | null;
 }
+
+/** Fields patched verbatim (trim → null); keeps updateProspectFields terse. */
+const PROSPECT_TEXT_FIELDS = [
+  'siteInternet',
+  'verticale',
+  'language',
+  'leadFrom',
+  'conversionProbability',
+  'bce',
+  'formeJuridique',
+  'gerantsTous',
+  'rue',
+  'codePostal',
+  'ville',
+  'province',
+  'pays',
+  'fsmaStatut',
+  'typesProduits',
+  'activite',
+  'tailleEquipe',
+  'telSociete',
+  'linkedinSociete',
+  'instagram',
+  'xTwitter',
+] as const;
 
 /** Patch the provided agency fields; blank strings clear the value. */
 export async function updateProspectFields(
@@ -336,11 +497,10 @@ export async function updateProspectFields(
     if (!societe) throw new Error('societe cannot be blank');
     set.societe = societe;
   }
-  if (patch.siteInternet !== undefined) set.siteInternet = patch.siteInternet?.trim() || null;
-  if (patch.verticale !== undefined) set.verticale = patch.verticale?.trim() || null;
-  if (patch.leadFrom !== undefined) set.leadFrom = patch.leadFrom?.trim() || null;
-  if (patch.conversionProbability !== undefined)
-    set.conversionProbability = patch.conversionProbability?.trim() || null;
+  for (const key of PROSPECT_TEXT_FIELDS) {
+    const value = patch[key];
+    if (value !== undefined) set[key] = value?.trim() || null;
+  }
   if (patch.mrr !== undefined) set.mrr = patch.mrr?.trim() || null;
   if (patch.meetingDate !== undefined) set.meetingDate = patch.meetingDate;
   if (Object.keys(set).length === 0) return;
@@ -356,6 +516,7 @@ export interface ContactPatch {
   email?: string | null;
   phone?: string | null;
   role?: string | null;
+  linkedin?: string | null;
 }
 
 /** Patch the provided fields of one contact; blank strings clear the value. */
@@ -369,11 +530,50 @@ export async function updateProspectContact(
   if (patch.email !== undefined) set.email = normalizeEmail(patch.email);
   if (patch.phone !== undefined) set.phone = patch.phone?.trim() || null;
   if (patch.role !== undefined) set.role = patch.role?.trim() || null;
+  if (patch.linkedin !== undefined) set.linkedin = patch.linkedin?.trim() || null;
   if (Object.keys(set).length === 0) return;
   await db
     .update(prospectContacts)
     .set({ ...set, updatedAt: new Date() })
     .where(eq(prospectContacts.id, contactId));
+}
+
+/** Store the agency logo (PNG bytes, base64, no data: prefix). */
+export async function setProspectLogo(
+  { db }: ProspectsServiceDeps,
+  id: string,
+  base64: string,
+  mimeType: string,
+): Promise<void> {
+  await db
+    .update(prospects)
+    .set({ logoBase64: base64, logoMimeType: mimeType, updatedAt: new Date() })
+    .where(eq(prospects.id, id));
+}
+
+/** Read the stored logo, or null when the agency has none. */
+export async function getProspectLogo(
+  { db }: ProspectsServiceDeps,
+  id: string,
+): Promise<{ base64: string; mimeType: string } | null> {
+  const [row] = await db
+    .select({ base64: prospects.logoBase64, mimeType: prospects.logoMimeType })
+    .from(prospects)
+    .where(eq(prospects.id, id))
+    .limit(1);
+  if (!row?.base64) return null;
+  return { base64: row.base64, mimeType: row.mimeType ?? 'image/png' };
+}
+
+/** Remove the agency logo. */
+export async function clearProspectLogo(
+  { db }: ProspectsServiceDeps,
+  id: string,
+): Promise<void> {
+  await db
+    .update(prospects)
+    .set({ logoBase64: null, logoMimeType: null, updatedAt: new Date() })
+    .where(eq(prospects.id, id));
 }
 
 /** Add a person to the agency — primary only when it has none yet. */

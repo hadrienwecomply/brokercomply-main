@@ -895,6 +895,57 @@ export const prospects = pgTable(
     sourceStatus: text('source_status'),
     /** Set when the prospect converts to a signed client (links to brokers). */
     brokerId: uuid('broker_id').references(() => brokers.id, { onDelete: 'set null' }),
+    /**
+     * Import lists this prospect belongs to (tags, cumulative). Each CSV import
+     * appends its list name (e.g. 'FSMA NL 2026-07'); existing tags are kept.
+     * Empty for the historical Notion/CSV imports — filtered as « Sans liste ».
+     */
+    lists: text('lists').array().notNull().default(sql`'{}'`),
+
+    // --- Enrichment (FSMA lead CSV) -----------------------------------------
+    // Written by the enrichment import only; the commercial axes below are never
+    // touched by it. Non-empty CSV values overwrite; blanks never clear.
+    /** Belgian company number (BCE/KBO), digits only. Unique when present. */
+    bce: text('bce'),
+    /** Legal form (SRL, SA, personne physique…). */
+    formeJuridique: text('forme_juridique'),
+    /** All managers, verbatim from the source (gerants_tous). */
+    gerantsTous: text('gerants_tous'),
+    rue: text('rue'),
+    codePostal: text('code_postal'),
+    ville: text('ville'),
+    province: text('province'),
+    /** Country, defaults to Belgium in practice. */
+    pays: text('pays'),
+    /** FSMA register status (e.g. 'inscrit', 'radié'). */
+    fsmaStatut: text('fsma_statut'),
+    /** Start date of the FSMA status. */
+    debutStatut: timestamp('debut_statut', { withTimezone: true }),
+    /** Product categories the broker is registered for (verbatim). */
+    typesProduits: text('types_produits'),
+    /** Free-form activity description from enrichment. */
+    activite: text('activite'),
+    /** Team-size estimate from enrichment (verbatim string). */
+    tailleEquipe: text('taille_equipe'),
+    /** Company switchboard number (tel_societe). */
+    telSociete: text('tel_societe'),
+    /** Where the phone number came from (site / prospeo / annuaire…). */
+    telSource: text('tel_source'),
+    /** Enrichment site probe: reachability status of site_web. */
+    siteStatus: text('site_status'),
+    /** Enrichment site probe: quality grade. */
+    siteQuality: text('site_quality'),
+    /** Enrichment site probe: one-line summary of the website. */
+    siteSummary: text('site_summary'),
+    linkedinSociete: text('linkedin_societe'),
+    instagram: text('instagram'),
+    xTwitter: text('x_twitter'),
+    /** When the enrichment pipeline last wrote this row (date_enrichissement). */
+    dateEnrichissement: timestamp('date_enrichissement', { withTimezone: true }),
+
+    // --- Company logo (PNG, base64 inline — same storage as brokers) ---------
+    logoBase64: text('logo_base64'),
+    logoMimeType: text('logo_mime_type'),
 
     // --- Funnel (commercial pipeline) ---------------------------------------
     /**
@@ -962,6 +1013,8 @@ export const prospects = pgTable(
   (t) => [
     // Agencies are deduped by case-insensitive name (import reconciliation).
     uniqueIndex('uq_prospects_societe').on(sql`lower(${t.societe})`),
+    // Enrichment imports reconcile by BCE first — unique only when present.
+    uniqueIndex('uq_prospects_bce').on(t.bce).where(sql`${t.bce} is not null`),
     index('idx_prospects_stage').on(t.stage),
     index('idx_prospects_next_action').on(t.stage, t.nextActionAt),
     index('idx_prospects_pipeline').on(t.pipelineStage),
@@ -990,6 +1043,8 @@ export const prospectContacts = pgTable(
     phone: text('phone'),
     /** Free-form role/title at the agency. */
     role: text('role'),
+    /** LinkedIn profile URL of this person (from enrichment). */
+    linkedin: text('linkedin'),
     /** The contact chased by the cadence. At most one per prospect (by convention). */
     isPrimary: boolean('is_primary').default(false).notNull(),
     notes: text('notes'),
