@@ -66,6 +66,52 @@ describe('renderPubHtml', () => {
     expect(html()).not.toContain('class="p-creative"');
   });
 
+  it('renders the "add constat" affordances and the officer-constat template', () => {
+    const out = html();
+    // One add button per rendered section, tagged with the section title.
+    expect(out).toContain('class="p-add"');
+    expect(out).toContain('+ Ajouter un constat');
+    expect(out).toContain('data-section="Identité &amp; mentions FSMA"');
+    // Catalog constats carry their origin; the cloneable template is present.
+    expect(out).toContain('data-origin="catalog"');
+    expect(out).toContain('id="p-officer-tpl"');
+    // The template is an officer block with an editable intitulé + type select.
+    expect(out).toContain('data-origin="officer"');
+    expect(out).toContain('class="p-type"');
+    expect(out).toContain('class="p-intitule" contenteditable="true"');
+    // Client wiring for add/remove/collect is present.
+    expect(out).toContain('addOfficerConstat');
+    expect(out).toContain('added:');
+  });
+
+  it('renders an officer-added constat from the payload as an editable, removable block', () => {
+    const payload = assemblePubPayload({
+      qualification,
+      rawConstats: [{ id: 'G1', verdict: 'conforme' }],
+      fileName: 'pub.png',
+      dateAnalyse: '2026-07-09',
+    });
+    const withOfficer = renderPubHtml({
+      ...payload,
+      constats: [
+        ...payload.constats,
+        {
+          id: 'CUST-demo1',
+          intitule: 'Constat maison',
+          verdict: 'non_conforme',
+          type: 'interdiction',
+          section: 'Identité & mentions FSMA',
+          base_legale: 'Art. X CDE',
+          origin: 'officer',
+        },
+      ],
+    });
+    expect(withOfficer).toContain('data-cid="CUST-demo1"');
+    expect(withOfficer).toContain('Constat maison');
+    expect(withOfficer).toContain('class="p-del"'); // removable
+    expect(withOfficer).toContain('p-baselegale'); // editable legal basis
+  });
+
   it('renders the new editable fields and the (hidden) correction row', () => {
     const out = html();
     expect(out).toContain('p-averifier-ou'); // a_verifier_ou editor

@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import { computeNiveau } from './assemble.js';
-import { PubVerdictSchema, type PubAuditPayload } from './types.js';
+import { PUB_SECTIONS } from './catalog.js';
+import {
+  MAX_ADDED_CONSTATS,
+  PubAddedConstatSchema,
+  PubVerdictSchema,
+  type PubAddedConstat,
+  type PubAuditPayload,
+  type PubConstat,
+} from './types.js';
 
 /**
  * Officer edits captured by the editable pub report (format
@@ -35,12 +43,61 @@ export const PubAuditEditsSchema = z.object({
     })
     .optional(),
   constats: z.record(PubAuditConstatEditSchema).optional(),
+  /**
+   * Constats the officer added by hand in the report (not in the catalog). They
+   * carry their whole content (there is no base to diff), are appended to the
+   * payload by {@link applyPubEdits}, and are mined into the custom-check store.
+   */
+  added: z.array(PubAddedConstatSchema).max(MAX_ADDED_CONSTATS).optional(),
 });
 export type PubAuditEdits = z.infer<typeof PubAuditEditsSchema>;
 
 /** Mirror the editor's `txt()` normalisation so diffs never fire on whitespace. */
 export function normalizePubText(s: string | null | undefined): string {
   return (s ?? '').replace(/\u00a0/g, ' ').replace(/\r\n/g, '\n').trim();
+}
+
+/**
+ * Turn a raw officer-added constat into a full {@link PubConstat} carrying
+ * `origin: 'officer'`. Kept separate so both the payload assembler (apply) and
+ * the learning store use identical normalisation.
+ */
+function toOfficerConstat(a: PubAddedConstat): PubConstat {
+  return {
+    id: a.id,
+    intitule: a.intitule,
+    verdict: a.verdict,
+    type: a.type,
+    section: a.section,
+    base_legale: a.base_legale,
+    citation: a.citation ?? null,
+    explication: a.explication ?? '',
+    reformulation: a.reformulation ?? null,
+    a_verifier_ou: a.a_verifier_ou ?? null,
+    commentaire: a.commentaire ?? null,
+    origin: 'officer',
+  };
+}
+
+/**
+ * Keep only the officer-added constats that are safe to render/persist: their
+ * section must be a real report section, they must have a non-empty intitul\u00e9,
+ * their ids must be unique, and the count is capped. An empty-intitul\u00e9 block is
+ * one the officer added but never filled \u2014 dropped silently.
+ */
+function sanitizeAdded(added: PubAddedConstat[] | undefined): PubAddedConstat[] {
+  if (!added || added.length === 0) return [];
+  const seen = new Set<string>();
+  const out: PubAddedConstat[] = [];
+  for (const a of added) {
+    if (!PUB_SECTIONS.includes(a.section)) continue;
+    if (normalizePubText(a.intitule) === '') continue;
+    if (seen.has(a.id)) continue;
+    seen.add(a.id);
+    out.push(a);
+    if (out.length >= MAX_ADDED_CONSTATS) break;
+  }
+  return out;
 }
 
 /**
@@ -66,13 +123,19 @@ export function applyPubEdits(payload: PubAuditPayload, rawEdits: unknown): PubA
     };
   });
 
+  // Append the officer-added constats after the catalog ones. They live only in
+  // the edits delta (the stored findings stay the raw LLM output), so this never
+  // double-appends across save round-trips.
+  const added = sanitizeAdded(edits.added).map(toOfficerConstat);
+  const constatsAll = added.length > 0 ? [...constats, ...added] : constats;
+
   return {
     ...payload,
     ...(edits.header?.description !== undefined ? { description: edits.header.description } : {}),
     ...(edits.header?.disclaimer !== undefined ? { disclaimer: edits.header.disclaimer } : {}),
     ...(edits.header?.note !== undefined ? { note: edits.header.note } : {}),
-    constats,
-    niveauGlobal: computeNiveau(constats),
+    constats: constatsAll,
+    niveauGlobal: computeNiveau(constatsAll),
   };
 }
 
@@ -144,7 +207,22 @@ export function diffPubEdits(payload: PubAuditPayload, rawEdits: unknown): PubAu
     if (Object.keys(constats).length > 0) out.constats = constats;
   }
 
+  // Officer-added constats have no base to diff against — carry the sanitized
+  // set through verbatim so it replays identically through applyPubEdits.
+  const added = sanitizeAdded(edits.added);
+  if (added.length > 0) out.added = added;
+
   return out;
+}
+
+/**
+ * Extract the officer-added constats worth persisting to the custom-check store
+ * (the "learn for the future" signal). Accepts either a full editor payload or a
+ * stored delta; both yield the same sanitized rows. Malformed edits throw (Zod).
+ */
+export function extractAddedConstats(rawEdits: unknown): PubAddedConstat[] {
+  const edits = PubAuditEditsSchema.parse(rawEdits ?? {});
+  return sanitizeAdded(edits.added);
 }
 
 /** A single officer correction mined for the feedback loop (Phase 4). */

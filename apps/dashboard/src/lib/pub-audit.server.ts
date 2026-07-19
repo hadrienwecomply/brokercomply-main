@@ -8,8 +8,11 @@ import {
   config,
   createLLMClient,
   createPubAudit,
+  customCheckPromptId,
   diffPubEdits,
+  extractAddedConstats,
   extractPubFeedback,
+  getActivePubCustomChecks,
   getBrokerById,
   getBrokerBySlug,
   getPubAuditById,
@@ -18,12 +21,14 @@ import {
   listPubAuditsForBroker,
   pubPdfPayload,
   PubAuditPayloadSchema,
+  recordPubCustomChecks,
   recordPubFeedback,
   renderPubHtml,
   runPubAudit,
   updatePubAudit,
   type Db,
   type NewPubAuditFeedbackRow,
+  type PubActiveCustomCheck,
   type PubAuditPayload,
   type PubAuditRow,
 } from "@brokercomply/shared";
@@ -145,6 +150,37 @@ async function capturePubFeedback(
   // Always call (even with 0 rows) so a re-submit that removed a correction
   // clears the previously-captured row instead of leaving it stale.
   await recordPubFeedback({ db }, row.id, rows);
+}
+
+/**
+ * Persist the officer-added constats of this audit into the custom-check store,
+ * so they surface as candidates in /config/pub (and, once promoted, get injected
+ * into future audits). Best-effort — never blocks the PDF request.
+ */
+async function capturePubCustomChecks(
+  db: Db,
+  row: PubAuditRow,
+  storedEdits: unknown,
+): Promise<void> {
+  const added = extractAddedConstats(storedEdits);
+  if (added.length === 0) return;
+  await recordPubCustomChecks(
+    { db },
+    {
+      brokerId: row.brokerId,
+      auditId: row.id,
+      added: added.map((a) => ({
+        section: a.section,
+        intitule: a.intitule,
+        type: a.type,
+        baseLegale: a.base_legale ?? null,
+        verdict: a.verdict ?? null,
+        citation: a.citation ?? null,
+        explication: a.explication ?? null,
+        reformulation: a.reformulation ?? null,
+      })),
+    },
+  );
 }
 
 /** True for an IPv4 literal in a loopback / private / link-local / CGNAT / reserved range. */
@@ -292,13 +328,24 @@ async function runPubAuditJob(auditId: string): Promise<void> {
   try {
     await updatePubAudit({ db }, auditId, { status: "running", errorMessage: null });
 
-    // Phase 3/4 — steer the checkers with the cabinet's approved guidance and
-    // its past corrections. Phase 2 — extract the linked landing page's text.
-    const [guidance, feedback, landingText] = await Promise.all([
+    // Phase 3/4 — steer the checkers with the cabinet's approved guidance, its
+    // past corrections and its promoted officer-added checks. Phase 2 — extract
+    // the linked landing page's text.
+    const [guidance, feedback, customCheckRows, landingText] = await Promise.all([
       getPubGuidanceMap({ db }).catch(() => ({})),
       getPubFeedbackMap({ db }).catch(() => ({})),
+      getActivePubCustomChecks({ db }).catch(() => []),
       row.landingUrl ? fetchLandingText(row.landingUrl) : Promise.resolve(undefined),
     ]);
+
+    const customChecks: PubActiveCustomCheck[] = customCheckRows.map((c) => ({
+      id: customCheckPromptId(c.id),
+      section: c.section,
+      intitule: c.intitule,
+      type: c.type as PubActiveCustomCheck["type"],
+      baseLegale: c.baseLegale,
+      exampleReformulation: c.exampleReformulation,
+    }));
 
     const llm = createLLMClient();
     const result = await runPubAudit(llm, {
@@ -311,6 +358,7 @@ async function runPubAuditJob(auditId: string): Promise<void> {
       landingText,
       guidance,
       feedback,
+      customChecks,
     });
 
     // Show the analysed creative in the report (injected at render time, not
@@ -508,6 +556,13 @@ export async function requestPubAuditPdf(auditId: string, edits: unknown): Promi
     await capturePubFeedback(db, existing, stored);
   } catch (e) {
     console.error("[pub-audit] capturePubFeedback failed", e);
+  }
+  // Mine the officer's hand-added constats into the custom-check store. Also
+  // best-effort — must never block PDF generation.
+  try {
+    await capturePubCustomChecks(db, existing, stored);
+  } catch (e) {
+    console.error("[pub-audit] capturePubCustomChecks failed", e);
   }
 
   let payload: PubAuditPayload;

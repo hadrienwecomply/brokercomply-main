@@ -52,14 +52,48 @@ function verdictSelect(c: PubConstat): string {
   return `<select class="p-verdict p-verdict--${c.verdict}" data-cid="${esc(c.id)}" data-orig="${esc(c.verdict)}">${options}</select>`;
 }
 
+const CONSTAT_TYPE_LABEL: Record<string, string> = {
+  principe: 'Principe / bonne pratique',
+  mention_obligatoire: 'Mention obligatoire',
+  interdiction: 'Interdiction',
+};
+
+/** Type <select> for officer-added constats (catalog constats keep a fixed type). */
+function typeSelect(selected: string): string {
+  const options = Object.keys(CONSTAT_TYPE_LABEL)
+    .map(
+      (t) => `<option value="${t}"${t === selected ? ' selected' : ''}>${CONSTAT_TYPE_LABEL[t]}</option>`,
+    )
+    .join('');
+  return `<select class="p-type">${options}</select>`;
+}
+
 function constatBlock(c: PubConstat, index: { section: number; item: number }): string {
+  const officer = c.origin === 'officer';
+  // Officer-added constats let the officer author the intitulé, type and legal
+  // basis (the catalog can't supply them); catalog constats keep them fixed.
+  const intitule = officer
+    ? `<span class="p-intitule" contenteditable="true" data-ph="Intitulé du constat…">${esc(c.intitule)}</span>`
+    : `<span class="p-intitule">${esc(c.intitule)}</span>`;
+  const badge = officer ? ` <span class="p-badge">ajouté</span>` : '';
+  const del = officer
+    ? `<button type="button" class="p-del" title="Supprimer ce constat ajouté">Supprimer</button>`
+    : '';
   return `
-  <article class="p-constat" data-cid="${esc(c.id)}">
+  <article class="p-constat" data-cid="${esc(c.id)}" data-origin="${officer ? 'officer' : 'catalog'}" data-section="${esc(c.section ?? '')}">
     <header class="p-constat-head">
-      <h3>${index.section}.${index.item} ${esc(c.intitule)} <span class="p-cid">${esc(c.id)}</span></h3>
+      <h3><span class="p-num">${index.section}.${index.item}</span> ${intitule}${badge} <span class="p-cid">${esc(c.id)}</span></h3>
       ${verdictSelect(c)}
+      ${del}
     </header>
-    ${c.base_legale ? `<div class="p-refs"><span class="p-ref">${esc(c.base_legale)}</span></div>` : ''}
+    ${
+      officer
+        ? `<div class="p-field"><label>Type de constat</label>${typeSelect(c.type)}</div>
+    <div class="p-field"><label>Base légale</label><div class="p-edit p-baselegale" contenteditable="true" data-ph="Ex. Art. VII.123 §1 CDE…">${esc(c.base_legale ?? '')}</div></div>`
+        : c.base_legale
+          ? `<div class="p-refs"><span class="p-ref">${esc(c.base_legale)}</span></div>`
+          : ''
+    }
     <div class="p-field">
       <label>Citation / constat</label>
       <div class="p-edit p-citation" contenteditable="true" data-ph="Citation ou constat d'absence…">${esc(c.citation ?? '')}</div>
@@ -115,12 +149,33 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   const sectionsHtml = sections
     .map(
       (sec, si) => `
-    <section class="p-section">
+    <section class="p-section" data-section="${esc(sec.titre)}">
       <h2>${si + 1}. ${esc(sec.titre)}</h2>
       ${sec.constats.map((c, ci) => constatBlock(c, { section: si + 1, item: ci + 1 })).join('')}
+      <button type="button" class="p-add" data-section="${esc(sec.titre)}">+ Ajouter un constat</button>
     </section>`,
     )
     .join('');
+
+  // Blank officer-constat markup, cloned client-side each time the officer adds
+  // a constat. Built from the same constatBlock() so the two never drift.
+  const officerTemplate = constatBlock(
+    {
+      id: '__CID__',
+      intitule: '',
+      verdict: 'a_verifier',
+      type: 'principe',
+      section: '__SECTION__',
+      base_legale: '',
+      citation: null,
+      explication: '',
+      reformulation: null,
+      a_verifier_ou: null,
+      commentaire: null,
+      origin: 'officer',
+    },
+    { section: 0, item: 0 },
+  );
 
   const nv = NIVEAU[niveauGlobal.code];
   const produits = support.produits.map((p) => PRODUIT_LABEL[p] ?? p).join(', ');
@@ -158,8 +213,20 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   .p-chips{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
   .chip{border-radius:999px;padding:5px 14px;font-size:13px;font-weight:600;border:1px solid transparent}
   .p-constat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0}
-  .p-constat-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .p-constat-head{display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+  .p-num{color:var(--muted);font-weight:600;margin-right:2px}
+  .p-intitule{font-weight:600}
+  .p-intitule[contenteditable]{outline:1px dashed rgba(70,83,200,.35);outline-offset:3px;border-radius:6px;padding:1px 4px}
+  .p-intitule[contenteditable]:focus{background:rgba(70,83,200,.08);outline:2px solid var(--brand)}
+  .p-intitule[contenteditable]:empty:before{content:attr(data-ph);color:var(--muted);font-style:italic;font-weight:400}
   .p-cid{color:var(--muted);font-size:12px;font-weight:400}
+  .p-badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--brand);background:rgba(70,83,200,.1);border-radius:999px;padding:1px 8px}
+  .p-constat[data-origin="officer"]{border-left:3px solid var(--brand)}
+  .p-type{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px;background:#fff}
+  .p-del{border:1px solid var(--line);background:#fff;color:#bb1626;border-radius:8px;padding:5px 10px;font-size:12.5px;font-weight:600;cursor:pointer}
+  .p-del:hover{background:#fde2e5;border-color:#bb1626}
+  .p-add{display:inline-flex;align-items:center;gap:6px;margin:6px 0 4px;border:1px dashed var(--brand);background:transparent;color:var(--brand);border-radius:8px;padding:8px 14px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .p-add:hover{background:rgba(70,83,200,.06)}
   .p-refs{margin:2px 0 8px}
   .p-ref{display:inline-block;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:12px;color:var(--muted)}
   .p-field{margin:10px 0}
@@ -244,6 +311,8 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   <button type="button" class="p-btn p-btn--primary" id="p-submit">Générer le PDF</button>
 </div>
 
+<template id="p-officer-tpl">${officerTemplate}</template>
+
 <script type="application/json" id="__cfg">{"format":"brokercomply-pub/v1"}</script>
 <script>(function pubClient() {
   var cfg = {};
@@ -258,11 +327,33 @@ export function renderPubHtml(payload: PubAuditPayload): string {
   }
 
   function collectEdits() {
-    var constats = {};
+    var constats = {}, added = [];
     document.querySelectorAll('.p-constat').forEach(function (art) {
       var cid = art.getAttribute('data-cid');
       if (!cid) return;
       var sel = art.querySelector('.p-verdict');
+      if (art.getAttribute('data-origin') === 'officer') {
+        // Officer-added constat: carry its whole content (there is no base to
+        // diff). Skip a block the officer added but left without a title.
+        var intitule = txt(art.querySelector('.p-intitule'));
+        if (!intitule) return;
+        var typeSel = art.querySelector('.p-type');
+        var sec = art.getAttribute('data-section') || (art.closest('.p-section') && art.closest('.p-section').getAttribute('data-section')) || '';
+        added.push({
+          id: cid,
+          section: sec,
+          intitule: intitule,
+          type: typeSel ? typeSel.value : 'principe',
+          verdict: sel ? sel.value : 'a_verifier',
+          base_legale: txt(art.querySelector('.p-baselegale')),
+          citation: txt(art.querySelector('.p-citation')),
+          explication: txt(art.querySelector('.p-explication')),
+          reformulation: txt(art.querySelector('.p-reformulation')),
+          a_verifier_ou: txt(art.querySelector('.p-averifier-ou')),
+          commentaire: txt(art.querySelector('.p-commentaire'))
+        });
+        return;
+      }
       var noteEl = art.querySelector('.p-correction-note');
       constats[cid] = {
         verdict: sel ? sel.value : undefined,
@@ -280,12 +371,75 @@ export function renderPubHtml(payload: PubAuditPayload): string {
         disclaimer: txt(document.getElementById('h-disclaimer')),
         note: txt(document.getElementById('h-note'))
       },
-      constats: constats
+      constats: constats,
+      added: added
     };
+  }
+
+  // ── Officer-added constats ────────────────────────────────────────────────
+  function genId() {
+    return 'CUST-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+  // Recompute the "section.item" display numbers after any add/delete.
+  function renumber() {
+    document.querySelectorAll('.p-section').forEach(function (sec, si) {
+      sec.querySelectorAll('.p-constat').forEach(function (art, ci) {
+        var num = art.querySelector('.p-num');
+        if (num) num.textContent = (si + 1) + '.' + (ci + 1);
+      });
+    });
+  }
+  function fillOfficer(art, data) {
+    var set = function (selq, val) { var el = art.querySelector(selq); if (el && val != null) el.textContent = val; };
+    set('.p-intitule', data.intitule);
+    set('.p-baselegale', data.base_legale);
+    set('.p-citation', data.citation);
+    set('.p-explication', data.explication);
+    set('.p-reformulation', data.reformulation);
+    set('.p-averifier-ou', data.a_verifier_ou);
+    set('.p-commentaire', data.commentaire);
+    var typeSel = art.querySelector('.p-type');
+    if (typeSel && data.type) typeSel.value = data.type;
+    var sel = art.querySelector('.p-verdict');
+    if (sel && data.verdict) { sel.value = data.verdict; sel.setAttribute('data-orig', data.verdict); restyleVerdict(sel); }
+  }
+  function findSection(section) {
+    // Match by attribute value (avoids selector-escaping pitfalls with section
+    // labels that contain spaces / "&").
+    var host = null;
+    document.querySelectorAll('.p-section').forEach(function (s) {
+      if (!host && s.getAttribute('data-section') === section) host = s;
+    });
+    return host;
+  }
+  function addOfficerConstat(section, data, focus) {
+    var host = findSection(section);
+    if (!host) return null;
+    var tpl = document.getElementById('p-officer-tpl');
+    var art = tpl.content.firstElementChild.cloneNode(true);
+    var id = (data && data.id) || genId();
+    art.setAttribute('data-cid', id);
+    art.setAttribute('data-section', section);
+    var cidEl = art.querySelector('.p-cid'); if (cidEl) cidEl.textContent = id;
+    var sel = art.querySelector('.p-verdict'); if (sel) sel.setAttribute('data-cid', id);
+    if (data) fillOfficer(art, data);
+    var addBtn = host.querySelector('.p-add');
+    host.insertBefore(art, addBtn);
+    renumber();
+    if (focus) { var it = art.querySelector('.p-intitule'); if (it) it.focus(); }
+    return art;
   }
 
   function applyEdits(ed) {
     if (!ed) return;
+    // Rebuild officer-added constats first so their fields exist for the rest.
+    // Idempotent: skip any id already present (avoids duplicates on re-apply).
+    if (ed.added && ed.added.length) {
+      ed.added.forEach(function (a) {
+        if (!a || !a.id || document.querySelector('.p-constat[data-cid="' + a.id + '"]')) return;
+        addOfficerConstat(a.section, a, false);
+      });
+    }
     if (ed.header) {
       if (ed.header.description !== undefined) document.getElementById('h-description').textContent = ed.header.description;
       if (ed.header.disclaimer !== undefined) document.getElementById('h-disclaimer').textContent = ed.header.disclaimer;
@@ -343,6 +497,22 @@ export function renderPubHtml(payload: PubAuditPayload): string {
       var art = e.target.closest('.p-constat');
       if (art) syncCorrection(art);
       markDirty();
+    }
+    if (e.target && e.target.classList.contains('p-type')) markDirty();
+  });
+
+  // Add / remove officer constats.
+  document.addEventListener('click', function (e) {
+    var addBtn = e.target && e.target.closest ? e.target.closest('.p-add') : null;
+    if (addBtn) {
+      addOfficerConstat(addBtn.getAttribute('data-section'), null, true);
+      markDirty();
+      return;
+    }
+    var delBtn = e.target && e.target.closest ? e.target.closest('.p-del') : null;
+    if (delBtn) {
+      var art = delBtn.closest('.p-constat');
+      if (art && window.confirm('Supprimer ce constat ajouté ?')) { art.remove(); renumber(); markDirty(); }
     }
   });
 

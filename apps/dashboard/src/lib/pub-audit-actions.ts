@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { retryPubAudit } from "./pub-audit.server";
 import {
+  dismissPubCustomCheck,
+  promotePubCustomCheck,
   promotePubReformulation,
   savePubGuidance,
   type SavePubGuidanceInput,
@@ -31,4 +33,18 @@ export async function promotePubReformulationAction(
   reformulation: string,
 ): Promise<{ ok: boolean; error?: string }> {
   return promotePubReformulation(checkId, reformulation);
+}
+
+/** Promote an officer-added check → evaluated on every future audit (cabinet-wide). */
+export async function promotePubCustomCheckAction(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  return promotePubCustomCheck(id);
+}
+
+/** Dismiss an officer-added check candidate. */
+export async function dismissPubCustomCheckAction(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  return dismissPubCustomCheck(id);
 }

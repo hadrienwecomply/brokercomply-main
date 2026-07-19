@@ -1,10 +1,21 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ChevronDown, Plus, Sparkles, Trash2, TrendingUp } from "lucide-react";
+import { ChevronDown, FilePlus2, Plus, Sparkles, Trash2, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { promotePubReformulationAction, savePubGuidanceAction } from "@/lib/pub-audit-actions";
+import {
+  dismissPubCustomCheckAction,
+  promotePubCustomCheckAction,
+  promotePubReformulationAction,
+  savePubGuidanceAction,
+} from "@/lib/pub-audit-actions";
 import type { PubGuidanceConfig } from "@/lib/pub-guidance.server";
+
+const CUSTOM_TYPE_LABEL: Record<string, string> = {
+  interdiction: "Interdiction",
+  mention_obligatoire: "Mention obligatoire",
+  principe: "Principe",
+};
 
 type GuidanceRow = PubGuidanceConfig["sections"][number]["rows"][number];
 
@@ -166,6 +177,90 @@ function PromotionCandidates({ candidates }: { candidates: PubGuidanceConfig["ca
   );
 }
 
+function CustomCheckCandidates({ customChecks }: { customChecks: PubGuidanceConfig["customChecks"] }) {
+  const [isPending, startTransition] = useTransition();
+  const [handled, setHandled] = useState<Record<string, "promoted" | "dismissed">>({});
+  // Only the proposed ones are actionable; active ones are shown for reference.
+  const proposed = customChecks.filter((c) => c.status === "proposed" && !handled[c.id]);
+  const active = customChecks.filter(
+    (c) => c.status === "active" || handled[c.id] === "promoted",
+  );
+  if (customChecks.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-brand-500/40 bg-brand-100/50 p-4">
+      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-brand-700">
+        <FilePlus2 className="size-4" /> Constats ajoutés par les officers
+      </div>
+      <p className="mb-3 text-sm text-ink-soft">
+        Constats saisis à la main dans les rapports. Promouvez-en un pour que l&apos;analyse l&apos;évalue
+        automatiquement sur tous les prochains audits, ou écartez-le s&apos;il était ponctuel.
+      </p>
+      <div className="space-y-2">
+        {proposed.map((c) => (
+          <div key={c.id} className="flex items-center gap-3 rounded-lg border border-line bg-white px-3 py-2">
+            <span className="rounded-md border border-line bg-paper px-2 py-0.5 text-xs font-medium text-ink-soft">
+              {CUSTOM_TYPE_LABEL[c.type] ?? c.type}
+            </span>
+            <span className="flex-1 text-sm text-ink">
+              {c.intitule}
+              <span className="ml-2 text-xs text-ink-soft">
+                · {c.section} · {c.occurrences}× ajouté
+              </span>
+            </span>
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() =>
+                startTransition(async () => {
+                  const res = await promotePubCustomCheckAction(c.id);
+                  if (res.ok) setHandled((p) => ({ ...p, [c.id]: "promoted" }));
+                })
+              }
+              className="rounded-lg border border-brand-500 bg-brand-600 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+            >
+              Promouvoir
+            </button>
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() =>
+                startTransition(async () => {
+                  const res = await dismissPubCustomCheckAction(c.id);
+                  if (res.ok) setHandled((p) => ({ ...p, [c.id]: "dismissed" }));
+                })
+              }
+              className="rounded-lg border border-line px-3 py-1 text-xs font-medium text-ink-soft hover:bg-white disabled:opacity-50"
+            >
+              Écarter
+            </button>
+          </div>
+        ))}
+        {proposed.length === 0 && active.length > 0 && (
+          <p className="text-sm text-ink-soft">Aucun nouveau constat à examiner.</p>
+        )}
+      </div>
+      {active.length > 0 && (
+        <div className="mt-3 border-t border-brand-500/30 pt-3">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">
+            Actifs (évalués sur chaque audit)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {active.map((c) => (
+              <span
+                key={c.id}
+                className="rounded-md border border-brand-500/40 bg-white px-2.5 py-1 text-xs text-ink-soft"
+              >
+                <span className="font-semibold text-ink">{c.intitule}</span> · {c.section}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Calibration({ calibration }: { calibration: PubGuidanceConfig["calibration"] }) {
   const top = calibration.filter((c) => c.verdictFlips > 0).slice(0, 8);
   if (top.length === 0) return null;
@@ -192,6 +287,7 @@ function Calibration({ calibration }: { calibration: PubGuidanceConfig["calibrat
 export function PubGuidanceWorkspace({ config }: { config: PubGuidanceConfig }) {
   return (
     <div className="space-y-5">
+      <CustomCheckCandidates customChecks={config.customChecks} />
       <PromotionCandidates candidates={config.candidates} />
       <Calibration calibration={config.calibration} />
       {config.sections.map((sec) => (

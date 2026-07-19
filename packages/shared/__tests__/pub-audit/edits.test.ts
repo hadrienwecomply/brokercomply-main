@@ -3,10 +3,11 @@ import { assemblePubPayload } from '../../src/pub-audit/assemble.js';
 import {
   applyPubEdits,
   diffPubEdits,
+  extractAddedConstats,
   extractPubFeedback,
   normalizePubText,
 } from '../../src/pub-audit/edits.js';
-import type { PubQualification } from '../../src/pub-audit/types.js';
+import type { PubAddedConstat, PubQualification } from '../../src/pub-audit/types.js';
 
 const qualification: PubQualification = {
   format: 'flyer',
@@ -131,6 +132,83 @@ describe('extractPubFeedback', () => {
       constats: { C5b: { verdict: 'non_conforme', reformulation: '   ' } },
     });
     expect(rows).toEqual([]);
+  });
+});
+
+const S_IDENTITE = 'Identité & mentions FSMA';
+
+function addedConstat(over: Partial<PubAddedConstat> = {}): PubAddedConstat {
+  return {
+    id: 'CUST-abc123',
+    section: S_IDENTITE,
+    intitule: 'Mention manuscrite ajoutée',
+    type: 'principe',
+    verdict: 'a_verifier',
+    ...over,
+  };
+}
+
+describe('applyPubEdits — officer-added constats', () => {
+  it('appends an added constat after the catalog ones', () => {
+    const out = applyPubEdits(basePayload(), { added: [addedConstat()] });
+    const c = out.constats.find((x) => x.id === 'CUST-abc123');
+    expect(c).toBeDefined();
+    expect(c!.origin).toBe('officer');
+    expect(c!.intitule).toBe('Mention manuscrite ajoutée');
+    expect(c!.section).toBe(S_IDENTITE);
+  });
+
+  it('lets an added interdiction escalate the global level', () => {
+    const payload = applyPubEdits(basePayload(), {
+      constats: { C5b: { verdict: 'non_applicable' } }, // clear the base rouge
+    });
+    expect(payload.niveauGlobal.code).not.toBe('rouge');
+    const out = applyPubEdits(payload, {
+      added: [addedConstat({ id: 'CUST-x1', type: 'interdiction', verdict: 'non_conforme' })],
+    });
+    expect(out.niveauGlobal.code).toBe('rouge');
+  });
+
+  it('drops added constats with an unknown section or empty intitulé', () => {
+    const out = applyPubEdits(basePayload(), {
+      added: [
+        addedConstat({ id: 'CUST-bad1', section: 'Section inexistante' }),
+        addedConstat({ id: 'CUST-bad2', intitule: '   ' }),
+        addedConstat({ id: 'CUST-ok' }),
+      ],
+    });
+    expect(out.constats.find((c) => c.id === 'CUST-bad1')).toBeUndefined();
+    expect(out.constats.find((c) => c.id === 'CUST-bad2')).toBeUndefined();
+    expect(out.constats.find((c) => c.id === 'CUST-ok')).toBeDefined();
+  });
+
+  it('rejects a malformed added id (Zod)', () => {
+    expect(() => applyPubEdits(basePayload(), { added: [addedConstat({ id: 'G1' })] })).toThrow();
+  });
+});
+
+describe('diffPubEdits / extractAddedConstats — officer-added constats', () => {
+  it('carries the added set through and replays identically', () => {
+    const payload = basePayload();
+    const full = { added: [addedConstat({ id: 'CUST-x1', type: 'interdiction', verdict: 'non_conforme' })] };
+    const delta = diffPubEdits(payload, full);
+    expect(delta.added).toHaveLength(1);
+    expect(applyPubEdits(payload, delta).niveauGlobal.code).toBe(
+      applyPubEdits(payload, full).niveauGlobal.code,
+    );
+  });
+
+  it('deduplicates added ids and drops the invalid ones', () => {
+    const rows = extractAddedConstats({
+      added: [
+        addedConstat({ id: 'CUST-dup' }),
+        addedConstat({ id: 'CUST-dup', intitule: 'Doublon écrasé' }),
+        addedConstat({ id: 'CUST-empty', intitule: '   ' }),
+      ],
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe('CUST-dup');
+    expect(rows[0].intitule).toBe('Mention manuscrite ajoutée');
   });
 });
 
