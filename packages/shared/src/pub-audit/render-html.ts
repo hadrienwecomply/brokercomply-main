@@ -21,7 +21,7 @@ const NIVEAU: Record<PubLevel, { label: string; color: string; bg: string }> = {
 
 const VERDICTS: Record<PubVerdict, { label: string; color: string; bg: string; icon: string }> = {
   non_conforme: { label: 'Non conforme', color: '#bb1626', bg: '#fde2e5', icon: '✗' },
-  a_verifier: { label: 'À vérifier', color: '#8a5300', bg: '#fdf1da', icon: '?' },
+  a_verifier: { label: "Point d'attention", color: '#8a5300', bg: '#fdf1da', icon: '?' },
   conforme: { label: 'Conforme', color: '#1f7a44', bg: '#e7f4ec', icon: '✓' },
   non_applicable: { label: 'Non applicable', color: '#8a9098', bg: '#f5f6f7', icon: '–' },
 };
@@ -280,7 +280,7 @@ export function renderPubHtml(payload: PubAuditPayload): string {
 
   <div class="p-chips">
     <span class="chip" style="color:#bb1626;background:#fde2e5">Non conformes : ${d.non_conforme}</span>
-    <span class="chip" style="color:#8a5300;background:#fdf1da">À vérifier : ${d.a_verifier}</span>
+    <span class="chip" style="color:#8a5300;background:#fdf1da">Points d'attention : ${d.a_verifier}</span>
     <span class="chip" style="color:#1f7a44;background:#e7f4ec">Conformes : ${d.conforme}</span>
     <span class="chip" style="color:#8a9098;background:#f5f6f7">N.A. : ${d.non_applicable}</span>
   </div>

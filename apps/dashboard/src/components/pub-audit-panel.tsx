@@ -63,7 +63,7 @@ function AuditRow({ audit, slug }: { audit: PubAuditView; slug: string }) {
         {audit.fileName}
         {audit.decompte && (
           <span className="ml-2 text-xs text-ink-soft">
-            · {audit.decompte.non_conforme} non conf. · {audit.decompte.a_verifier} à vérif.
+            · {audit.decompte.non_conforme} non conf. · {audit.decompte.a_verifier} pt(s) d&apos;attention
           </span>
         )}
         {audit.errorMessage && (

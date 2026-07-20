@@ -29,9 +29,9 @@ import type {
  */
 
 const LEVEL_LIBELLE: Record<PubLevel, string> = {
-  rouge: "Non conforme — ne pas diffuser en l'état",
-  orange: 'Non conforme — mentions à compléter avant diffusion',
-  jaune: 'Sous réserve — éléments à vérifier',
+  rouge: "Non conforme : ne pas diffuser en l'état",
+  orange: 'Non conforme : mentions à compléter avant diffusion',
+  jaune: "Sous réserve : points d'attention à lever",
   vert: 'Aucun constat de non-conformité',
 };
 
@@ -217,11 +217,16 @@ export function assemblePubPayload(input: AssemblePubInput): PubAuditPayload {
   };
 }
 
+/** Verdicts the final PDF reports on, in the order they should be presented. */
+const PDF_VERDICTS: ReadonlyArray<PubConstat['verdict']> = ['non_conforme', 'a_verifier'];
+
 /**
- * Reduce a payload to what the *final PDF* should show: only `non_conforme`
- * constats. The editable review report keeps every constat (the officer must
- * see and correct them all) — this filter applies solely at PDF-generation
- * time, so the deliverable lists only the parts that must be fixed.
+ * Reduce a payload to what the *final PDF* should show: the constats that
+ * require the broker to act — `non_conforme` (to fix) and `a_verifier`
+ * (points d'attention, surfaced on equal footing). `conforme` and
+ * `non_applicable` are dropped: the editable review report keeps every constat
+ * (the officer must see and correct them all), but the deliverable lists only
+ * what needs attention.
  *
  * `niveauGlobal` (banner + decompte) is left untouched: it is computed from the
  * full constat set and stays an honest summary even when the detailed list is
@@ -230,6 +235,6 @@ export function assemblePubPayload(input: AssemblePubInput): PubAuditPayload {
 export function pubPdfPayload(payload: PubAuditPayload): PubAuditPayload {
   return {
     ...payload,
-    constats: payload.constats.filter((c) => c.verdict === 'non_conforme'),
+    constats: payload.constats.filter((c) => PDF_VERDICTS.includes(c.verdict)),
   };
 }
