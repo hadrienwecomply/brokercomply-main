@@ -374,7 +374,7 @@ async function runPubAuditJob(auditId: string): Promise<void> {
       result.errors.length > 0
         ? `Analyse partielle : ${result.errors.length} passe(s) en échec (${result.errors
             .map((e) => e.pass)
-            .join(", ")}) — contrôle manuel recommandé pour les points « à vérifier ».`
+            .join(", ")}) : contrôle manuel recommandé pour les points d'attention.`
         : null;
     await updatePubAudit({ db }, auditId, {
       status: "review_pending",

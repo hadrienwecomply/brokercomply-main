@@ -23,8 +23,8 @@ const payloadWith = (constats: PubConstat[]): PubAuditPayload => ({
   constats,
 });
 
-describe('pubPdfPayload (PDF shows only non-conformities)', () => {
-  it('keeps only non_conforme constats', () => {
+describe('pubPdfPayload (PDF shows what needs action)', () => {
+  it('keeps non_conforme and a_verifier constats, drops the rest', () => {
     const payload = payloadWith([
       constat({ id: 'G1', verdict: 'non_conforme' }),
       constat({ id: 'G2', verdict: 'a_verifier' }),
@@ -33,7 +33,15 @@ describe('pubPdfPayload (PDF shows only non-conformities)', () => {
       constat({ id: 'G5', verdict: 'non_conforme' }),
     ]);
     const out = pubPdfPayload(payload);
-    expect(out.constats.map((c) => c.id)).toEqual(['G1', 'G5']);
+    expect(out.constats.map((c) => c.id)).toEqual(['G1', 'G2', 'G5']);
+  });
+
+  it('preserves the incoming constat order (points d\'attention are not demoted)', () => {
+    const payload = payloadWith([
+      constat({ id: 'G2', verdict: 'a_verifier' }),
+      constat({ id: 'G1', verdict: 'non_conforme' }),
+    ]);
+    expect(pubPdfPayload(payload).constats.map((c) => c.id)).toEqual(['G2', 'G1']);
   });
 
   it('leaves niveauGlobal (banner + decompte) untouched as an honest summary', () => {
@@ -42,10 +50,18 @@ describe('pubPdfPayload (PDF shows only non-conformities)', () => {
     expect(out.niveauGlobal).toEqual(payload.niveauGlobal);
   });
 
-  it('yields an empty constat list for a jaune report (only a_verifier)', () => {
+  it('keeps the detail of a jaune report (only a_verifier)', () => {
     const payload = payloadWith([
       constat({ id: 'G2', verdict: 'a_verifier' }),
       constat({ id: 'G3', verdict: 'conforme' }),
+    ]);
+    expect(pubPdfPayload(payload).constats.map((c) => c.id)).toEqual(['G2']);
+  });
+
+  it('yields an empty constat list when nothing needs action', () => {
+    const payload = payloadWith([
+      constat({ id: 'G3', verdict: 'conforme' }),
+      constat({ id: 'G4', verdict: 'non_applicable' }),
     ]);
     expect(pubPdfPayload(payload).constats).toEqual([]);
   });

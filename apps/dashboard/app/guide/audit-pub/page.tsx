@@ -159,8 +159,8 @@ export default function PubAuditGuidePage() {
         </Step>
         <Step n={4} icon={<FileDown className="size-4" />} title="Générer le PDF">
           Le bouton « Générer le PDF » produit le rapport final aux couleurs du courtier.
-          Important : <strong>le PDF ne liste que les non-conformités</strong> — les points
-          conformes, « à vérifier » et non applicables n’y figurent pas.
+          Important : <strong>le PDF liste les non-conformités et les points d’attention</strong>,
+          au même titre. Les points conformes et non applicables n’y figurent pas.
         </Step>
         <Step n={5} icon={<GraduationCap className="size-4" />} title="L’outil apprend de vous">
           Au moment de la génération du PDF, vos corrections (verdicts retournés, reformulations
@@ -192,13 +192,13 @@ export default function PubAuditGuidePage() {
             color="#4b5159"
             bg="#eef0f2"
             label="Jaune — Sous réserve"
-            rule="Rien de non conforme, mais certains points restent « à vérifier » (l’élément peut se trouver ailleurs : landing page, profil du réseau social…)."
+            rule="Rien de non conforme, mais certains points restent des « points d’attention » (l’élément peut se trouver ailleurs : landing page, profil du réseau social…)."
           />
           <LevelRow
             color="#1f7a44"
             bg="#e7f4ec"
             label="Vert — Aucun constat"
-            rule="Aucune non-conformité ni point à vérifier."
+            rule="Aucune non-conformité ni point d’attention."
           />
         </div>
         <p className="mt-3 text-sm text-ink-soft">
@@ -231,7 +231,7 @@ export default function PubAuditGuidePage() {
 
         <FieldExplain label="Verdict (menu déroulant)" example="Non conforme ▾">
           Le jugement porté sur ce point : <strong>Non conforme</strong> (rouge),{" "}
-          <strong>À vérifier</strong> (l’IA n’a pas pu trancher avec les éléments fournis),{" "}
+          <strong>Point d’attention</strong> (l’IA n’a pas pu trancher avec les éléments fournis),{" "}
           <strong>Conforme</strong>, ou <strong>Non applicable</strong> (le point ne concerne
           pas ce type de pub). C’est la ligne la plus importante du bloc : elle pilote le niveau
           global et l’apparition du constat dans le PDF final.
@@ -277,7 +277,7 @@ export default function PubAuditGuidePage() {
           label="Emplacement à vérifier"
           example="Légende du post ou page de destination"
         >
-          Pour les verdicts « À vérifier » : où la mention manquante a le droit de se trouver
+          Pour les verdicts « Point d’attention » : où la mention manquante a le droit de se trouver
           (texte d’accompagnement, profil, landing page…). Aide le courtier — et vous — à savoir
           quoi contrôler avant de valider.
         </FieldExplain>
@@ -373,7 +373,7 @@ export default function PubAuditGuidePage() {
         <p className="text-sm text-ink-soft">
           Beaucoup de mentions obligatoires ont le droit de se trouver <em>en dehors</em> du
           visuel : dans la légende du post, sur la page de destination… Si vous n’importez que
-          l’image, l’IA ne peut pas le savoir et classera honnêtement ces points « À vérifier ».
+          l’image, l’IA ne peut pas le savoir et classera honnêtement ces points « Point d’attention ».
         </p>
         <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-ink-soft">
           <li>
@@ -383,11 +383,11 @@ export default function PubAuditGuidePage() {
           <li>
             <strong className="text-ink">URL de la landing page</strong> : la page est récupérée
             et analysée avec le visuel. Une mention présente sur la landing peut faire passer un
-            point de « À vérifier » à « Conforme ».
+            point de « Point d’attention » à « Conforme ».
           </li>
         </ul>
         <p className="mt-3 text-sm text-ink-soft">
-          Résultat : moins de faux « à vérifier », moins de corrections manuelles, un rapport
+          Résultat : moins de faux points d’attention, moins de corrections manuelles, un rapport
           plus proche du définitif dès la première analyse.
         </p>
       </Card>
@@ -411,17 +411,18 @@ export default function PubAuditGuidePage() {
             relu. Vérifiez toujours que la citation correspond bien à la pub.
           </li>
           <li>
-            <strong className="text-ink">Un point non analysé devient « À vérifier ».</strong>{" "}
-            Quand l’IA n’a pas pu examiner un point applicable, elle le marque honnêtement « À
-            vérifier » plutôt que d’inventer un verdict. Un rapport avec beaucoup de « à
-            vérifier » signifie souvent qu’il manquait du contexte à l’import.
+            <strong className="text-ink">Un point non analysé devient « Point d’attention ».</strong>{" "}
+            Quand l’IA n’a pas pu examiner un point applicable, elle le marque honnêtement
+            « Point d’attention » plutôt que d’inventer un verdict. Un rapport avec beaucoup de
+            points d’attention signifie souvent qu’il manquait du contexte à l’import.
           </li>
           <li>
-            <strong className="text-ink">Le PDF ne montre que les non-conformités.</strong> Une
-            pub « jaune » (uniquement des points à vérifier) produit donc un PDF sans liste
-            détaillée, avec une simple mention qu’aucune non-conformité bloquante n’a été
-            relevée. Pour partager les points « à vérifier » avec le courtier, utilisez le champ
-            Commentaire d’un constat non conforme, ou traitez-les en amont.
+            <strong className="text-ink">
+              Le PDF reprend les points d’attention au même titre que les non-conformités.
+            </strong>{" "}
+            Une pub « jaune » (uniquement des points d’attention) produit donc bien un rapport
+            détaillé. Relisez-les avec la même attention que les non-conformités : ils partent
+            tels quels chez le courtier.
           </li>
           <li>
             <strong className="text-ink">L’apprentissage est commun au cabinet.</strong> Les
