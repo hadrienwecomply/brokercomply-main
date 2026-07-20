@@ -50,6 +50,7 @@ import {
   movePipeline,
   saveContact,
   saveNotes,
+  saveOwner,
   savePhone,
   saveProspectFields,
   undoTask,
@@ -159,6 +160,14 @@ export function ProspectFile({
         onStage={(stage) => {
           patch({ pipelineStage: stage, lostReason: stage === "lost" ? "other" : null });
           startTransition(() => movePipeline(p.id, stage));
+        }}
+        onOwner={(owner) => {
+          patch({ owner });
+          // Pending tasks nobody claimed follow the new owner (server-side).
+          setTasks((prev) =>
+            prev.map((t) => (t.status === "open" && !t.assignee ? { ...t, assignee: owner } : t)),
+          );
+          startTransition(() => saveOwner(p.id, owner));
         }}
       />
 
@@ -487,9 +496,11 @@ export function ProspectFile({
 function ProspectHeader({
   p,
   onStage,
+  onOwner,
 }: {
   p: ProspectDTO;
   onStage: (stage: PipelineStage) => void;
+  onOwner: (owner: string | null) => void;
 }) {
   const primary = primaryContact(p);
   // The gérant's mobile is the cold-call target; fall back to the switchboard.
@@ -517,6 +528,19 @@ function ProspectHeader({
             {p.pipelineStage === "lost" && p.lostReason && (
               <span className="text-sm text-st-na">{LOST_REASON_LABEL[p.lostReason]}</span>
             )}
+            <select
+              value={p.owner ?? ""}
+              onChange={(e) => onOwner(e.target.value || null)}
+              title="Officer responsable — les tâches de cadence sont créées à son nom"
+              className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm text-ink-soft focus:border-brand-500 focus:outline-none"
+            >
+              <option value="">Sans responsable</option>
+              {OFFICER_OPTIONS.map((o) => (
+                <option key={o.email} value={o.email}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
             {p.noShow && <Badge tone="warn" icon={CalendarX2}>no-show</Badge>}
             {p.needsReview && <Badge tone="alert" icon={AlertTriangle}>à vérifier</Badge>}
             {p.fsmaStatut && <Badge tone="muted">FSMA · {p.fsmaStatut}</Badge>}

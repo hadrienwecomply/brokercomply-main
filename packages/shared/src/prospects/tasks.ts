@@ -268,6 +268,25 @@ export async function reassignTask(
     .where(eq(prospectTasks.id, id));
 }
 
+/**
+ * Hand a batch of tasks to an officer in one go — the bulk counterpart of
+ * {@link reassignTask}, used by the board to assign whatever the current
+ * filters have narrowed down. Returns the number of open tasks touched.
+ */
+export async function assignTasks(
+  { db }: ProspectsServiceDeps,
+  ids: string[],
+  assignee: string | null,
+): Promise<number> {
+  if (ids.length === 0) return 0;
+  const rows = await db
+    .update(prospectTasks)
+    .set({ assignee, updatedAt: new Date() })
+    .where(and(inArray(prospectTasks.id, ids), eq(prospectTasks.status, 'open')))
+    .returning({ id: prospectTasks.id });
+  return rows.length;
+}
+
 export async function setTaskDue(
   { db }: ProspectsServiceDeps,
   id: string,
@@ -381,6 +400,10 @@ export async function reconcileCadenceTasks(
             dueAt: d.dueAt,
             source: 'cadence',
             cadenceKey: d.key,
+            // Hand the step to whoever owns the prospect. Cadence tasks used to
+            // be born unassigned, which made the "Mes tâches" filter match
+            // nothing at all — every generated task was invisible under it.
+            assignee: p.owner,
           } satisfies NewProspectTask)
           .onConflictDoNothing();
         summary.created++;

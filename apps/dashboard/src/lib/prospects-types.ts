@@ -22,6 +22,8 @@ export interface ProspectDTO {
   verticale: string | null;
   /** 'FR' | 'NL' | 'EN' — drives the reminder template language. */
   language: string | null;
+  /** Officer who chases this prospect; cadence tasks are created in their name. */
+  owner: string | null;
   /** Verbatim lifecycle tags from the import source (Notion/CSV). */
   sourceStatus: string | null;
   /** Import list tags (cumulative); empty = « Sans liste ». */
