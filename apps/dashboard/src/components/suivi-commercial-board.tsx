@@ -27,10 +27,12 @@ import {
   taskGroup,
   TASK_GROUPS,
   TASK_OUTCOME_LABEL,
+  type AiActionDTO,
   type PipelineStage,
   type ProspectDTO,
   type TaskDTO,
 } from "@/lib/prospects-types";
+import { AiActivity } from "./ai-activity";
 import {
   assignManyTasks,
   finishTask,
@@ -40,17 +42,19 @@ import {
   undoTask,
 } from "@/lib/prospects-actions";
 
-type View = "taches" | "pipeline";
+type View = "taches" | "pipeline" | "ia";
 
 export function SuiviCommercialBoard({
   prospects: initialProspects,
   tasksOpen,
   tasksRecent,
+  aiActions,
   me,
 }: {
   prospects: ProspectDTO[];
   tasksOpen: TaskDTO[];
   tasksRecent: TaskDTO[];
+  aiActions: AiActionDTO[];
   me: string;
 }) {
   const [prospects, setProspects] = useState(initialProspects);
@@ -115,6 +119,11 @@ export function SuiviCommercialBoard({
     }
     return counts;
   }, [open]);
+
+  const aiPending = useMemo(
+    () => aiActions.filter((a) => a.status === "pending_review").length,
+    [aiActions],
+  );
 
   const missingPhone = useMemo(
     () =>
@@ -249,6 +258,10 @@ export function SuiviCommercialBoard({
             Pipeline
             <Count tone="muted">{prospects.length}</Count>
           </ViewTab>
+          <ViewTab active={view === "ia"} onClick={() => setView("ia")}>
+            IA
+            {aiPending > 0 && <Count tone="alert">{aiPending}</Count>}
+          </ViewTab>
         </div>
 
         <label className="relative min-w-52 max-w-sm flex-1">
@@ -308,7 +321,9 @@ export function SuiviCommercialBoard({
         </button>
       </div>
 
-      {view === "taches" ? (
+      {view === "ia" ? (
+        <AiActivity actions={aiActions} />
+      ) : view === "taches" ? (
         <>
           {/* Group chips + mine filter */}
           <div className="flex flex-wrap items-center gap-1.5">

@@ -1,5 +1,9 @@
 import { currentOfficer } from "@/lib/officer.server";
-import { listSuiviCommercial, listTaskBoard } from "@/lib/prospects.server";
+import {
+  listAiActivity,
+  listSuiviCommercial,
+  listTaskBoard,
+} from "@/lib/prospects.server";
 import { SuiviCommercialBoard } from "@/components/suivi-commercial-board";
 
 export const metadata = {
@@ -10,9 +14,10 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function SuiviCommercialPage() {
-  const [prospects, tasks, me] = await Promise.all([
+  const [prospects, tasks, aiActions, me] = await Promise.all([
     listSuiviCommercial(),
     listTaskBoard(),
+    listAiActivity(),
     currentOfficer(),
   ]);
 
@@ -36,6 +41,7 @@ export default async function SuiviCommercialPage() {
         prospects={prospects}
         tasksOpen={tasks.open}
         tasksRecent={tasks.recent}
+        aiActions={aiActions}
         me={me}
       />
     </div>

@@ -423,14 +423,41 @@ export async function revertAiAction(
     .where(eq(prospectAiActions.id, actionId));
 }
 
-/** Recent AI actions for the audit view, newest first. */
+export interface AiActionWithProspect {
+  id: string;
+  prospectId: string;
+  societe: string;
+  intent: string;
+  confidence: number;
+  quote: string | null;
+  stageBefore: string;
+  stageAfter: string | null;
+  status: string;
+  resolvedBy: string | null;
+  createdAt: Date;
+}
+
+/** Recent AI actions for the audit/review view, newest first, with agency name. */
 export async function listAiActions(
   { db }: ProspectsServiceDeps,
   limit = 100,
-) {
+): Promise<AiActionWithProspect[]> {
   return db
-    .select()
+    .select({
+      id: prospectAiActions.id,
+      prospectId: prospectAiActions.prospectId,
+      societe: prospects.societe,
+      intent: prospectAiActions.intent,
+      confidence: prospectAiActions.confidence,
+      quote: prospectAiActions.quote,
+      stageBefore: prospectAiActions.stageBefore,
+      stageAfter: prospectAiActions.stageAfter,
+      status: prospectAiActions.status,
+      resolvedBy: prospectAiActions.resolvedBy,
+      createdAt: prospectAiActions.createdAt,
+    })
     .from(prospectAiActions)
+    .innerJoin(prospects, eq(prospects.id, prospectAiActions.prospectId))
     .orderBy(desc(prospectAiActions.createdAt))
     .limit(limit);
 }
