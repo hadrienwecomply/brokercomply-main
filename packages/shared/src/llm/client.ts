@@ -60,7 +60,9 @@ class AnthropicChatProvider implements ChatProvider {
       this.client.messages.create({
         model: options.model ?? this.model,
         max_tokens: options.maxTokens ?? 4096,
-        temperature: options.temperature ?? 0,
+        // Only send temperature when the caller sets it: newer models (Sonnet 5+)
+        // reject the parameter, so an unconditional default would break them.
+        ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
         ...(options.system ? { system: options.system } : {}),
         messages: messages.map((m, i) => {
           if (i !== lastUserIdx) return { role: m.role, content: m.content };
