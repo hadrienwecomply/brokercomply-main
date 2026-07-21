@@ -731,6 +731,7 @@ export async function setProspectPipelineStage(
   id: string,
   pipelineStage: PipelineStage,
   lostReason: LostReason | null = null,
+  opts: { byAi?: boolean } = {},
 ): Promise<void> {
   const terminal = pipelineStage === 'won' || pipelineStage === 'lost';
   await db
@@ -738,6 +739,11 @@ export async function setProspectPipelineStage(
     .set({
       pipelineStage,
       lostReason: pipelineStage === 'lost' ? lostReason ?? 'other' : null,
+      // Stamp a HUMAN stage change so the classifier can honour "the human
+      // wins": a manual move made after a signal blocks the auto-move. An AI
+      // move must NOT stamp it — otherwise the AI would shield its own move
+      // from the next signal. Every existing caller is a human action.
+      ...(opts.byAi ? {} : { stageChangedAt: new Date() }),
       ...(terminal ? { stage: 'closed', nextActionAt: null } : {}),
       updatedAt: new Date(),
     })

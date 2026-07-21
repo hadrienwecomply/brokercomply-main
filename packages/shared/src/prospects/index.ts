@@ -3,6 +3,7 @@ export * from './service.js';
 export * from './notion-mapping.js';
 export * from './intent-mapping.js';
 export * from './intent-classifier.js';
+export * from './intent-bridge.js';
 export * from './fsma-mapping.js';
 export * from './tasks-engine.js';
 export * from './tasks.js';
