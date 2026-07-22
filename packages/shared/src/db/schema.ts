@@ -1053,6 +1053,13 @@ export const prospects = pgTable(
     /** 'ai' | 'human' — a human-set intent is never overwritten by the AI. */
     intentSource: text('intent_source'),
     intentUpdatedAt: timestamp('intent_updated_at', { withTimezone: true }),
+    /**
+     * When the funnel stage was last changed BY A HUMAN (board/fiche move).
+     * The classifier compares this against the signal date to honour "the human
+     * wins": a manual move made after the e-mail it read blocks the auto-move
+     * (the AI proposes in the review queue instead). Null = never moved by hand.
+     */
+    stageChangedAt: timestamp('stage_changed_at', { withTimezone: true }),
 
     notes: text('notes'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -1161,6 +1168,56 @@ export const prospectTasks = pgTable(
 
 export type ProspectTask = typeof prospectTasks.$inferSelect;
 export type NewProspectTask = typeof prospectTasks.$inferInsert;
+
+/**
+ * Audit log of every funnel action the intent classifier took (or proposed) —
+ * one row per (prospect, source e-mail). It is the backbone of three P2
+ * requirements at once:
+ *  - the "what did the AI do automatically" review view (officer-visible feed);
+ *  - EXACT reversal — `stageBefore` records the state to roll back to, unlike
+ *    the best-effort `reopenTask` which can only guess `offer_sent`;
+ *  - idempotence — keyed on `messageId`, so a thread is classified once per new
+ *    inbound reply and never reprocessed.
+ *
+ * `status` = 'applied' (auto-moved), 'pending_review' (below the confidence bar
+ * or blocked by a human's later edit — awaiting an officer), 'reverted' (an
+ * officer undid it) or 'dismissed' (an officer rejected a proposal).
+ */
+export const prospectAiActions = pgTable(
+  'prospect_ai_actions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    prospectId: uuid('prospect_id')
+      .notNull()
+      .references(() => prospects.id, { onDelete: 'cascade' }),
+    /** internetMessageId of the latest inbound reply that triggered this. */
+    messageId: text('message_id').notNull(),
+    /** Classified intent (see `prospects/intent-mapping.ts`). */
+    intent: text('intent').notNull(),
+    confidence: real('confidence').notNull(),
+    /** Verbatim excerpt from the thread justifying the intent. */
+    quote: text('quote'),
+    /** Funnel stage before the action — the exact target of a revert. */
+    stageBefore: text('stage_before').notNull(),
+    /** Funnel stage the action set (or would set), null when no funnel move. */
+    stageAfter: text('stage_after'),
+    /** 'applied' | 'pending_review' | 'reverted' | 'dismissed'. */
+    status: text('status').notNull(),
+    /** Officer who reverted/dismissed/confirmed, when acted on by a human. */
+    resolvedBy: text('resolved_by'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_prospect_ai_actions_prospect').on(t.prospectId, t.createdAt),
+    index('idx_prospect_ai_actions_status').on(t.status, t.createdAt),
+    // A given inbound message is classified at most once (idempotent bridge).
+    uniqueIndex('uq_prospect_ai_actions_message').on(t.messageId),
+  ],
+);
+
+export type ProspectAiAction = typeof prospectAiActions.$inferSelect;
+export type NewProspectAiAction = typeof prospectAiActions.$inferInsert;
 
 /**
  * Dashboard user accounts. Replaces the env-based credential list

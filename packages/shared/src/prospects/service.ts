@@ -120,6 +120,34 @@ function normalizeEmail(raw: string | null | undefined): string | null {
   return e && e.includes('@') ? e : null;
 }
 
+/**
+ * The agency owning any of these (already-normalized) addresses, or null.
+ * Shared by the import reconciliation and by the intent classifier, which needs
+ * to route an inbound reply back to its prospect by sender address — the reason
+ * secondary contact addresses are stored as their own rows.
+ */
+async function findProspectIdByEmails(
+  db: Db,
+  emails: string[],
+): Promise<string | null> {
+  if (emails.length === 0) return null;
+  const [row] = await db
+    .select({ prospectId: prospectContacts.prospectId })
+    .from(prospectContacts)
+    .where(inArray(prospectContacts.email, emails))
+    .limit(1);
+  return row?.prospectId ?? null;
+}
+
+/** Public lookup: which prospect, if any, owns this e-mail address. */
+export async function findProspectByEmail(
+  { db }: ProspectsServiceDeps,
+  email: string,
+): Promise<string | null> {
+  const normalized = normalizeEmail(email);
+  return normalized ? findProspectIdByEmails(db, [normalized]) : null;
+}
+
 /** Belgian company number → digits only (drops 'BE', dots, spaces). */
 export function normalizeBce(raw: string | null | undefined): string | null {
   const digits = raw?.replace(/\D/g, '') ?? '';
@@ -238,13 +266,9 @@ export async function upsertProspect(
     if (byBce) prospectId = byBce.id;
   }
   if (!prospectId && allEmails.length > 0) {
-    const [byEmail] = await db
-      .select({ prospectId: prospectContacts.prospectId })
-      .from(prospectContacts)
-      .where(inArray(prospectContacts.email, allEmails))
-      .limit(1);
+    const byEmail = await findProspectIdByEmails(db, allEmails);
     if (byEmail) {
-      prospectId = byEmail.prospectId;
+      prospectId = byEmail;
       matchedByEmail = true;
     }
   }
@@ -707,6 +731,7 @@ export async function setProspectPipelineStage(
   id: string,
   pipelineStage: PipelineStage,
   lostReason: LostReason | null = null,
+  opts: { byAi?: boolean } = {},
 ): Promise<void> {
   const terminal = pipelineStage === 'won' || pipelineStage === 'lost';
   await db
@@ -714,6 +739,11 @@ export async function setProspectPipelineStage(
     .set({
       pipelineStage,
       lostReason: pipelineStage === 'lost' ? lostReason ?? 'other' : null,
+      // Stamp a HUMAN stage change so the classifier can honour "the human
+      // wins": a manual move made after a signal blocks the auto-move. An AI
+      // move must NOT stamp it — otherwise the AI would shield its own move
+      // from the next signal. Every existing caller is a human action.
+      ...(opts.byAi ? {} : { stageChangedAt: new Date() }),
       ...(terminal ? { stage: 'closed', nextActionAt: null } : {}),
       updatedAt: new Date(),
     })

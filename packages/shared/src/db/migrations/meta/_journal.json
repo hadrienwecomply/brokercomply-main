@@ -141,6 +141,13 @@
       "when": 1784283729809,
       "tag": "0019_cold_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784627222218,
+      "tag": "0020_unusual_black_bolt",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,8 @@ import {
   addProspectContact,
   assignTasks,
   cancelTask,
+  resolveAiAction,
+  revertAiAction,
   completeTask,
   createTask,
   reassignTask,
@@ -105,6 +107,18 @@ export async function assignManyTasks(ids: string[], assignee: string | null) {
   const n = await assignTasks({ db: getDb() }, ids, assignee);
   refresh();
   return n;
+}
+
+/** Officer confirms or dismisses a proposed AI move (review queue). */
+export async function decideAiAction(actionId: string, decision: "confirm" | "dismiss") {
+  await resolveAiAction({ db: getDb() }, actionId, decision, await currentOfficer());
+  refresh();
+}
+
+/** Officer reverts an auto-applied AI move to its exact prior stage. */
+export async function undoAiAction(actionId: string) {
+  await revertAiAction({ db: getDb() }, actionId, await currentOfficer());
+  refresh();
 }
 
 /** Set the owning officer of a prospect (and inherit their pending tasks). */

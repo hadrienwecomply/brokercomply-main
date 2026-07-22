@@ -149,6 +149,32 @@ export interface TaskDTO {
   createdAt: string;
 }
 
+/** One action the intent classifier took or proposed — for the IA view. */
+export interface AiActionDTO {
+  id: string;
+  prospectId: string;
+  societe: string;
+  intent: string;
+  confidence: number;
+  quote: string | null;
+  stageBefore: PipelineStage;
+  stageAfter: PipelineStage | null;
+  status: "applied" | "pending_review" | "reverted" | "dismissed" | "noop";
+  resolvedBy: string | null;
+  createdAt: string;
+}
+
+/** Human-readable labels for the seven classifier intents. */
+export const INTENT_LABEL: Record<string, string> = {
+  no_reply: "Pas de réponse",
+  interested: "Intéressé",
+  not_interested: "Pas intéressé",
+  later: "Plus tard",
+  meeting_booked: "RDV pris",
+  unreachable: "Injoignable",
+  converted: "Signé",
+};
+
 export const TASK_TYPE_LABEL: Record<TaskType, string> = {
   call: "Appel",
   email: "E-mail",

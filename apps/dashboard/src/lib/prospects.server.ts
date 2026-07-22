@@ -1,6 +1,7 @@
 import "server-only";
 import {
   getProspect,
+  listAiActions,
   listOpenTasks,
   listProspects,
   listProspectTasks,
@@ -12,6 +13,7 @@ import {
 } from "@brokercomply/shared";
 import { getDb } from "./db.server";
 import type {
+  AiActionDTO,
   PipelineStage,
   LostReason,
   ProspectDTO,
@@ -120,6 +122,24 @@ export async function listTaskBoard(): Promise<{ open: TaskDTO[]; recent: TaskDT
     open: open.map((r) => taskToDTO(r.task)),
     recent: recent.map((r) => taskToDTO(r.task)),
   };
+}
+
+/** The intent-classifier activity feed (pending review + recent history). */
+export async function listAiActivity(): Promise<AiActionDTO[]> {
+  const rows = await listAiActions({ db: getDb() }, 150);
+  return rows.map((r) => ({
+    id: r.id,
+    prospectId: r.prospectId,
+    societe: r.societe,
+    intent: r.intent,
+    confidence: r.confidence,
+    quote: r.quote,
+    stageBefore: r.stageBefore as PipelineStage,
+    stageAfter: (r.stageAfter as PipelineStage | null) ?? null,
+    status: r.status as AiActionDTO["status"],
+    resolvedBy: r.resolvedBy,
+    createdAt: r.createdAt.toISOString(),
+  }));
 }
 
 /** One agency (or null) + its full task history, serialized. */

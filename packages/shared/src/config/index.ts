@@ -115,6 +115,16 @@ const envSchema = z.object({
   N8N_CALLBACK_TOKEN: z.string().optional(),
   N8N_CALLBACK_SECRET: z.string().optional(),
 
+  // Gate for the mail intent classifier's AUTO-MOVES (Phase 2). Off by default:
+  // the daily sync still classifies calendar demos (a live, reliable signal),
+  // but only touches the funnel from e-mail once the mail delta sync is
+  // confirmed feeding a FRESH archive — otherwise a first pass would move deals
+  // on month-old backfilled signals. Set to 'true' to flip mail auto-move on.
+  PROSPECT_MAIL_AUTOMOVE: z
+    .string()
+    .default('false')
+    .transform((s) => s.toLowerCase() === 'true' || s === '1'),
+
   // n8n PDF workflow (outbound). The "Générer le PDF" button triggers this
   // workflow with the reviewed edits; it renders the PDF and posts it back via
   // the callback above (kind='pdf'). Shares N8N_WEBHOOK_SECRET as the header.
