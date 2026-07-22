@@ -74,11 +74,14 @@ export const config = {
   /*
    * Gate everything EXCEPT:
    *  - api/webhooks  → inbound n8n & Fillout callbacks (own token-in-path + secret)
+   *  - api/prospects/tick, api/prospects/daily-sync → n8n cron endpoints, each
+   *    with its own constant-time token-in-path auth (same trust model as the
+   *    webhooks). The session gate would 401 the cron before it reaches them.
    *  - _next/static, _next/image → build assets / image optimizer
    *  - favicon.ico, icon.svg, robots.txt, sitemap.xml, brokercomply-logo.svg → public metadata
    * Every other path (the UI and all browser-called API routes) is protected.
    */
   matcher: [
-    "/((?!api/webhooks|_next/static|_next/image|favicon.ico|icon.svg|robots.txt|sitemap.xml|brokercomply-logo.svg).*)",
+    "/((?!api/webhooks|api/prospects/tick|api/prospects/daily-sync|_next/static|_next/image|favicon.ico|icon.svg|robots.txt|sitemap.xml|brokercomply-logo.svg).*)",
   ],
 };
