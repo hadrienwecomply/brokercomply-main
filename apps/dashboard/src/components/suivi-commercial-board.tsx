@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { formatDate, formatEur } from "@/lib/format";
-import { officerName } from "@/lib/officers";
+import { officerName, OFFICER_OPTIONS } from "@/lib/officers";
 import {
   anyPhone,
   LOST_REASON_LABEL,
@@ -32,6 +32,7 @@ import {
   type TaskDTO,
 } from "@/lib/prospects-types";
 import {
+  assignManyTasks,
   finishTask,
   movePipeline,
   runTick,
@@ -58,6 +59,8 @@ export function SuiviCommercialBoard({
   const [view, setView] = useState<View>("taches");
   const [group, setGroup] = useState("all");
   const [mineOnly, setMineOnly] = useState(false);
+  const [noPhoneOnly, setNoPhoneOnly] = useState(false);
+  const [assigning, setAssigning] = useState(false);
   const [query, setQuery] = useState("");
   const [listFilter, setListFilter] = useState(""); // "" = all, NO_LIST_LABEL = untagged
   const [ticking, setTicking] = useState(false);
@@ -97,10 +100,11 @@ export function SuiviCommercialBoard({
         (t) =>
           (group === "all" || taskGroup(t) === group) &&
           (!mineOnly || t.assignee === me) &&
+          (!noPhoneOnly || (t.type === "call" && !anyPhone(byId.get(t.prospectId) ?? emptyP))) &&
           matchesList(byId.get(t.prospectId)) &&
           matchesQuery(byId.get(t.prospectId)),
       ),
-    [open, group, mineOnly, me, q, listFilter, byId],
+    [open, group, mineOnly, noPhoneOnly, me, q, listFilter, byId],
   );
 
   const groupCounts = useMemo(() => {
@@ -205,6 +209,25 @@ export function SuiviCommercialBoard({
     startTransition(() => movePipeline(p.id, stage));
   }
 
+  /**
+   * Hand every currently-listed task to an officer. Operating on the filtered
+   * set rather than on a checkbox selection is deliberate: the filters above
+   * (group, list, search, missing number) already express "this batch", and the
+   * queue is hundreds of rows long — ticking boxes would not scale.
+   */
+  function assignVisible(assignee: string | null) {
+    const ids = visibleTasks.map((t) => t.id);
+    if (ids.length === 0) return;
+    setAssigning(true);
+    setOpen((prev) =>
+      prev.map((t) => (ids.includes(t.id) ? { ...t, assignee } : t)),
+    );
+    startTransition(async () => {
+      await assignManyTasks(ids, assignee);
+      setAssigning(false);
+    });
+  }
+
   function onTick() {
     setTicking(true);
     startTransition(async () => {
@@ -255,10 +278,23 @@ export function SuiviCommercialBoard({
         )}
 
         {missingPhone > 0 && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fdf1da] px-2.5 py-1 text-xs font-medium text-[#8a5300] ring-1 ring-inset ring-[#f0ad4e]/55">
+          <button
+            onClick={() => {
+              setView("taches");
+              setNoPhoneOnly((v) => !v);
+            }}
+            aria-pressed={noPhoneOnly}
+            title="N'afficher que les appels dont le numéro manque"
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset transition-colors",
+              noPhoneOnly
+                ? "bg-[#8a5300] text-white ring-[#8a5300]"
+                : "bg-[#fdf1da] text-[#8a5300] ring-[#f0ad4e]/55 hover:bg-[#fbe7c2]",
+            )}
+          >
             <PhoneMissed className="size-3.5" />
             {missingPhone} numéro{missingPhone > 1 ? "s" : ""} à ajouter
-          </span>
+          </button>
         )}
 
         <button
@@ -302,6 +338,14 @@ export function SuiviCommercialBoard({
             >
               Mes tâches
             </button>
+
+            {visibleTasks.length > 0 && (
+              <BulkAssign
+                count={visibleTasks.length}
+                busy={assigning}
+                onAssign={assignVisible}
+              />
+            )}
           </div>
 
           <TaskList
@@ -322,12 +366,50 @@ export function SuiviCommercialBoard({
   );
 }
 
+/**
+ * Assign the whole filtered batch in one gesture. Resets to its placeholder
+ * after firing so it reads as an action, not as a piece of state.
+ */
+function BulkAssign({
+  count,
+  busy,
+  onAssign,
+}: {
+  count: number;
+  busy: boolean;
+  onAssign: (assignee: string | null) => void;
+}) {
+  return (
+    <select
+      value=""
+      disabled={busy}
+      onChange={(e) => {
+        if (e.target.value === "") return;
+        onAssign(e.target.value === "__none" ? null : e.target.value);
+        e.target.value = "";
+      }}
+      aria-label={`Assigner les ${count} tâches affichées`}
+      title={`Assigner les ${count} tâches affichées`}
+      className="rounded-full border border-line bg-white px-2.5 py-1 text-xs font-medium text-ink-soft focus:border-brand-500 focus:outline-none disabled:opacity-50"
+    >
+      <option value="">Assigner les {count} affichées…</option>
+      {OFFICER_OPTIONS.map((o) => (
+        <option key={o.email} value={o.email}>
+          {o.name}
+        </option>
+      ))}
+      <option value="__none">Retirer l&apos;assignation</option>
+    </select>
+  );
+}
+
 const emptyP: ProspectDTO = {
   id: "",
   societe: "",
   siteInternet: null,
   verticale: null,
   language: null,
+  owner: null,
   sourceStatus: null,
   lists: [],
   pipelineStage: "to_contact",

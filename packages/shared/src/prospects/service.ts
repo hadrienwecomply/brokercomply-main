@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, inArray, isNotNull, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import {
   prospectContacts,
+  prospectTasks,
   prospects,
   type NewProspect,
   type NewProspectContact,
@@ -125,6 +126,85 @@ export function normalizeBce(raw: string | null | undefined): string | null {
   return digits.length >= 9 ? digits : null;
 }
 
+/** Resolved match context for {@link buildAgencyFields}. */
+export interface AgencyFieldsContext {
+  /** The row was found via a contact address rather than its name. */
+  matchedByEmail: boolean;
+  /** A squash-close name already exists (create path only). */
+  nearDuplicate: boolean;
+  /** Normalized company number, or null when the source had none. */
+  bce: string | null;
+}
+
+/**
+ * Build the agency columns an import writes — the single place that decides
+ * which `ProspectImport` field reaches the database.
+ *
+ * Pure and exported so the field coverage can be unit-tested: a field declared
+ * on `ProspectImport` but missing here is silently dropped at write time with
+ * no type error (this is how `noShow` was lost in b5d0858, and it is why
+ * `owner` has never been persisted by any importer).
+ */
+export function buildAgencyFields(
+  input: ProspectImport,
+  { matchedByEmail, nearDuplicate, bce }: AgencyFieldsContext,
+): Partial<NewProspect> {
+  return {
+    // An email match never RENAMES the agency: shared mailboxes across two
+    // agency spellings would steal a name already held by another row
+    // (unique lower(societe)). The name only sets on create or a name match.
+    ...(matchedByEmail ? {} : { societe: input.societe.trim() }),
+    ...definedOnly({
+      siteInternet: input.siteInternet,
+      verticale: input.verticale,
+      language: input.language,
+      owner: input.owner,
+      sourceStatus: input.sourceStatus,
+      pipelineStage: input.pipelineStage,
+      lostReason: input.lostReason,
+      noShow: input.noShow,
+      mrr: input.mrr,
+      conversionProbability: input.conversionProbability,
+      leadFrom: input.leadFrom,
+      meetingDate: input.meetingDate,
+      notes: input.notes,
+      // Enrichment fields — the mapper emits `undefined` for empty cells, so
+      // definedOnly keeps existing values (blanks never clear).
+      formeJuridique: input.formeJuridique,
+      gerantsTous: input.gerantsTous,
+      rue: input.rue,
+      codePostal: input.codePostal,
+      ville: input.ville,
+      province: input.province,
+      pays: input.pays,
+      fsmaStatut: input.fsmaStatut,
+      debutStatut: input.debutStatut,
+      typesProduits: input.typesProduits,
+      activite: input.activite,
+      tailleEquipe: input.tailleEquipe,
+      telSociete: input.telSociete,
+      telSource: input.telSource,
+      siteStatus: input.siteStatus,
+      siteQuality: input.siteQuality,
+      siteSummary: input.siteSummary,
+      linkedinSociete: input.linkedinSociete,
+      instagram: input.instagram,
+      xTwitter: input.xTwitter,
+      dateEnrichissement: input.dateEnrichissement,
+    }),
+    // `needsReview` is OR-ed: a near-duplicate flag never gets cleared by a
+    // later plain import that doesn't set it.
+    ...(input.needsReview || nearDuplicate ? { needsReview: true } : {}),
+    // BCE only backfills — never blank an existing number with an empty cell.
+    ...(bce ? { bce } : {}),
+    // Never blank progress facts on a re-import when the source cell is empty.
+    ...(input.offerSentAt ? { offerSentAt: input.offerSentAt } : {}),
+    ...(input.lastReplyAt ? { lastReplyAt: input.lastReplyAt } : {}),
+    ...(input.lastReplySubject ? { lastReplySubject: input.lastReplySubject } : {}),
+    ...(input.calledAt ? { calledAt: input.calledAt } : {}),
+  };
+}
+
 /**
  * Idempotent import of one agency + its contact(s).
  *
@@ -192,59 +272,7 @@ export async function upsertProspect(
     if (dup) nearDuplicate = true;
   }
 
-  const agencyFields: Partial<NewProspect> = {
-    // An email match never RENAMES the agency: shared mailboxes across two
-    // agency spellings would steal a name already held by another row
-    // (unique lower(societe)). The name only sets on create or a name match.
-    ...(matchedByEmail ? {} : { societe }),
-    ...definedOnly({
-      siteInternet: input.siteInternet,
-      verticale: input.verticale,
-      language: input.language,
-      owner: input.owner,
-      sourceStatus: input.sourceStatus,
-      pipelineStage: input.pipelineStage,
-      lostReason: input.lostReason,
-      mrr: input.mrr,
-      conversionProbability: input.conversionProbability,
-      leadFrom: input.leadFrom,
-      meetingDate: input.meetingDate,
-      notes: input.notes,
-      // Enrichment fields — the mapper emits `undefined` for empty cells, so
-      // definedOnly keeps existing values (blanks never clear).
-      formeJuridique: input.formeJuridique,
-      gerantsTous: input.gerantsTous,
-      rue: input.rue,
-      codePostal: input.codePostal,
-      ville: input.ville,
-      province: input.province,
-      pays: input.pays,
-      fsmaStatut: input.fsmaStatut,
-      debutStatut: input.debutStatut,
-      typesProduits: input.typesProduits,
-      activite: input.activite,
-      tailleEquipe: input.tailleEquipe,
-      telSociete: input.telSociete,
-      telSource: input.telSource,
-      siteStatus: input.siteStatus,
-      siteQuality: input.siteQuality,
-      siteSummary: input.siteSummary,
-      linkedinSociete: input.linkedinSociete,
-      instagram: input.instagram,
-      xTwitter: input.xTwitter,
-      dateEnrichissement: input.dateEnrichissement,
-    }),
-    // `needsReview` is OR-ed: a near-duplicate flag never gets cleared by a
-    // later plain import that doesn't set it.
-    ...(input.needsReview || nearDuplicate ? { needsReview: true } : {}),
-    // BCE only backfills — never blank an existing number with an empty cell.
-    ...(bce ? { bce } : {}),
-    // Never blank progress facts on a re-import when the source cell is empty.
-    ...(input.offerSentAt ? { offerSentAt: input.offerSentAt } : {}),
-    ...(input.lastReplyAt ? { lastReplyAt: input.lastReplyAt } : {}),
-    ...(input.lastReplySubject ? { lastReplySubject: input.lastReplySubject } : {}),
-    ...(input.calledAt ? { calledAt: input.calledAt } : {}),
-  };
+  const agencyFields = buildAgencyFields(input, { matchedByEmail, nearDuplicate, bce });
 
   // Import lists are cumulative — union the incoming tags with the stored ones.
   const newLists = (input.lists ?? []).map((l) => l.trim()).filter(Boolean);
@@ -636,6 +664,37 @@ export async function markProspectCalled(
       updatedAt: new Date(),
     })
     .where(eq(prospects.id, id));
+}
+
+/**
+ * Set the officer who owns this prospect, and hand them the tasks that are
+ * already waiting.
+ *
+ * The back-fill matters: cadence tasks inherit `owner` at creation time, so
+ * without it, naming an owner would only affect steps generated from now on
+ * and the existing queue would stay ownerless forever. Tasks somebody else is
+ * already on are left alone — only unassigned ones move.
+ */
+export async function setProspectOwner(
+  { db }: ProspectsServiceDeps,
+  id: string,
+  owner: string | null,
+): Promise<void> {
+  await db
+    .update(prospects)
+    .set({ owner, updatedAt: new Date() })
+    .where(eq(prospects.id, id));
+  if (!owner) return;
+  await db
+    .update(prospectTasks)
+    .set({ assignee: owner, updatedAt: new Date() })
+    .where(
+      and(
+        eq(prospectTasks.prospectId, id),
+        eq(prospectTasks.status, 'open'),
+        isNull(prospectTasks.assignee),
+      ),
+    );
 }
 
 /**

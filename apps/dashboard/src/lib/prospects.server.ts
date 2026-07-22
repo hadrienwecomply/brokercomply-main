@@ -29,6 +29,7 @@ function toDTO(row: ProspectWithContacts): ProspectDTO {
     siteInternet: row.siteInternet,
     verticale: row.verticale,
     language: row.language,
+    owner: row.owner,
     sourceStatus: row.sourceStatus,
     lists: row.lists ?? [],
     pipelineStage: row.pipelineStage as PipelineStage,

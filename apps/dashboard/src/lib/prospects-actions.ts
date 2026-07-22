@@ -3,12 +3,14 @@
 import { revalidatePath } from "next/cache";
 import {
   addProspectContact,
+  assignTasks,
   cancelTask,
   completeTask,
   createTask,
   reassignTask,
   reopenTask,
   runFollowupTick,
+  setProspectOwner,
   setProspectPhone,
   setProspectPipelineStage,
   setTaskDue,
@@ -96,6 +98,19 @@ export async function dropTask(id: string, prospectId: string) {
 export async function assignTask(id: string, prospectId: string, assignee: string | null) {
   await reassignTask({ db: getDb() }, id, assignee);
   refresh(prospectId);
+}
+
+/** Hand every listed open task to an officer (bulk action on the board). */
+export async function assignManyTasks(ids: string[], assignee: string | null) {
+  const n = await assignTasks({ db: getDb() }, ids, assignee);
+  refresh();
+  return n;
+}
+
+/** Set the owning officer of a prospect (and inherit their pending tasks). */
+export async function saveOwner(id: string, owner: string | null) {
+  await setProspectOwner({ db: getDb() }, id, owner);
+  refresh(id);
 }
 
 export async function rescheduleTask(id: string, prospectId: string, dueAt: string | null) {

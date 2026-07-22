@@ -1,30 +1,13 @@
 import { NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
 import { config } from "@brokercomply/shared";
 import { recordN8nCallback } from "@/lib/formulaires.server";
 import { recordAuditPdfCallback } from "@/lib/website-audit.server";
 import { recordPubPdfCallback } from "@/lib/pub-audit.server";
+import { safeEqual } from "@/lib/safe-equal";
 
 // Needs the Node runtime: postgres.js + node:crypto are not available on Edge.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/**
- * Constant-time string compare. Pads both buffers to the same length so
- * `timingSafeEqual` always runs — an early length-mismatch return would leak
- * the secret's length through response timing.
- */
-function safeEqual(a: string | null | undefined, b: string | null | undefined): boolean {
-  if (!a || !b) return false;
-  const ba = Buffer.from(a);
-  const bb = Buffer.from(b);
-  const len = Math.max(ba.length, bb.length);
-  const pa = Buffer.alloc(len);
-  const pb = Buffer.alloc(len);
-  ba.copy(pa);
-  bb.copy(pb);
-  return timingSafeEqual(pa, pb) && ba.length === bb.length;
-}
 
 interface N8nCallbackBody {
   submissionId?: unknown;
